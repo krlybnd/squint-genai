@@ -1,0 +1,5 @@
+# Collapse generated lockfiles in GitHub PR diffs (linguist-generated).
+package-lock.json linguist-generated=true
+**/package-lock.json linguist-generated=true
+uv.lock linguist-generated=true
+**/uv.lock linguist-generated=true
