@@ -190,12 +190,14 @@ jobs:
           import json
           from pathlib import Path
 
-          path = Path("licenses/bom.cdx.json")
-          bom = json.loads(path.read_text())
+          src = Path("licenses/bom.cdx.json")
+          dst = Path(".reports/licenses/bom-submission.cdx.json")
+          dst.parent.mkdir(parents=True, exist_ok=True)
+          bom = json.loads(src.read_text())
           tools = bom.get("metadata", {}).get("tools")
           if isinstance(tools, dict) and "components" in tools:
               bom["metadata"]["tools"] = tools["components"]
-          path.write_text(json.dumps(bom))
+          dst.write_text(json.dumps(bom))
           PY
 
       - name: Submit SBOM to GitHub dependency graph
@@ -205,7 +207,7 @@ jobs:
            github.event.pull_request.head.repo.full_name == github.repository)
         uses: evryfs/sbom-dependency-submission-action@v0.0.14
         with:
-          sbom-files: licenses/bom.cdx.json
+          sbom-files: .reports/licenses/bom-submission.cdx.json
 
   coverage-aggregate:
     name: coverage-combine
