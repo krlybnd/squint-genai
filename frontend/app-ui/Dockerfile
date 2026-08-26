@@ -24,7 +24,6 @@ ENV VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL
 ENV VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM
 ENV VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID
 
-RUN node frontend/scripts/patch-config.mjs frontend/app-ui/public/config.json
 RUN npm run build -w @are/app-ui
 
 FROM nginx:1.27-alpine AS runtime
