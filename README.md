@@ -218,13 +218,14 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every PR and `main` push:
 - **python-project** — ruff/mypy, unit tests + coverage gates (shared 80%, services 70%)
 - **node-project** — eslint/stylelint/tsc, Vitest + coverage (ui-core 80%)
 - **python-suite** — eval dataset smoke tests
-- **licenses** — CycloneDX SBOM merge + Grant policy gate (`.grant.yaml`)
+- **licenses** — CycloneDX SBOM merge + Grant policy gate (`.grant.yaml`); merged SBOM submitted to GitHub dependency graph
 - **coverage-combine** — merged Python HTML report (non-gating aggregate)
 
 On successful **`main`** builds:
 
 - [`stable`](https://github.com/krlybnd/agentic-rag-eval/releases/tag/stable) tag moves to the commit
-- [Stable release](https://github.com/krlybnd/agentic-rag-eval/releases/tag/stable) gets the merged CycloneDX SBOM attached
+- [Stable release](https://github.com/krlybnd/squint-genai/releases/tag/stable) gets the merged CycloneDX SBOM attached
+- Merged SBOM is submitted to the [dependency graph](https://github.com/krlybnd/squint-genai/network/dependencies) (Security tab) on each successful CI run
 - Combined Python unit coverage is deployed to **GitHub Pages** when available (requires a public repo or paid plan; the step is non-blocking otherwise)
 
 PR runs upload artifacts only; they do not update `stable` or Pages.

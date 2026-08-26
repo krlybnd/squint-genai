@@ -147,6 +147,8 @@ jobs:
   licenses:
     name: license-policy
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -177,6 +179,15 @@ jobs:
             licenses/bom.cdx.json
             .reports/licenses/bom.cdx.json
           retention-days: 14
+
+      - name: Submit SBOM to GitHub dependency graph
+        if: >-
+          success() &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
+        uses: evryfs/sbom-dependency-submission-action@v0.0.14
+        with:
+          sbom-files: licenses/bom.cdx.json
 
   coverage-aggregate:
     name: coverage-combine
