@@ -243,7 +243,7 @@ Squint is a **reference architecture demo**, not a production deployment. The RE
 | **Compliance** | GDPR / NIS2 / EU AI Act modules are extension points (NoOp stubs) — audit logging and retention are not wired end-to-end |
 | **Multitenancy** | Keycloak Organizations demo is real, but API-key auth accepts `X-Tenant-Id` without binding validation — misconfiguration risk in prod |
 | **Chat streaming** | SSE token stream is simulated from the final answer, not native LLM token streaming |
-| **Vector lifecycle** | Document delete/reindex cleanup is being hardened — verify Qdrant state after bulk operations |
+| **Vector lifecycle** | Document delete and reindex remove prior Qdrant vectors ([#12](https://github.com/krlybnd/squint-genai/pull/12)) |
 | **Frontend resilience** | No global React error boundary; chat state lives in a large hook with partial test coverage |
 
 Run live suites locally after `make up-auth` when validating end-to-end behavior before a demo or release.
