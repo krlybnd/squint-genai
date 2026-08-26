@@ -1,6 +1,6 @@
 import { createBdd } from "playwright-bdd";
-import { humanClick, humanGoto, humanPause } from "../support/human";
-import { ensureLoggedIn } from "../support/keycloak-login";
+import { humanClick, humanPause } from "../support/human";
+import { ensureLoggedIn, ensureLoggedInAs } from "../support/keycloak-login";
 import { expect, test } from "../support/fixtures";
 
 const { Given, When, Then } = createBdd(test);
@@ -11,19 +11,12 @@ Given("I am signed in as a user with write access", async ({ page }) => {
 });
 
 Given("I am signed in as a read-only user", async ({ page }) => {
-  test.skip(
-    !process.env.E2E_READONLY_USER,
-    "Set E2E_READONLY_USER and extend global-setup for a read-only persona",
-  );
-  await humanGoto(page, "/");
+  await ensureLoggedInAs(page, "readonly");
+  await expect(page.locator(".documents-panel")).toBeVisible();
 });
 
 Given("I am signed in as a non-admin user with write access", async ({ page }) => {
-  test.skip(
-    !process.env.E2E_NON_ADMIN_USER,
-    "Set E2E_NON_ADMIN_USER / E2E_NON_ADMIN_PASSWORD (realm user without admin role)",
-  );
-  await ensureLoggedIn(page);
+  await ensureLoggedInAs(page, "nonAdmin");
   await expect(page.locator(".documents-panel")).toBeVisible();
 });
 

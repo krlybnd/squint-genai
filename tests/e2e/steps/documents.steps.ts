@@ -103,7 +103,8 @@ Then("the upload PDF control should not be visible", async ({ page }) => {
 });
 
 Then("the read-only empty hint should be visible", async ({ page }) => {
-  await expect(page.getByText(/read-only access|nur lesezugriff|csak olvasás/i)).toBeVisible();
+  await expect(page.locator(".doc-empty")).toBeVisible();
+  await expect(page.locator(".doc-empty")).toContainText(/read-only access|nur lesezugriff|csak olvas/i);
 });
 
 Then("I should see document action {string}", async ({ page }, label: string) => {

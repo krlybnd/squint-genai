@@ -44,11 +44,17 @@ Steps use **roles and visible copy** from `frontend/src/locales/*.json` (no `dat
 
 Recommended follow-up (implementation): add `data-testid` on profile menu, document cards, and chat input for less brittle selectors.
 
-## Auth storage
+## Auth personas
 
-`global-setup.ts` logs in once and writes `.auth/user.json` used as Playwright `storageState`. Admin scenarios currently reuse the same user (must have `admin` role in realm).
+Steps log in via Keycloak per scenario. Default admin user: `admin` / `admin`.
 
-Read-only upload scenario is **skipped** until `E2E_READONLY_USER` and a second storage file are wired in `global-setup.ts`.
+| Persona | Default user | Realm roles | Used by |
+|---------|--------------|-------------|---------|
+| Write / admin | `E2E_USER` (`admin`) | admin, read, write | Most scenarios |
+| Read-only | `bob@tenant-b.local` / `bob` | read (tenant-b) | Documents upload RBAC |
+| Non-admin write | `writer@tenant-a.local` / `writer` | write | Admin panel access denied |
+
+Override with `E2E_READONLY_*` or `E2E_NON_ADMIN_*` in `.env` when needed.
 
 ## Fixtures
 

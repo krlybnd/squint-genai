@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
 import { humanClick, humanFill, humanGoto } from "./human";
 
+export type E2ePersona = "default" | "readonly" | "nonAdmin";
+
 function keycloakSubmit(page: Page) {
   return page.locator("#kc-login, input[type='submit']").or(
     page.getByRole("button", { name: /sign in/i }),
@@ -32,6 +34,26 @@ async function waitForAuthGate(page: Page): Promise<void> {
   );
 }
 
+export function e2eCredentials(persona: E2ePersona = "default"): { username: string; password: string } {
+  switch (persona) {
+    case "readonly":
+      return {
+        username: process.env.E2E_READONLY_USER ?? "bob@tenant-b.local",
+        password: process.env.E2E_READONLY_PASSWORD ?? "bob",
+      };
+    case "nonAdmin":
+      return {
+        username: process.env.E2E_NON_ADMIN_USER ?? "writer@tenant-a.local",
+        password: process.env.E2E_NON_ADMIN_PASSWORD ?? "writer",
+      };
+    default:
+      return {
+        username: process.env.E2E_USER ?? "admin",
+        password: process.env.E2E_PASSWORD ?? "admin",
+      };
+  }
+}
+
 export async function loginViaKeycloak(
   page: Page,
   username: string,
@@ -56,23 +78,46 @@ export async function loginViaKeycloak(
   await page.locator(".profile-menu-name").waitFor({ timeout: 30_000 });
 }
 
-export async function ensureLoggedIn(page: Page): Promise<void> {
-  const username = process.env.E2E_USER ?? "admin";
-  const password = process.env.E2E_PASSWORD ?? "admin";
+export async function signOutIfAuthenticated(page: Page): Promise<void> {
+  if (process.env.E2E_AUTH === "0") return;
+  if (!(await isAppAuthenticated(page))) return;
+
+  await humanClick(page, page.locator(".profile-menu-trigger"));
+  await humanClick(page, page.getByRole("menuitem", { name: /log out|kijelentkezés|abmelden/i }));
+  await page.waitForFunction(
+    () => window.location.pathname.includes("/realms/") || !document.querySelector(".profile-menu-name"),
+    { timeout: 30_000 },
+  );
+}
+
+export async function ensureLoggedInAs(
+  page: Page,
+  persona: E2ePersona = "default",
+): Promise<void> {
+  const { username, password } = e2eCredentials(persona);
   await humanGoto(page, "/");
   if (process.env.E2E_AUTH === "0") {
     return;
   }
+
   await waitForAuthGate(page);
   if (await isAppAuthenticated(page)) {
-    return;
+    await signOutIfAuthenticated(page);
   }
-  await loginViaKeycloak(page, username, password);
+
+  await humanGoto(page, "/");
+  await waitForAuthGate(page);
+  if (await isAppAuthenticated(page)) {
+    await page.context().clearCookies();
+    await humanGoto(page, "/");
+    await waitForAuthGate(page);
+  }
+
+  if (!(await isAppAuthenticated(page))) {
+    await loginViaKeycloak(page, username, password);
+  }
 }
 
-export function e2eCredentials(): { username: string; password: string } {
-  return {
-    username: process.env.E2E_USER ?? "admin",
-    password: process.env.E2E_PASSWORD ?? "admin",
-  };
+export async function ensureLoggedIn(page: Page): Promise<void> {
+  await ensureLoggedInAs(page, "default");
 }
