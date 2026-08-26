@@ -14,7 +14,7 @@ services:
       ops:
         condition: service_completed_successfully
       keycloak:
-        condition: service_started
+        condition: service_healthy
       api:
         condition: service_started
       chat:
