@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   repo-map:
     name: repo-map
@@ -206,3 +210,73 @@ jobs:
           name: coverage-combined
           path: .reports/coverage/combined/
           retention-days: 14
+
+  publish-stable:
+    name: publish-stable
+    needs:
+      - repo-map
+      - python-project
+      - python-suite
+      - node-project
+      - licenses
+      - coverage-aggregate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-pages.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download combined coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-combined
+          path: coverage
+
+      - name: Download merged SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: licenses-bom
+          path: .
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update stable tag
+        run: |
+          git tag -fa stable -m "Stable build from ${GITHUB_SHA}"
+          git push origin stable --force
+
+      - name: Publish stable release with SBOM
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          short_sha="${GITHUB_SHA:0:7}"
+          gh release delete stable --yes 2>/dev/null || true
+          gh release create stable \
+            licenses/bom.cdx.json \
+            --title "Stable" \
+            --notes "Automated stable build from [\`${short_sha}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}). Combined Python unit coverage is published to GitHub Pages when available; CycloneDX SBOM attached." \
+            --latest
+
+      # Pages requires a public repo or paid plan; keep main green when unavailable.
+      - name: Upload Pages artifact
+        continue-on-error: true
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: coverage
+
+      - name: Deploy coverage to GitHub Pages
+        id: deploy-pages
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
