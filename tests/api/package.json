@@ -1,0 +1,21 @@
+{
+  "name": "agentic-rag-eval-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:api": "node scripts/generate-api.mjs",
+    "postinstall": "npm run generate:api",
+    "bddgen": "bddgen",
+    "test": "npm run generate:api && bddgen && playwright test",
+    "lint": "npm run generate:api && tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.0",
+    "dotenv": "^16.5.0",
+    "openapi-fetch": "^0.14.0",
+    "openapi-typescript": "^7.6.1",
+    "playwright-bdd": "^9.2.0",
+    "typescript": "^5.8.0"
+  }
+}

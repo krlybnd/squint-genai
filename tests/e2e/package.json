@@ -1,0 +1,21 @@
+{
+  "name": "agentic-rag-eval-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bddgen": "bddgen",
+    "test": "bddgen && playwright test",
+    "test:smoke": "bddgen && playwright test --grep @smoke",
+    "test:demo": "E2E_HUMAN=1 E2E_VIDEO=1 E2E_MIN_SCENARIO_MS=20000 E2E_SLOW_MO=500 E2E_MOUSE_STEPS=40 E2E_PAUSE_MS=450 E2E_TYPING_DELAY_MS=55 bddgen && playwright test",
+    "test:headed": "E2E_HEADED=1 bddgen && playwright test",
+    "test:ui": "bddgen && playwright test --ui",
+    "report": "playwright show-report ../../.reports/e2e/html"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.0",
+    "dotenv": "^16.5.0",
+    "playwright-bdd": "^9.2.0",
+    "typescript": "^5.8.0"
+  }
+}
