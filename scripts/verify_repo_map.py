@@ -73,11 +73,16 @@ def _lists_match(cue_build: dict[str, object], mk: dict[str, list[str]]) -> list
     return errors
 
 
+OPTIONAL_FOLDER_PATHS = frozenset({".reports", "licenses", "packages/generated"})
+
+
 def main() -> int:
     _run(["cue", "vet", PROJECT_CUE.name])
 
     folders = _cue_export("folders")
-    missing = [path for path in folders if not (ROOT / path).exists()]
+    missing = [
+        path for path in folders if path not in OPTIONAL_FOLDER_PATHS and not (ROOT / path).exists()
+    ]
     if missing:
         print("project.cue folders missing on disk:", file=sys.stderr)
         for path in sorted(missing):
