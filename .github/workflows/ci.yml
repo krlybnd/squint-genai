@@ -180,6 +180,24 @@ jobs:
             .reports/licenses/bom.cdx.json
           retention-days: 14
 
+      - name: Normalize SBOM for dependency submission
+        if: >-
+          success() &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
+        run: |
+          python3 <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("licenses/bom.cdx.json")
+          bom = json.loads(path.read_text())
+          tools = bom.get("metadata", {}).get("tools")
+          if isinstance(tools, dict) and "components" in tools:
+              bom["metadata"]["tools"] = tools["components"]
+          path.write_text(json.dumps(bom))
+          PY
+
       - name: Submit SBOM to GitHub dependency graph
         if: >-
           success() &&
