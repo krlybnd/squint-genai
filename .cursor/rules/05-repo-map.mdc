@@ -1,0 +1,32 @@
+---
+description: Repo map and drift policy — read before structural changes
+alwaysApply: false
+---
+# Repo map (`project.cue`)
+
+Canonical **where / what / must-not** metadata lives in root [`project.cue`](../project.cue) ([ADR 008](../docs/adr/008-repo-metadata-in-cue.md)). ADRs explain **why**; this file explains **structure**.
+
+## Before you change structure
+
+1. **Read** `project.cue` — locate the nearest `folders` entry and related paths.
+2. **New top-level folder or monorepo project?** Add or extend a `#Folder` block and update `build.*` if it joins CI fan-out.
+3. **Run** `make verify-repo-map` (must pass before PR; also runs via pre-commit when repo-map paths change).
+4. **If you changed `build.*`** run `make sync-projects-mk` — do not hand-edit list variables in `make/projects.mk`.
+
+## Drift checklist (PR author)
+
+- [ ] `project.cue` updated for any new/moved/renamed top-level path or service
+- [ ] `adr: [...]` IDs added when the change reflects a recorded decision
+- [ ] `mustNot` updated if a new boundary applies (e.g. sync indexing in API)
+- [ ] `make verify-repo-map` green locally (pre-commit hook runs on `project.cue`, `make/projects.mk`, and top-level `packages|services|frontend|tests` changes)
+- [ ] `make sync-projects-mk` run when `build.*` changed
+
+## Do not duplicate in CUE
+
+- Full ADR text (link by ID only)
+- Mermaid diagrams / port tables (`docs/architecture.md`)
+- Step-by-step coding conventions (`.cursor/rules/10-*`, `20-*`, `40-*`)
+
+## Agent workflow
+
+When exploring an unfamiliar area: `cue export project.cue -e folders.<path>` or read the matching `folders` block in `project.cue` before searching the tree blindly.

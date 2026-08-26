@@ -1,0 +1,15 @@
+---
+description: Testing and evaluation conventions
+globs: tests/**/*
+---
+- **Unit test structure**: use `# Arrange`, `# Act`, `# Assert` comments in Python `tests/unittest` and UI `*.test.ts(x)` files (combined lines OK for one-liners)
+- **Repo map drift**: structural changes must update root `project.cue` and pass `make verify-repo-map` ([ADR 008](../docs/adr/008-repo-metadata-in-cue.md))
+- **In-service tests are unit only** (no `tests/integration/` under services) — HTTP acceptance is `tests/api`; see [ADR 004](../docs/adr/004-no-in-service-integration-tests.md)
+- **Default CI is unit-only** — no docker-compose, `tests/api`, `tests/e2e`, or `eval-live`; see [ADR 007](../docs/adr/007-no-live-tests-in-ci.md) (demo/reference project, not production revenue software)
+- API Gherkin (`tests/api`): Playwright-BDD against live api/chat/admin; steps use **only** clients generated from `openapi/*.yaml`; `make test-api`; manual / on-demand
+- **DeepEval** RAG eval: `make eval-live` (`EVAL_MODE=live`, needs running stack); manual / on-demand — runs the real chat graph
+- Eval layout follows DeepEval convention: `tests/eval/test_rag_eval.py` + `metrics.py` + `dataset.json`; run via `deepeval test run`, never raw `pytest`
+- Goldens are grounded in `resources/` PDFs (not the repo itself). Metrics: ContextualPrecision + ContextualRecall (0.6) and Faithfulness + AnswerRelevancy (0.7)
+- **LangSmith** prod tracing: `LANGSMITH_ENABLED=true` on chat service (LangGraph auto-traces)
+- Test profiles: Dagger functions in `tools/ops` (`test-unit`, `test-all`); `make test-profiles`
+- E2E UI: `tests/e2e` (Playwright + Gherkin); not in default CI; `npm test` is fast by default, `npm run test:demo` for slow human-like video

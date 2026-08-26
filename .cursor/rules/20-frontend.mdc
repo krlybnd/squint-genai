@@ -1,0 +1,15 @@
+---
+description: React UI conventions
+globs: frontend/**/*
+---
+- **`packages/ui-core`**: Vitest coverage gate **80%** (lines/functions/branches/statements) on scoped shared modules; product apps gate per-app in their `vite.config.ts`
+- Vite + React + TS workspace: `@are/ui-core`, `@are/app-ui`, `@are/admin-app-ui` — shared chrome in ui-core (`AppShell`, bootstrap, auth, i18n); product screens stay in each app ([ADR 005](../docs/adr/005-shared-ui-core-appshell.md))
+- Shared UI lives in `packages/ui-core`: components ship their own CSS (`Select.css`, `Modal.css`); form/button primitives in `styles/controls.css` (`ui-btn`, `ui-field`, `ui-form-error`, `ui-badge`, `ui-checkbox`)
+- App bootstrap: `mountApp`, `authClientFromEnv`, `createAppI18nFromLocales` from `@are/ui-core/app/*`; `viteAppConfig` from `@are/ui-core/build/*`; single `scripts/generate-api.mjs` in ui-core
+- Types from `openapi/api.yaml`, `openapi/chat.yaml`, `openapi/admin.yaml` → generated per app
+- Run `make sync`, then `npm run generate:api` (also on postinstall)
+- Traefik routes `/` → app-ui, `/admin` → admin-ui when using `make up-auth`
+- Purple youthful theme (DM Sans, gradient accents)
+- Layout: header top, left documents panel, right chat sessions
+- Chat consumes SSE from chat service (`/v1/chat/sessions/{id}/stream`)
+- Auth: `keycloak-js` when `VITE_AUTH_ENABLED=true` (`make up-auth`); dev without auth via `make up-ui` (`AUTH_MODE=none`)

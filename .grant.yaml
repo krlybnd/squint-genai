@@ -1,0 +1,35 @@
+# License compliance policy for merged CycloneDX SBOM (make licenses-check).
+# Docs: https://oss.anchore.com/docs/guides/license/policies/
+#
+# Default: deny unless explicitly allowed. Run `make licenses-list` to inspect
+# findings before adding waivers to ignore-packages.
+
+allow:
+  # Permissive
+  - MIT
+  - MIT-0
+  - Apache-*
+  - BSD-*-Clause
+  - ISC
+  - 0BSD
+  - Unlicense
+  - CC0-*
+  - CC-BY-4.0
+  - Python-2.0
+  - PSF-2.0
+  - Zlib
+  - BSL-1.0
+  - HPND
+  - HPND-sell-variant
+  - BlueOak-1.0.0
+  - WTFPL
+  - Unicode-3.0
+  - MPL-2.0
+  - LGPL-*
+
+# Packages reviewed and waived — add name/purl patterns after `make licenses-list`.
+ignore-packages: []
+
+# Many PyPI/npm metadata entries omit license fields in SBOM export.
+require-license: false
+require-known-license: false

@@ -1,0 +1,16 @@
+# Root ruff config — extended by each Python project via pyproject.toml
+
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "TID"]
+
+[lint.flake8-tidy-imports.banned-api]
+"getattr".msg = "getattr is banned; bound the type instead of duck-typing"
+"hasattr".msg = "hasattr is banned; bound the type instead of duck-typing"
+"builtins.getattr".msg = "getattr is banned; bound the type instead of duck-typing"
+"builtins.hasattr".msg = "hasattr is banned; bound the type instead of duck-typing"
+
+[lint.per-file-ignores]
+"**/router.py" = ["B008"]

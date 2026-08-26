@@ -1,0 +1,21 @@
+---
+description: agentic-rag-eval scope guard — read before any feature work
+alwaysApply: true
+---
+# Scope
+
+Phase 1 architecture (LOCKED):
+- **Services:** api (documents/jobs/retrieval/annotations REST), chat (LangGraph + in-process retrieval + SSE), indexing (Celery), admin (Keycloak Organizations REST)
+- **Infra:** PostgreSQL, Redis, MinIO, Qdrant, LiteLLM, docker-compose
+- **Edge (optional `--profile auth --profile ui`):** Keycloak, Traefik, frontend + admin-ui
+- **Backend:** Dishka DI, vertical module slices (`modules/<domain>/`), providers receive settings in `__init__`
+- **Heavy ops:** semantic chunking + indexing via Celery only — never sync in API
+- **UI:** React purple theme, documents sidebar + chat sessions, SSE streaming; Keycloak login when `VITE_AUTH_ENABLED=true`
+- **Tenancy:** `tenant_id` on persisted entities; resolved from auth context (`X-Tenant-Id` / JWT)
+
+OUT OF SCOPE (Phase 2 — diagram/reference only):
+- Graph DB, visual workflow editor, full multitenancy product features
+
+Prefer minimal vertical slices. One PR = one slice (e.g. "document upload" or "chat SSE").
+
+**Repo structure:** root [`project.cue`](../project.cue) maps folders and boundaries ([ADR 008](../docs/adr/008-repo-metadata-in-cue.md)). Update it when adding top-level paths; run `make verify-repo-map`.

@@ -1,0 +1,23 @@
+---
+description: Python backend conventions
+globs: services/**/*.py,packages/**/*.py
+---
+- Python 3.12+, type hints, pydantic-settings for config
+- **No duck-typing builtins:** never `getattr` / `hasattr` / `__getattr__`. Bound generics to real types (`T: TenantScopedEntity`) instead. mypy will not catch this — lint will.
+- **SOLID / protocol-driven**: use `@runtime_checkable` `Protocol` for boundaries; services depend on protocols, not SQLAlchemy sessions
+- **SQL persistence**: entities under `agentic_shared/domains/persistence/entities/`; separate **read** and **write** repository protocols under `protocols/`; async implementations in `repositories/async_/` (API/chat), sync in `repositories/sync_/` (Celery). Schema changes via Alembic in `packages/shared/alembic/`
+- **Dishka DI**: `main.py` calls `load_settings()`, passes layer settings to provider `__init__`, builds container via `make_service_container(...)` — no global SettingsProvider, no Dishka context for settings layers
+- **Settings layers** (see ADR 002):
+  - **Integration/infra** — each owns `settings.py` extending `EnvSettings` (reads `.env`)
+  - **Service** — `services/<svc>/settings.py`: class extends `AppSettings`, nested layers via `Field(default_factory=...)`, `load_settings()` → `load_app_settings(XxxSettings)`
+  - **Module/node** — `modules/<domain>/settings.py` or `core/nodes/*/settings.py`: extends `ModuleSettings`, `env_prefix`, `get_module_settings = module_settings_loader(...)`
+- **Logging**: `setup_logging` in shared reuses uvicorn handlers (HTTP) or celery/root handlers (worker); modules use `logging.getLogger(__name__)`. Infra clients log `opening`/`closing` via `BaseResourceClient`. Do not dictConfig or replace the host logger.
+- **i18n** (see [ADR 006](../docs/adr/006-backend-i18n.md)): server-emitted copy via `agentic_shared.core.i18n` (`t` / `t_stored`, `Accept-Language`); do not hardcode user-facing chat/annotation strings
+- FastAPI routers thin; business logic in `service.py`
+- **Clients**: each integration under `agentic_shared/integrations/` or `infrastructure/` owns `settings.py` + read/write `Protocol`s where applicable
+- **Health**: `agentic_shared/core/health/` — `/health` + `/ready`; resources implement `ResourceHealthCheckable`; wire with `make_resource_health_provider(...)` or `infrastructure_health_provider()`
+- **Auth / RBAC**: `AuthSettings.auth_mode` (`none` | `api_key` | `jwt`); Keycloak realm roles `admin` / `read` / `write`; `AppRole` enum; `RoleSettings.roles` maps Keycloak role names → app roles; routes use `require_roles(auth, auth_settings, AppRole.*)`; frontend uses `keycloak-js` when `VITE_AUTH_ENABLED=true`
+- **Storage / Redis / Qdrant**: separate reader + writer protocols (`ObjectStorageReader`/`Writer`, `RedisReader`/`Writer`, `QdrantReader`/`Writer`)
+- **Compliance** (GDPR / NIS2 / EU AI Act prep): `core/compliance/` — ports (`AuditLogger`, `DataSubjectRightsPort`, `IncidentReporter`, `AiTransparencyPort`); NoOp defaults; see `docs/compliance.md`
+- OpenAPI is API-first: edit FastAPI routes/schemas, run `make sync` → `openapi/api.yaml`, `openapi/chat.yaml`, `openapi/admin.yaml`
+- Frontend types: `npm run generate:api` from per-service OpenAPI specs

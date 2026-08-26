@@ -1,0 +1,17 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "ignoreFiles": ["**/node_modules/**", "**/dist/**", "**/themes.css"],
+  "rules": {
+    "color-no-hex": true,
+    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"],
+    "no-descending-specificity": null,
+    "selector-class-pattern": null,
+    "rule-empty-line-before": null,
+    "at-rule-empty-line-before": null,
+    "import-notation": null,
+    "media-feature-range-notation": null,
+    "keyframes-name-pattern": null,
+    "declaration-property-value-keyword-no-deprecated": null,
+    "no-duplicate-selectors": null
+  }
+}

@@ -1,0 +1,3 @@
+**/node_modules/**
+**/dist/**
+packages/ui-core/src/styles/themes.css

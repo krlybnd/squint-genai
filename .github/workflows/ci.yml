@@ -1,0 +1,208 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  repo-map:
+    name: repo-map
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Install CUE and verify repo map
+        run: |
+          go install cuelang.org/go/cmd/cue@v0.11.0
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          make verify-repo-map
+
+  python-project:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: packages/shared
+            name: shared
+          - project: services/api
+            name: api
+          - project: services/chat
+            name: chat
+          - project: services/admin
+            name: admin
+          - project: services/indexing
+            name: indexing
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "${{ matrix.project }}/uv.lock"
+
+      - name: Sync (frozen)
+        working-directory: ${{ matrix.project }}
+        run: uv sync --frozen
+
+      - name: Lint
+        run: make -C ${{ matrix.project }} lint
+
+      - name: Unit tests + coverage
+        run: make -C ${{ matrix.project }} unit-test-coverage
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-reports-${{ matrix.name }}
+          path: .reports/python/${{ matrix.name }}/
+          retention-days: 14
+
+  python-suite:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: tests/eval
+            name: eval
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "${{ matrix.project }}/uv.lock"
+
+      - name: Sync (frozen)
+        working-directory: ${{ matrix.project }}
+        run: uv sync --frozen
+
+      - name: Run suite
+        run: make -C ${{ matrix.project }} run
+
+  node-project:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: packages/ui-core
+            name: ui-core
+          - project: frontend/app-ui
+            name: app-ui
+          - project: frontend/admin-app-ui
+            name: admin-app-ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+      - name: Install
+        run: make -C ${{ matrix.project }} install
+
+      - name: Lint
+        run: make -C ${{ matrix.project }} lint
+
+      - name: Unit tests
+        run: make -C ${{ matrix.project }} unit-test
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-reports-${{ matrix.name }}
+          path: .reports/node/${{ matrix.name }}/
+          retention-days: 14
+
+  licenses:
+    name: license-policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Sync all projects (frozen)
+        run: make sync-frozen
+
+      - name: SBOM merge + license policy gate
+        run: make licenses
+
+      - name: Upload merged SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: licenses-bom
+          path: |
+            licenses/bom.cdx.json
+            .reports/licenses/bom.cdx.json
+          retention-days: 14
+
+  coverage-aggregate:
+    name: coverage-combine
+    runs-on: ubuntu-latest
+    needs: [python-project]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: python-reports-*
+          path: .reports/_ci-artifacts
+          merge-multiple: true
+
+      - name: Normalize Python report paths
+        run: |
+          mkdir -p .reports/python
+          for name in shared api chat admin indexing; do
+            src=".reports/_ci-artifacts/python-reports-${name}"
+            if [ -d "$src" ]; then
+              mkdir -p ".reports/python/${name}"
+              cp -a "${src}/." ".reports/python/${name}/"
+            fi
+          done
+
+      - name: Sync shared (for coverage CLI)
+        working-directory: packages/shared
+        run: uv sync --frozen
+
+      - name: Combine coverage (non-gating)
+        run: make coverage-combine
+
+      - name: Upload combined coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-combined
+          path: .reports/coverage/combined/
+          retention-days: 14

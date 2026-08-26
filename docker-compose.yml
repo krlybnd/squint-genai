@@ -1,0 +1,161 @@
+include:
+  - path: operations/postgres/compose.yaml
+  - path: operations/redis/compose.yaml
+  - path: operations/minio/compose.yaml
+  - path: operations/qdrant/compose.yaml
+  - path: operations/litellm/compose.yaml
+  - path: operations/keycloak/compose.yaml
+  - path: operations/traefik/compose.yaml
+
+x-app-env: &app-env
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  AUTH_MODE: ${AUTH_MODE:-jwt}
+  INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-dev-internal-service-key-change-me}
+  KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+  KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
+  KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-agentic-rag-eval-api}
+  KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-change-me-api-client-secret}
+  ROLES: ${ROLES:-{"admin":"admin","read":"read","write":"write"}}
+
+services:
+  ops:
+    build:
+      context: .
+      dockerfile: tools/ops/Dockerfile
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: "no"
+
+  indexing:
+    build:
+      context: .
+      dockerfile: services/indexing/Dockerfile
+    env_file: .env
+    environment:
+      <<: *app-env
+    depends_on:
+      ops:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      litellm:
+        condition: service_started
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    env_file: .env
+    environment:
+      <<: *app-env
+    depends_on:
+      ops:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      litellm:
+        condition: service_started
+      indexing:
+        condition: service_started
+    ports:
+      - "8000:8000"
+
+  chat:
+    build:
+      context: .
+      dockerfile: services/chat/Dockerfile
+    env_file: .env
+    environment:
+      <<: *app-env
+    depends_on:
+      ops:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      litellm:
+        condition: service_started
+    ports:
+      - "8002:8002"
+
+  admin:
+    build:
+      context: .
+      dockerfile: services/admin/Dockerfile
+    env_file: .env
+    environment:
+      <<: *app-env
+    depends_on:
+      ops:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+        required: false
+    ports:
+      - "8003:8003"
+
+  frontend:
+    profiles: [ui]
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-false}
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost}
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
+        VITE_KEYCLOAK_CLIENT_ID: agentic-rag-eval-ui
+    depends_on:
+      ops:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+      chat:
+        condition: service_started
+      admin:
+        condition: service_started
+        required: false
+      keycloak:
+        condition: service_started
+        required: false
+    ports:
+      - "5173:5173"
+
+  admin-ui:
+    profiles: [ui]
+    build:
+      context: .
+      dockerfile: frontend/admin-app-ui/Dockerfile
+      args:
+        VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-false}
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost}
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
+        VITE_KEYCLOAK_CLIENT_ID: agentic-rag-eval-ui
+        VITE_API_KEY: ${API_KEY:-dev-admin-key-change-me}
+    depends_on:
+      ops:
+        condition: service_completed_successfully
+      admin:
+        condition: service_started
+        required: false
+      keycloak:
+        condition: service_started
+        required: false
+    ports:
+      - "5174:5173"

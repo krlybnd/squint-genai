@@ -1,0 +1,89 @@
+---
+description: Create GitHub issues with gh using the repo's markdown templates
+alwaysApply: false
+---
+
+# GitHub issues
+
+Use `gh` for every GitHub issue/PR/check. Do not invent issues in chat — create them on GitHub when asked.
+
+Issue templates are **markdown** (not YAML forms) so `gh issue create --template` works. The agent should still pass `--body` with filled-in content; `--template` plus `--body` cannot be combined.
+
+## One-time labels
+
+If `gh issue create --label` fails because a label is missing:
+
+```bash
+make gh-labels
+```
+
+## Create an issue
+
+Fill real content (never leave HTML comments or empty sections). Then:
+
+```bash
+gh issue create \
+  --title "[bug] Short actionable title" \
+  --label bug \
+  --body "$(cat <<'EOF'
+## Summary
+One or two sentences.
+
+## Steps to Reproduce
+1. …
+2. …
+
+## Expected Behavior
+…
+
+## Actual Behavior
+…
+
+## Acceptance Criteria
+- [ ] Bug is fixed
+- [ ] Regression covered (if applicable)
+
+## Notes
+Optional.
+EOF
+)"
+```
+
+| Type in title | `--label` |
+|---------------|-----------|
+| `[bug]` | `bug` |
+| `[feature]` | `enhancement` |
+| `[chore]` | `chore` |
+| `[docs]` | `documentation` |
+| `[test]` | `test` |
+
+## Title and body
+
+- Title: `[type] Short, actionable title` — types: `feature`, `bug`, `chore`, `docs`, `test`
+- English only
+- Acceptance criteria must be checkboxes
+- No story points, estimates, or time fields
+- Keep it short
+
+Body shape (must match the template):
+
+```markdown
+## Summary
+…
+
+## Context
+Why this exists. Link related issues or docs.
+
+## Acceptance Criteria
+- [ ] Testable outcome 1
+- [ ] Testable outcome 2
+
+## Notes
+Optional constraints or open questions.
+```
+
+Bug reports add **Steps to Reproduce**, **Expected Behavior**, **Actual Behavior** instead of Context.
+
+## After create
+
+Return the issue URL. Do not create issues unless the user asked.

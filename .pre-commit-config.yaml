@@ -1,0 +1,34 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+        exclude: ^(frontend/.*/dist/|.*\.tsbuildinfo|package-lock\.json)
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.20
+    hooks:
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  - repo: local
+    hooks:
+      - id: verify-repo-map
+        name: verify repo map (project.cue)
+        entry: scripts/precommit_verify_repo_map.sh
+        language: system
+        pass_filenames: false
+        files: ^(project\.cue|cue\.mod/|make/projects\.mk|scripts/(verify_repo_map|render_projects_mk|precommit_verify_repo_map)\.sh|\.github/workflows/ci\.yml|(packages|services|frontend|tests)/[^/]+/)
+      - id: workspace-lint
+        name: workspace lint (ruff + eslint + stylelint + tsc)
+        entry: make lint
+        language: system
+        always_run: true
+        pass_filenames: false

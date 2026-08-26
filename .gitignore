@@ -1,0 +1,57 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+node_modules/
+frontend/dist/
+frontend/*/src/api/generated/
+tests/api/src/generated/
+*.tsbuildinfo
+.DS_Store
+data/checkpoints.db
+
+# Demo PDFs (download with `make resources`)
+resources/*.pdf
+
+# Dagger removed — ops container only
+tools/ops/.gitignore
+
+# Generated SBOM / license reports
+licenses/
+
+# CI test reports, coverage, Playwright E2E, and API acceptance output
+.reports/
+
+# Vitest coverage output (per-project; canonical copy under .reports/node/<name>/coverage)
+coverage/
+
+# DeepEval local test-run cache (make eval-live)
+.deepeval/
+.deepeval-cache.json
+
+# Generated OpenAPI (committed — regenerate with `make generate-openapi`)
+# openapi/*.yaml and openapi/*.json are tracked
+
+# OpenAPI-generated Python clients (run `make generate-keycloak-client`)
+packages/generated/
+
+# IDE / editor (keep project rules in git)
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+.idea/
+.vscode/
+.hypothesis/
+*.swp
+*.swo
+*~
