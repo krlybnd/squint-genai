@@ -1,0 +1,402 @@
+openapi: 3.1.0
+info:
+  title: Squint Chat
+  description: Stateful chat with LangGraph workflow + SSE streaming
+  version: 0.1.0
+paths:
+  /health:
+    get:
+      tags:
+      - health
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /ready:
+    get:
+      tags:
+      - health
+      summary: Ready
+      operationId: ready_ready_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  anyOf:
+                  - type: string
+                  - type: boolean
+                type: object
+                title: Response Ready Ready Get
+  /v1/chat/sessions:
+    get:
+      tags:
+      - chat
+      summary: List Sessions
+      operationId: list_sessions_v1_chat_sessions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ChatSessionOut'
+                type: array
+                title: Response List Sessions V1 Chat Sessions Get
+    post:
+      tags:
+      - chat
+      summary: Create Session
+      operationId: create_session_v1_chat_sessions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/chat/sessions/{session_id}:
+    delete:
+      tags:
+      - chat
+      summary: Delete Session
+      operationId: delete_session_v1_chat_sessions__session_id__delete
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Session Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/chat/sessions/{session_id}/messages:
+    get:
+      tags:
+      - chat
+      summary: Get Messages
+      operationId: get_messages_v1_chat_sessions__session_id__messages_get
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Session Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessageOut'
+                title: Response Get Messages V1 Chat Sessions  Session Id  Messages
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/chat/sessions/{session_id}/messages/{message_id}/tail:
+    delete:
+      tags:
+      - chat
+      summary: Truncate Messages
+      operationId: truncate_messages_v1_chat_sessions__session_id__messages__message_id__tail_delete
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Session Id
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Message Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/chat/sessions/{session_id}/stream:
+    post:
+      tags:
+      - chat
+      summary: Stream Chat
+      operationId: stream_chat_v1_chat_sessions__session_id__stream_post
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Session Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatStreamRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/chat/sessions/{session_id}/replay:
+    post:
+      tags:
+      - chat
+      summary: Replay Chat
+      operationId: replay_chat_v1_chat_sessions__session_id__replay_post
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Session Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatReplayRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ChatMessageOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        role:
+          $ref: '#/components/schemas/ChatMessageRole'
+        content:
+          type: string
+          title: Content
+        citations:
+          items:
+            $ref: '#/components/schemas/CitationOut'
+          type: array
+          title: Citations
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - role
+      - content
+      - created_at
+      title: ChatMessageOut
+    ChatMessageRole:
+      type: string
+      enum:
+      - user
+      - assistant
+      title: ChatMessageRole
+      description: Persisted chat history / REST API (no system role).
+    ChatReplayRequest:
+      properties:
+        run_id:
+          type: string
+          minLength: 1
+          title: Run Id
+        query:
+          type: string
+          minLength: 1
+          title: Query
+        checkpoint_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Checkpoint Id
+      type: object
+      required:
+      - run_id
+      - query
+      title: ChatReplayRequest
+    ChatSessionOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - title
+      - created_at
+      - updated_at
+      title: ChatSessionOut
+    ChatStreamRequest:
+      properties:
+        message:
+          type: string
+          minLength: 1
+          title: Message
+        run_id:
+          anyOf:
+          - type: string
+            minLength: 1
+          - type: 'null'
+          title: Run Id
+      type: object
+      required:
+      - message
+      title: ChatStreamRequest
+    CitationOut:
+      properties:
+        chunk_id:
+          type: string
+          title: Chunk Id
+          default: ''
+        doc_id:
+          type: string
+          title: Doc Id
+          default: ''
+        source_file:
+          type: string
+          title: Source File
+          default: ''
+        page:
+          anyOf:
+          - type: integer
+          - type: string
+          - type: 'null'
+          title: Page
+        excerpt:
+          type: string
+          title: Excerpt
+          default: ''
+      type: object
+      title: CitationOut
+    CreateSessionRequest:
+      properties:
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+      type: object
+      title: CreateSessionRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - status
+      title: HealthResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
