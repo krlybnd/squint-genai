@@ -12,7 +12,7 @@ Docker Compose **include** fragments — one folder per dependency.
 | `keycloak/` | Keycloak + org bootstrap (`--profile auth`) | via Traefik `/realms` |
 | `traefik/` | API gateway + JWT auth (`--profile auth`) | 80 / 8088 |
 
-App Dockerfiles live under each project: `services/*/Dockerfile`, `frontend/Dockerfile`.
+App Dockerfiles live under each project: `services/*/Dockerfile`, `frontend/app-ui/Dockerfile`, `frontend/admin-app-ui/Dockerfile`.
 
 Post-start bootstrap (Alembic migrate + MinIO bucket/CORS): **`tools/ops`** — Dagger module + lightweight `ops` compose service.
 
