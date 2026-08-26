@@ -22,6 +22,7 @@ that unit tests plus optional local suites already provide.
 ## Decision
 
 - **Default GitHub Actions CI does not start docker-compose or run live-stack suites.**
+- **`tests/eval` is not run in CI** — neither the offline dataset smoke (`make -C tests/eval run`) nor the live DeepEval gate (`make eval-live`). Same rationale as `tests/e2e`: the suite belongs to the live-stack / quality-validation path, not the fast hermetic PR gate ([ADR 004](004-no-in-service-integration-tests.md)).
 - **`tests/api`, `tests/e2e`, and `make eval-live` remain manual / on-demand** — documented in root README and `tests/*/README.md`; developers run them after `make up` when validating end-to-end behavior.
 - **CI continues to gate** lint, unit coverage (packages ≥ 80%, services ≥ 70%), and license policy.
 - **Contract drift** is mitigated by committed `openapi/*.yaml`, generated clients, and local `make test-api` — not by blocking every PR on a full stack.
