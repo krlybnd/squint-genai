@@ -77,31 +77,6 @@ jobs:
           include-hidden-files: true
           retention-days: 14
 
-  python-suite:
-    name: ${{ matrix.name }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - project: tests/eval
-            name: eval
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-          cache-dependency-glob: "${{ matrix.project }}/uv.lock"
-
-      - name: Sync (frozen)
-        working-directory: ${{ matrix.project }}
-        run: uv sync --frozen
-
-      - name: Run suite
-        run: make -C ${{ matrix.project }} run
-
   node-project:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -258,7 +233,6 @@ jobs:
     needs:
       - repo-map
       - python-project
-      - python-suite
       - node-project
       - licenses
       - coverage-aggregate

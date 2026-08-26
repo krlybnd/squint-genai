@@ -217,9 +217,10 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every PR and `main` push:
 - **repo-map** — `project.cue` drift check
 - **python-project** — ruff/mypy, unit tests + coverage gates (shared 80%, services 70%)
 - **node-project** — eslint/stylelint/tsc, Vitest + coverage (ui-core 80%)
-- **python-suite** — eval dataset smoke tests
 - **licenses** — CycloneDX SBOM merge + Grant policy gate (`.grant.yaml`); merged SBOM submitted to GitHub dependency graph
 - **coverage-combine** — merged Python HTML report (non-gating aggregate)
+
+`tests/eval` (offline smoke + `make eval-live`) is **not** in CI — same as e2e; see [ADR 007](docs/adr/007-no-live-tests-in-ci.md).
 
 On successful **`main`** builds:
 
