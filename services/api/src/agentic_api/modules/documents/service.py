@@ -15,6 +15,7 @@ from agentic_shared.infrastructure.object_storage.protocols import (
     ObjectStorageReader,
     ObjectStorageWriter,
 )
+from agentic_shared.infrastructure.vector.protocols import QdrantWriter
 
 from agentic_api.modules.documents.schemas import DocumentOut, IndexStatus
 from agentic_api.modules.jobs.service import JobService
@@ -32,6 +33,7 @@ class DocumentService:
         jobs_write: IndexJobWriteRepository,
         storage_read: ObjectStorageReader,
         storage_write: ObjectStorageWriter,
+        qdrant_write: QdrantWriter,
         job_service: JobService,
     ) -> None:
         self._tenant_id = tenant_id
@@ -41,6 +43,7 @@ class DocumentService:
         self._jobs_write = jobs_write
         self._storage_read = storage_read
         self._storage_write = storage_write
+        self._qdrant_write = qdrant_write
         self._job_service = job_service
 
     async def create_upload_presign(
@@ -111,6 +114,10 @@ class DocumentService:
             raise BadRequestError("Object not found in MinIO — upload the file first")
 
         await self._job_service.cancel_indexing_for_document(document_id)
+        self._qdrant_write.delete_document_vectors(
+            str(document_id),
+            tenant_id=self._tenant_id,
+        )
         document.indexed_at = None
         await self._documents_write.update(document)
         job = IndexJob(
@@ -135,6 +142,10 @@ class DocumentService:
         if not document:
             raise NotFoundError("Document not found")
         await self._job_service.cancel_indexing_for_document(document_id)
+        self._qdrant_write.delete_document_vectors(
+            str(document_id),
+            tenant_id=self._tenant_id,
+        )
         if self._storage_read.object_exists(document.minio_key):
             self._storage_write.delete(document.minio_key)
         await self._documents_write.delete(document_id)

@@ -30,6 +30,7 @@ def _service(**overrides: object) -> DocumentService:
         "jobs_write": AsyncMock(),
         "storage_read": Mock(),
         "storage_write": Mock(),
+        "qdrant_write": Mock(),
         "job_service": AsyncMock(),
     }
     defaults.update(overrides)
@@ -119,6 +120,10 @@ class TestDocumentService(unittest.IsolatedAsyncioTestCase):
 
         # Assert
         service._job_service.cancel_indexing_for_document.assert_awaited_once_with(document.id)
+        service._qdrant_write.delete_document_vectors.assert_called_once_with(
+            str(document.id),
+            tenant_id="tenant-1",
+        )
         service._documents_write.update.assert_awaited_once()
         self.assertIsNone(returned_doc.indexed_at)
         service._jobs_write.add.assert_awaited_once()
@@ -130,6 +135,23 @@ class TestDocumentService(unittest.IsolatedAsyncioTestCase):
             "tenant-1",
         )
         self.assertIs(returned_job, job)
+
+    async def test_delete_document_removes_qdrant_vectors(self) -> None:
+        # Arrange
+        service = _service()
+        document = _document()
+        service._documents_read.get_by_id.return_value = document
+        service._storage_read.object_exists.return_value = True
+
+        # Act
+        await service.delete_document(document.id)
+
+        # Assert
+        service._qdrant_write.delete_document_vectors.assert_called_once_with(
+            str(document.id),
+            tenant_id="tenant-1",
+        )
+        service._documents_write.delete.assert_awaited_once_with(document.id)
 
     async def test_delete_document_skips_storage_delete_when_object_missing(self) -> None:
         # Arrange

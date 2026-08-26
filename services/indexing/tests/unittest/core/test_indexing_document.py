@@ -54,6 +54,10 @@ class TestIndexDocumentUseCase(unittest.TestCase):
         jobs.update_status.assert_any_call(job_id, JobStatus.RUNNING)
         jobs.update_status.assert_any_call(job_id, JobStatus.COMPLETED)
         storage_read.download.assert_called_once_with("docs/key.pdf")
+        qdrant_write.delete_document_vectors.assert_called_once_with(
+            str(document_id),
+            tenant_id="acme",
+        )
         mock_index_pdf_bytes.assert_called_once_with(
             b"pdf-bytes",
             doc_id=str(document_id),

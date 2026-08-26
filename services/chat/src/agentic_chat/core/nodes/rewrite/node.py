@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from dataclasses import dataclass
 
 from agentic_shared.core.i18n import t
 from agentic_shared.domains.retrieval.models import IndexedDocumentEntry
@@ -34,59 +35,63 @@ def _parse_rewrite_response(content: str) -> RewriteRouterResponse:
     return RewriteRouterResponse.model_validate(parsed)
 
 
-class RewriteQueryNode(LlmCallNode):
+@dataclass(frozen=True)
+class _RewriteContext:
+    locale: str
+    query: str
+    indexed: list[IndexedDocumentEntry]
+
+
+class RewriteQueryNode(LlmCallNode[_RewriteContext]):
     def __init__(self, deps: AgentGraphDeps) -> None:
         super().__init__(deps)
-        self._locale = ""
-        self._query = ""
-        self._indexed: list[IndexedDocumentEntry] = []
 
     @property
     def node_id(self) -> AgentGraphNode:
         return AgentGraphNode.REWRITE
 
-    async def prepare(self, state: AgentState) -> AgentStateUpdate | None:
-        self._locale = locale_of(state)
-        self._query = state.get("safe_query") or state.get("query", "")
+    async def prepare(self, state: AgentState) -> tuple[AgentStateUpdate | None, _RewriteContext]:
+        locale = locale_of(state)
+        query = state.get("safe_query") or state.get("query", "")
         tenant_id = state.get("tenant_id") or "default"
-        self._indexed = await self._deps.retrieval.list_indexed_documents(tenant_id=tenant_id)
-        return None
+        indexed = await self._deps.retrieval.list_indexed_documents(tenant_id=tenant_id)
+        return None, _RewriteContext(locale=locale, query=query, indexed=indexed)
 
-    async def build_messages(self, state: AgentState) -> list[dict[str, str]]:
-        system = build_rewrite_router_system_prompt(indexed=self._indexed)
-        return llm_system_user(system, self._query)
+    async def build_messages(self, state: AgentState, ctx: _RewriteContext) -> list[dict[str, str]]:
+        system = build_rewrite_router_system_prompt(indexed=ctx.indexed)
+        return llm_system_user(system, ctx.query)
 
-    def on_success(self, state: AgentState, content: str) -> AgentStateUpdate:
+    def on_success(self, state: AgentState, content: str, ctx: _RewriteContext) -> AgentStateUpdate:
         parsed = _parse_rewrite_response(content)
         needs = parsed.needs_document_search
         search_query = parsed.search_query.strip()
         reason = parsed.rewrite_reason.strip()
         if needs and not search_query:
-            search_query = self._query
+            search_query = ctx.query
         logger.debug(
             "rewrite routing needs_retrieval=%s indexed=%d",
             needs,
-            len(self._indexed),
+            len(ctx.indexed),
         )
         return rewrite_routing_update(
             needs_retrieval=needs,
             search_query=search_query if needs else "",
             rewrite_reason=reason
             or (
-                t("rewrite.search_needed", self._locale)
+                t("rewrite.search_needed", ctx.locale)
                 if needs
-                else t("rewrite.no_search", self._locale)
+                else t("rewrite.no_search", ctx.locale)
             ),
-            indexed_document_count=len(self._indexed),
+            indexed_document_count=len(ctx.indexed),
         )
 
-    def on_error(self, state: AgentState) -> AgentStateUpdate:
-        logger.warning("rewrite fallback to retrieval indexed=%d", len(self._indexed))
+    def on_error(self, state: AgentState, ctx: _RewriteContext) -> AgentStateUpdate:
+        logger.warning("rewrite fallback to retrieval indexed=%d", len(ctx.indexed))
         return rewrite_routing_update(
             needs_retrieval=True,
-            search_query=self._query,
-            rewrite_reason=t("rewrite.fallback", self._locale),
-            indexed_document_count=len(self._indexed),
+            search_query=ctx.query,
+            rewrite_reason=t("rewrite.fallback", ctx.locale),
+            indexed_document_count=len(ctx.indexed),
         )
 
     def llm_temperature(self) -> float:

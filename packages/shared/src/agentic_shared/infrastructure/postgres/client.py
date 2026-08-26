@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from sqlalchemy import text
@@ -28,6 +29,6 @@ class DatabaseClient(BaseInfraClient[DatabaseSettings]):
 
 
 @asynccontextmanager
-async def database_client(settings: DatabaseSettings):
+async def database_client(settings: DatabaseSettings) -> AsyncIterator[DatabaseClient]:
     async with open_client(DatabaseClient(settings)) as client:
         yield client

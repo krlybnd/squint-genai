@@ -50,6 +50,7 @@ class IndexDocumentUseCase:
         logger.debug("downloading document minio_key=%s job_id=%s", minio_key, job_id)
         pdf_bytes = self._storage_read.download(minio_key)
         logger.debug("downloaded document bytes=%d job_id=%s", len(pdf_bytes), job_id)
+        self._qdrant_write.delete_document_vectors(str(document_id), tenant_id=tenant_id)
         chunk_count = index_pdf_bytes(
             pdf_bytes,
             doc_id=str(document_id),

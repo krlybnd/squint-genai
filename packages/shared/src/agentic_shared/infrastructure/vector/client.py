@@ -9,6 +9,7 @@ from qdrant_client.http.models import (
     Distance,
     FieldCondition,
     Filter,
+    FilterSelector,
     Fusion,
     FusionQuery,
     MatchValue,
@@ -272,6 +273,33 @@ class QdrantClient(BaseInfraClient[QdrantSettings]):
         logger.info("indexed qdrant points count=%d", len(points))
         return len(points)
 
+    def delete_document_vectors(self, doc_id: str, *, tenant_id: str) -> None:
+        """Remove chunk vectors for a document before reindex or after delete."""
+        try:
+            self._sdk.delete(
+                collection_name=self._settings.qdrant_collection,
+                points_selector=FilterSelector(
+                    filter=self._chunk_only_filter(
+                        must=[
+                            FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id)),
+                            FieldCondition(key="doc_id", match=MatchValue(value=doc_id)),
+                        ]
+                    )
+                ),
+            )
+            logger.info(
+                "deleted qdrant vectors doc_id=%s tenant_id=%s",
+                doc_id,
+                tenant_id,
+            )
+        except Exception:
+            logger.warning(
+                "qdrant delete document vectors failed doc_id=%s tenant_id=%s",
+                doc_id,
+                tenant_id,
+                exc_info=True,
+            )
+
     def hybrid_search(
         self,
         *,
@@ -446,6 +474,9 @@ class QdrantVectorWriter(QdrantWriter):
         embedding: EmbeddingSettings,
     ) -> int:
         return self._client.index_nodes(nodes, llm=llm, embedding=embedding)
+
+    def delete_document_vectors(self, doc_id: str, *, tenant_id: str) -> None:
+        self._client.delete_document_vectors(doc_id, tenant_id=tenant_id)
 
     def append_chunk_comment(self, chunk_id: str, comment: ChunkComment) -> None:
         self._client.append_chunk_comment(chunk_id, comment)
