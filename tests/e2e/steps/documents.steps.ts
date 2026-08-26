@@ -11,6 +11,42 @@ function docCard(page: import("@playwright/test").Page, name: string) {
   return page.locator(".doc-card").filter({ has: page.locator(".doc-name", { hasText: name }) }).first();
 }
 
+async function openDocActionsMenu(page: import("@playwright/test").Page, name: string): Promise<void> {
+  const card = docCard(page, name);
+  await expect(card).toBeVisible();
+  const actionsBtn = card.locator(".btn-doc-actions");
+  await expect(actionsBtn.locator(".spin")).toHaveCount(0, { timeout: 60_000 });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await humanClick(page, actionsBtn);
+    const menu = page.locator(".doc-actions-menu");
+    if (await menu.isVisible()) return;
+    await humanPause(page, 300);
+  }
+  await expect(page.locator(".doc-actions-menu")).toBeVisible({ timeout: 15_000 });
+}
+
+Given("the documents sidebar is empty", async ({ page }) => {
+  await humanGoto(page, "/");
+  await expect(page.locator(".documents-panel")).toBeVisible();
+  await page.locator(".doc-list .doc-empty .spin").waitFor({ state: "detached", timeout: 30_000 }).catch(() => {});
+
+  let cards = page.locator(".doc-card");
+  while ((await cards.count()) > 0) {
+    const before = await cards.count();
+    const card = cards.first();
+    const actionsBtn = card.locator(".btn-doc-actions");
+    await expect(actionsBtn.locator(".spin")).toHaveCount(0, { timeout: 60_000 });
+    await humanClick(page, actionsBtn);
+    await expect(page.locator(".doc-actions-menu")).toBeVisible({ timeout: 10_000 });
+    await humanClick(page, page.locator(".doc-actions-menu").getByRole("button", { name: /^delete$|törlés|löschen/i }));
+    await expect(actionsBtn.locator(".spin")).toHaveCount(0, { timeout: 60_000 });
+    await expect(cards).toHaveCount(before - 1, { timeout: 60_000 });
+    await humanPause(page, 500);
+    cards = page.locator(".doc-card");
+  }
+  await expect(page.locator(".doc-empty")).toBeVisible({ timeout: 30_000 });
+});
+
 Given("the documents list is loaded", async ({ page }) => {
   await humanGoto(page, "/");
   await expect(page.locator(".documents-panel .panel-header h2")).toBeVisible();
@@ -47,13 +83,11 @@ Given('a document {string} exists in the sidebar', async ({ page }, name: string
 });
 
 When("I open actions for document {string}", async ({ page }, name: string) => {
-  const card = docCard(page, name);
-  await humanClick(page, card.locator(".btn-doc-actions"));
-  await expect(card.locator(".doc-actions-menu")).toBeVisible();
+  await openDocActionsMenu(page, name);
 });
 
 When("I choose delete document", async ({ page }) => {
-  await humanClick(page, page.getByRole("button", { name: /^delete$|törlés|löschen/i }));
+  await humanClick(page, page.locator(".doc-actions-menu").getByRole("button", { name: /^delete$|törlés|löschen/i }));
 });
 
 Then("document {string} should not appear in the sidebar", async ({ page }, name: string) => {
@@ -73,7 +107,7 @@ Then("the read-only empty hint should be visible", async ({ page }) => {
 });
 
 Then("I should see document action {string}", async ({ page }, label: string) => {
-  await expect(page.getByRole("button", { name: label })).toBeVisible();
+  await expect(page.locator(".doc-actions-menu").getByRole("button", { name: label })).toBeVisible();
 });
 
 Then('document {string} should show status {string} or {string}', async ({ page }, name, a, b) => {
@@ -115,8 +149,9 @@ When("I open document {string} from the sidebar", async ({ page }, name: string)
 });
 
 Then("the chunk viewer modal should be visible for {string}", async ({ page }, name: string) => {
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByText(name)).toBeVisible();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { name })).toBeVisible();
 });
 
 Then("the documents sidebar heading should be {string}", async ({ page }, heading: string) => {

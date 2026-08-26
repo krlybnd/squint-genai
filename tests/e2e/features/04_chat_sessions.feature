@@ -21,12 +21,14 @@ Feature: Chat sessions and messaging
     And I should receive an assistant reply within 90 seconds
 
   Scenario: Session drawer lists and deletes a conversation
+    Given the chat sessions list is empty
     When I open the sessions drawer
     And I start a new chat from the toolbar
     And I send the chat message "Hello E2E session"
     And I wait until chat is not streaming
+    And I wait until the session title is updated from default
     And I open the sessions drawer
-    Then the sessions list should contain a session with title matching "E2E Session Introduction"
+    Then the sessions list should contain the active session title
     When I wait until the active session can be deleted
     And I delete the current chat session from the drawer
     Then no chat error should be visible

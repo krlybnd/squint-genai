@@ -11,6 +11,7 @@ Feature: Document upload and deletion
 
   @smoke
   Scenario: Upload a PDF and delete it from the actions menu
+    Given the documents sidebar is empty
     When I upload the fixture file "sample.pdf" from the documents panel
     Then a document card named "sample.pdf" should appear in the sidebar
     When I open actions for document "sample.pdf"
@@ -25,7 +26,8 @@ Feature: Document upload and deletion
     And the read-only empty hint should be visible
 
   Scenario: Document actions menu offers revectorization and delete
-    Given a document "sample.pdf" exists in the sidebar
+    Given the documents sidebar is empty
+    And a document "sample.pdf" exists in the sidebar
     When I open actions for document "sample.pdf"
     Then I should see document action "Revectorization"
     And I should see document action "Delete"
