@@ -1,0 +1,11 @@
+{
+  "endpoints": {
+    "admin": "/admin-api"
+  },
+  "auth": {
+    "enabled": false,
+    "keycloakUrl": "http://localhost",
+    "keycloakRealm": "agentic-rag-eval",
+    "keycloakClientId": "agentic-rag-eval-ui"
+  }
+}
