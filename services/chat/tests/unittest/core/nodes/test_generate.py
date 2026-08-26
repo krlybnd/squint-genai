@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
@@ -22,8 +23,8 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         node, _ = self._node()
 
         # Act
-        await node.prepare({"query": "hello", "locale": "en", "retrieved_chunks": []})
-        messages = await node.build_messages({"query": "hello", "retrieved_chunks": []})
+        _, ctx = await node.prepare({"query": "hello", "locale": "en", "retrieved_chunks": []})
+        messages = await node.build_messages({"query": "hello", "retrieved_chunks": []}, ctx)
         module = get_module_settings()
 
         # Assert
@@ -45,8 +46,8 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         state = {"query": "What is AI?", "retrieved_chunks": chunks, "locale": "en"}
 
         # Act
-        await node.prepare(state)
-        messages = await node.build_messages(state)
+        _, ctx = await node.prepare(state)
+        messages = await node.build_messages(state, ctx)
         module = get_module_settings()
 
         # Assert
@@ -111,6 +112,39 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
 
         # Act / Assert
         self.assertIs(node.node_id, AgentGraphNode.GENERATE)
+
+    async def test_concurrent_calls_do_not_share_mutable_state(self) -> None:
+        # Arrange — one APP-scoped node instance must serve concurrent requests safely.
+        node, chat_client = self._node()
+        chunks_a = [
+            {
+                "chunk_id": "c-a",
+                "doc_id": "d1",
+                "source_file": "a.pdf",
+                "page": 1,
+                "text": "alpha",
+            },
+        ]
+
+        async def fake_completion(messages: list[dict[str, str]], **_: object) -> dict[str, object]:
+            body = messages[1]["content"]
+            if "q-a" in body:
+                return {"choices": [{"message": {"content": "answer-a"}}]}
+            return {"choices": [{"message": {"content": "answer-b"}}]}
+
+        chat_client.chat_completion = AsyncMock(side_effect=fake_completion)
+
+        # Act
+        update_a, update_b = await asyncio.gather(
+            node({"query": "q-a", "retrieved_chunks": chunks_a, "locale": "en"}),
+            node({"query": "q-b", "retrieved_chunks": [], "locale": "en"}),
+        )
+
+        # Assert
+        self.assertEqual(update_a["answer"], "answer-a")
+        self.assertEqual(update_a["citations"][0]["chunk_id"], "c-a")
+        self.assertEqual(update_b["answer"], "answer-b")
+        self.assertEqual(update_b["citations"], [])
 
 
 if __name__ == "__main__":

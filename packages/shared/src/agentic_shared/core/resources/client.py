@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from types import TracebackType
 from typing import Protocol, Self, TypeVar, runtime_checkable
@@ -58,7 +59,7 @@ class BaseResourceClient[S: ResourceSettings]:
 
 
 @asynccontextmanager
-async def open_resource[T: "ResourceClient"](client: T):
+async def open_resource[T: "ResourceClient"](client: T) -> AsyncIterator[T]:
     """Yield a resource client and always run teardown."""
     try:
         yield client

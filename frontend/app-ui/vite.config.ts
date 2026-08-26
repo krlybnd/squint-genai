@@ -16,12 +16,22 @@ export default viteAppConfig({
     ...reports,
     coverage: {
       provider: "v8",
-      include: ["src/features/chat/components/MessageList.tsx"],
+      include: [
+        "src/features/chat/components/MessageList.tsx",
+        "src/features/chat/hooks/useChatController.ts",
+      ],
       reportsDirectory: reports.coverage.reportsDirectory,
       thresholds: {
-        lines: 70,
-        functions: 70,
-        statements: 70,
+        "src/features/chat/components/MessageList.tsx": {
+          lines: 70,
+          functions: 70,
+          statements: 70,
+        },
+        "src/features/chat/hooks/useChatController.ts": {
+          lines: 35,
+          functions: 70,
+          statements: 35,
+        },
       },
     },
   },
