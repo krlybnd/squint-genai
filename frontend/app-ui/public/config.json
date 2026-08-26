@@ -3,12 +3,6 @@
     "api": "/api",
     "chat": "/chat"
   },
-  "auth": {
-    "enabled": false,
-    "keycloakUrl": "http://localhost",
-    "keycloakRealm": "agentic-rag-eval",
-    "keycloakClientId": "agentic-rag-eval-ui"
-  },
   "features": {
     "adminPanelHref": "/admin/"
   }

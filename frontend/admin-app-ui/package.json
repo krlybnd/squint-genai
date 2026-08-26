@@ -13,7 +13,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@are/ui-core": "file:../../packages/ui-core",
+    "@are/ui-core": "*",
     "i18next": "^26.3.4",
     "keycloak-js": "^26.0.0",
     "lucide-react": "^0.468.0",

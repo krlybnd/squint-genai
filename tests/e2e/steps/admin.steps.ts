@@ -13,7 +13,7 @@ When("I select admin section {string}", async ({ page }, section: string) => {
 });
 
 Then("the admin users table or list should be visible", async ({ page }) => {
-  await expect(page.locator(".admin-page, .admin-resource-panel")).toBeVisible();
+  await expect(page.locator(".admin-resource-panel").first()).toBeVisible();
 });
 
 Then("I should not see the admin tenants management UI", async ({ page }) => {

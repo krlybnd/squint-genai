@@ -1,16 +1,19 @@
-FROM node:latest AS build
+# syntax=docker/dockerfile:1
+
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY packages/ui-core/package.json packages/ui-core/
 COPY frontend/app-ui/package.json frontend/app-ui/
+COPY frontend/admin-app-ui/package.json frontend/admin-app-ui/
+COPY tests/e2e/package.json tests/e2e/
+COPY tests/api/package.json tests/api/
+RUN npm ci --ignore-scripts --workspace=@are/app-ui
 
-RUN npm install --ignore-scripts --workspace=@are/ui-core --workspace=@are/app-ui
-
-COPY packages/ui-core packages/ui-core
-COPY packages/shared/src/agentic_shared/locales packages/shared/src/agentic_shared/locales
-COPY frontend/app-ui frontend/app-ui
-COPY openapi/ /openapi/
+COPY packages packages
+COPY frontend frontend
+COPY openapi openapi
 
 ARG VITE_AUTH_ENABLED=false
 ARG VITE_KEYCLOAK_URL=
@@ -23,8 +26,8 @@ ENV VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID
 
 RUN npm run build -w @are/app-ui
 
-FROM nginx:latest
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+FROM nginx:1.27-alpine AS runtime
+COPY frontend/app-ui/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/frontend/app-ui/dist /usr/share/nginx/html
 EXPOSE 5173
 CMD ["nginx", "-g", "daemon off;"]

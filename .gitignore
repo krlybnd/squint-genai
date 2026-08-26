@@ -12,6 +12,7 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+!packages/ui-core/src/build/
 node_modules/
 frontend/dist/
 frontend/*/src/api/generated/

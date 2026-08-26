@@ -9,6 +9,9 @@ API gateway — **JWT auth** for `/api` and `/chat` when using `--profile auth`.
 
 1. Client obtains Bearer token from Keycloak (`tenant_id` claim in access token).
 2. Traefik `keycloak-jwt` middleware validates JWT via Keycloak JWKS.
+   - Traefik waits for Keycloak **healthy** before starting (see `compose.yaml`).
+   - `ForceRefreshKeys` refetches JWKS when a token references an unknown `kid`.
+   - If API calls return **403** with body `token validation failed`, restart Traefik after Keycloak is up: `docker compose restart traefik`.
 3. Valid requests are forwarded with headers:
    - `X-Tenant-Id` ← `tenant_id` claim
    - `X-User-Id` ← `sub`

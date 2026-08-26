@@ -63,6 +63,8 @@ http:
       plugin:
         jwt:
           Required: true
+          # Refetch JWKS when a token kid is unknown (e.g. after Keycloak realm re-import).
+          ForceRefreshKeys: true
           Keys:
             - http://keycloak:8080/realms/agentic-rag-eval/protocol/openid-connect/certs
           JwtHeaders:

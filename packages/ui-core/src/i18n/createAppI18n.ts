@@ -52,7 +52,7 @@ const coreResources: AppTranslationResources = {
   },
 };
 
-export function createAppI18n(appResources: AppTranslationResources): I18nInstance {
+export async function createAppI18n(appResources: AppTranslationResources): Promise<I18nInstance> {
   const resources: AppTranslationResources = {
     en: { translation: mergeDeep(coreResources.en.translation, appResources.en?.translation ?? {}) },
     hu: { translation: mergeDeep(coreResources.hu.translation, appResources.hu?.translation ?? {}) },
@@ -60,11 +60,12 @@ export function createAppI18n(appResources: AppTranslationResources): I18nInstan
   };
 
   const instance = i18n.createInstance();
-  void instance.use(initReactI18next).init({
+  await instance.use(initReactI18next).init({
     resources,
     lng: detectInitialLocale(),
     fallbackLng: "en",
     interpolation: { escapeValue: false },
+    react: { useSuspense: false },
   });
   return instance;
 }
