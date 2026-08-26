@@ -1,0 +1,84 @@
+[project]
+name = "agentic-shared"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+    "openai>=1.60",
+    "redis>=5.2",
+    "minio>=7.2",
+    "qdrant-client>=1.12",
+    "llama-index-core>=0.14",
+    "llama-index-vector-stores-qdrant>=0.10",
+    "llama-index-embeddings-openai>=0.3",
+    "httpx>=0.28",
+    "fastembed>=0.6",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "psycopg2-binary>=2.9",
+    "pyjwt[crypto]>=2.10",
+    "dishka>=1.4",
+    "starlette>=0.41",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentic_shared"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/agentic_shared/locales/messages/en.json" = "agentic_shared/locales/messages/en.json"
+"src/agentic_shared/locales/messages/hu.json" = "agentic_shared/locales/messages/hu.json"
+"src/agentic_shared/locales/messages/de.json" = "agentic_shared/locales/messages/de.json"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "coverage>=7.6",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "alembic>=1.14",
+    "fastapi>=0.115",
+]
+
+[tool.ruff]
+extend = "../../ruff.toml"
+src = ["src", "tests"]
+exclude = ["alembic"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests/unittest"]
+addopts = "--import-mode=importlib"
+
+[tool.coverage.run]
+source = ["src"]
+branch = false
+omit = [
+    "**/main.py",
+    "**/router.py",
+    "**/providers.py",
+    "**/factory.py",
+    "**/bootstrap.py",
+    "**/configure.py",
+    "**/binder.py",
+    "**/checkpointer.py",
+    "**/infrastructure/**/client.py",
+    "**/integrations/**/client.py",
+    "**/integrations/**/gateway.py",
+    "**/integrations/**/openai.py",
+    "**/integrations/langsmith/**",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 80
+
+[tool.coverage.html]
+title = "agentic-shared Coverage"

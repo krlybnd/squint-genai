@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "krlybnd's - Squint",
+    "adminTitle": "krlybnd's - Squint | Admin Tool"
+  },
+  "prefs": {
+    "language": "Language",
+    "theme": "Theme",
+    "logout": "Log out",
+    "guest": "Guest",
+    "accountMenu": "Account and preferences"
+  },
+  "lang": {
+    "en": "English",
+    "hu": "Magyar",
+    "de": "Deutsch"
+  },
+  "theme": {
+    "purple": "Purple",
+    "neptune": "Neptune"
+  },
+  "admin": {
+    "panelLink": "Admin panel",
+    "backToApp": "Back to app"
+  }
+}

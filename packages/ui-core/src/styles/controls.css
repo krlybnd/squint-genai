@@ -1,0 +1,93 @@
+.ui-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-input);
+  color: var(--text);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.ui-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.ui-btn.danger {
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.ui-form-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--danger-banner-bg);
+  border: 1px solid var(--danger-banner-border);
+  color: var(--danger-fg);
+  font-size: 0.88rem;
+}
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand-400);
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+}
+
+.ui-checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.ui-field label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.ui-field input[type="text"],
+.ui-field input[type="email"],
+.ui-field input[type="password"],
+.ui-field select,
+.ui-field textarea {
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--overlay-deep);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.ui-field input:disabled {
+  opacity: 0.65;
+}
+
+.ui-field fieldset {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.ui-field fieldset legend {
+  padding: 0 4px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}

@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "krlybnd's - Squint",
+    "adminTitle": "krlybnd's - Squint | Admin Tool"
+  },
+  "prefs": {
+    "language": "Nyelv",
+    "theme": "Téma",
+    "logout": "Kijelentkezés",
+    "guest": "Vendég",
+    "accountMenu": "Fiók és beállítások"
+  },
+  "lang": {
+    "en": "English",
+    "hu": "Magyar",
+    "de": "Deutsch"
+  },
+  "theme": {
+    "purple": "Lila",
+    "neptune": "Neptun"
+  },
+  "admin": {
+    "panelLink": "Admin felület",
+    "backToApp": "Vissza az apphoz"
+  }
+}
