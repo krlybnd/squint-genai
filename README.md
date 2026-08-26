@@ -231,6 +231,23 @@ On successful **`main`** builds:
 
 PR runs upload artifacts only; they do not update `stable` or Pages.
 
+## Current limitations (Phase 1)
+
+Squint is a **reference architecture demo**, not a production deployment. The README capabilities table describes design intent; the gaps below are known and intentional for Phase 1:
+
+| Area | Limitation |
+|------|------------|
+| **CI scope** | No live-stack suites in default CI — e2e, API acceptance, and `make eval-live` are manual/on-demand ([ADR 007](docs/adr/007-no-live-tests-in-ci.md)) |
+| **Infra** | Docker Compose is dev/demo grade: default secrets, HTTP-only Traefik, floating image tags, no resource limits |
+| **Guardrails** | Prompt-injection detection is regex-based; PII redaction runs on input/context, not a full output filter |
+| **Compliance** | GDPR / NIS2 / EU AI Act modules are extension points (NoOp stubs) — audit logging and retention are not wired end-to-end |
+| **Multitenancy** | Keycloak Organizations demo is real, but API-key auth accepts `X-Tenant-Id` without binding validation — misconfiguration risk in prod |
+| **Chat streaming** | SSE token stream is simulated from the final answer, not native LLM token streaming |
+| **Vector lifecycle** | Document delete/reindex cleanup is being hardened — verify Qdrant state after bulk operations |
+| **Frontend resilience** | No global React error boundary; chat state lives in a large hook with partial test coverage |
+
+Run live suites locally after `make up-auth` when validating end-to-end behavior before a demo or release.
+
 ## API-first (OpenAPI)
 
 Contract is **generated**, not hand-written:
