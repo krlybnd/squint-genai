@@ -74,6 +74,7 @@ jobs:
         with:
           name: python-reports-${{ matrix.name }}
           path: .reports/python/${{ matrix.name }}/
+          include-hidden-files: true
           retention-days: 14
 
   python-suite:
@@ -194,7 +195,6 @@ jobs:
         with:
           pattern: python-reports-*
           path: .reports/_ci-artifacts
-          merge-multiple: true
 
       - name: Normalize Python report paths
         run: |
@@ -247,10 +247,15 @@ jobs:
           fetch-depth: 0
 
       - name: Download combined coverage
+        continue-on-error: true
+        id: download-coverage
         uses: actions/download-artifact@v4
         with:
           name: coverage-combined
           path: coverage
+
+      - name: Ensure coverage directory exists
+        run: mkdir -p coverage
 
       - name: Download merged SBOM
         uses: actions/download-artifact@v4
