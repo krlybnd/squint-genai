@@ -1,0 +1,48 @@
+services:
+  keycloak:
+    profiles: [auth]
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: start-dev --import-realm --features=organization
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-agentic}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-agentic}
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: ${TRAEFIK_HTTP_PORT:-80}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./realm:/opt/keycloak/data/import:ro
+
+  keycloak-init:
+    profiles: [auth]
+    image: alpine:3.21
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    volumes:
+      - ./init/init-organizations.sh:/init/init-organizations.sh:ro
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - apk add --no-cache curl jq >/dev/null && sh /init/init-organizations.sh
+    restart: on-failure

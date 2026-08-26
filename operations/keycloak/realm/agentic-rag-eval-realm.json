@@ -1,0 +1,299 @@
+{
+  "realm": "agentic-rag-eval",
+  "enabled": true,
+  "displayName": "agentic-rag-eval",
+  "organizationsEnabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": false,
+  "attributes": {
+    "organizationsEnabled": "true"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Full administrative access"
+      },
+      {
+        "name": "read",
+        "description": "Read-only access to documents and chat"
+      },
+      {
+        "name": "write",
+        "description": "Create and mutate documents and chat sessions"
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "tenant",
+      "description": "Multitenancy — tenant_id claim in bearer token",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant-id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "false",
+            "aggregate.attrs": "false"
+          }
+        }
+      ]
+    },
+    {
+      "name": "app-roles",
+      "description": "Flatten realm roles into top-level roles claim",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "sub-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "id",
+            "claim.name": "sub",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "preferred-username-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "username",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "defaultDefaultClientScopes": [
+    "tenant",
+    "app-roles"
+  ],
+  "clients": [
+    {
+      "clientId": "agentic-rag-eval-ui",
+      "name": "agentic-rag-eval UI",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "rootUrl": "http://localhost/",
+      "baseUrl": "http://localhost/",
+      "redirectUris": [
+        "http://localhost",
+        "http://localhost/",
+        "http://localhost/*",
+        "http://localhost:5173",
+        "http://localhost:5173/",
+        "http://localhost:5173/*",
+        "http://localhost:5174",
+        "http://localhost:5174/",
+        "http://localhost:5174/*",
+        "http://127.0.0.1",
+        "http://127.0.0.1/",
+        "http://127.0.0.1/*",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "+"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost/*##http://localhost:5173/*##http://127.0.0.1/*##http://127.0.0.1:5173/*",
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": [
+        "tenant",
+        "app-roles"
+      ]
+    },
+    {
+      "clientId": "agentic-rag-eval-api",
+      "name": "agentic-rag-eval API (service account)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "change-me-api-client-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "defaultClientScopes": [
+        "tenant",
+        "app-roles"
+      ]
+    },
+    {
+      "clientId": "agentic-rag-eval-dev",
+      "name": "Dev token client (password grant)",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": [
+        "tenant",
+        "app-roles"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@local",
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "requiredActions": [],
+      "attributes": {
+        "tenant_id": ["tenant-a"]
+      },
+      "realmRoles": ["admin", "read", "write"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "reader@tenant-a.local",
+      "enabled": true,
+      "email": "reader@tenant-a.local",
+      "emailVerified": true,
+      "firstName": "Reader",
+      "lastName": "TenantA",
+      "attributes": {
+        "tenant_id": ["tenant-a"]
+      },
+      "realmRoles": ["read"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "reader",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "writer@tenant-a.local",
+      "enabled": true,
+      "email": "writer@tenant-a.local",
+      "emailVerified": true,
+      "firstName": "Writer",
+      "lastName": "TenantA",
+      "attributes": {
+        "tenant_id": ["tenant-a"]
+      },
+      "realmRoles": ["write"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "writer",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "alice@tenant-a.local",
+      "enabled": true,
+      "email": "alice@tenant-a.local",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "TenantA",
+      "attributes": {
+        "tenant_id": ["tenant-a"]
+      },
+      "realmRoles": ["read", "write"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alice",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "bob@tenant-b.local",
+      "enabled": true,
+      "email": "bob@tenant-b.local",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "TenantB",
+      "attributes": {
+        "tenant_id": ["tenant-b"]
+      },
+      "realmRoles": ["read"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "bob",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "service-account-agentic-rag-eval-api",
+      "enabled": true,
+      "serviceAccountClientId": "agentic-rag-eval-api",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "manage-realm",
+          "view-realm"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# openapi-python-client config — Keycloak Admin REST API
+# https://github.com/openapi-generators/openapi-python-client
+project_name_override: keycloak-admin-client
+package_name_override: keycloak_admin_client
+package_version_override: "0.1.0"
+fail_on_warning: false
+overwrite: true

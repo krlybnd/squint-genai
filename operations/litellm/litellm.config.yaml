@@ -1,0 +1,18 @@
+model_list:
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: text-embedding-3-small
+    litellm_params:
+      model: text-embedding-3-small
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: rerank-multilingual-v3.0
+    litellm_params:
+      model: cohere/rerank-multilingual-v3.0
+      api_key: os.environ/COHERE_API_KEY
+    model_info:
+      mode: rerank
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

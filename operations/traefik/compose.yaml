@@ -1,0 +1,25 @@
+services:
+  traefik:
+    profiles: [auth]
+    image: traefik:v3.4.0
+    command:
+      - --configFile=/etc/traefik/traefik.yaml
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_DASHBOARD_PORT:-8088}:8080"
+    volumes:
+      - ./traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+    depends_on:
+      ops:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+      api:
+        condition: service_started
+      chat:
+        condition: service_started
+      frontend:
+        condition: service_started
+      admin-ui:
+        condition: service_started

@@ -1,0 +1,104 @@
+http:
+  routers:
+    keycloak-realms:
+      rule: PathPrefix(`/realms`)
+      entryPoints: [web]
+      priority: 100
+      service: keycloak
+
+    keycloak-resources:
+      rule: PathPrefix(`/resources`)
+      entryPoints: [web]
+      priority: 100
+      service: keycloak
+
+    api:
+      rule: PathPrefix(`/api`)
+      entryPoints: [web]
+      priority: 50
+      middlewares: [strip-api, keycloak-jwt]
+      service: api
+
+    chat:
+      rule: PathPrefix(`/chat`)
+      entryPoints: [web]
+      priority: 50
+      middlewares: [strip-chat, keycloak-jwt]
+      service: chat
+
+    admin-api:
+      rule: PathPrefix(`/admin-api`)
+      entryPoints: [web]
+      priority: 50
+      middlewares: [strip-admin-api, keycloak-jwt]
+      service: admin
+
+    admin-ui:
+      rule: PathPrefix(`/admin`)
+      entryPoints: [web]
+      priority: 40
+      service: admin-ui
+
+    frontend:
+      rule: PathPrefix(`/`)
+      entryPoints: [web]
+      priority: 1
+      service: frontend
+
+  middlewares:
+    strip-api:
+      stripPrefix:
+        prefixes: ["/api"]
+
+    strip-chat:
+      stripPrefix:
+        prefixes: ["/chat"]
+
+    strip-admin-api:
+      stripPrefix:
+        prefixes: ["/admin-api"]
+
+    # Traefik validates Bearer JWT (Keycloak JWKS) and forwards tenant claim as header.
+    keycloak-jwt:
+      plugin:
+        jwt:
+          Required: true
+          Keys:
+            - http://keycloak:8080/realms/agentic-rag-eval/protocol/openid-connect/certs
+          JwtHeaders:
+            X-Tenant-Id: tenant_id
+            X-User-Id: sub
+          JwtSources:
+            - type: bearer
+              key: Authorization
+
+  services:
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: http://keycloak:8080
+
+    api:
+      loadBalancer:
+        servers:
+          - url: http://api:8000
+
+    chat:
+      loadBalancer:
+        servers:
+          - url: http://chat:8002
+
+    admin:
+      loadBalancer:
+        servers:
+          - url: http://admin:8003
+
+    admin-ui:
+      loadBalancer:
+        servers:
+          - url: http://admin-ui:5173
+
+    frontend:
+      loadBalancer:
+        servers:
+          - url: http://frontend:5173

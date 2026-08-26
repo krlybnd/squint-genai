@@ -1,0 +1,20 @@
+api:
+  insecure: true
+
+log:
+  level: INFO
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+experimental:
+  plugins:
+    jwt:
+      moduleName: github.com/traefik-plugins/traefik-jwt-plugin
+      version: v0.10.0
