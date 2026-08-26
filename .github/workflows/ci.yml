@@ -106,10 +106,13 @@ jobs:
         include:
           - project: packages/ui-core
             name: ui-core
+            workspace: "@are/ui-core"
           - project: frontend/app-ui
             name: app-ui
+            workspace: "@are/app-ui"
           - project: frontend/admin-app-ui
             name: admin-app-ui
+            workspace: "@are/admin-app-ui"
     steps:
       - uses: actions/checkout@v4
 
@@ -117,16 +120,16 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install
-        run: make -C ${{ matrix.project }} install
+        run: npm ci
 
       - name: Lint
-        run: make -C ${{ matrix.project }} lint
+        run: npm run lint -w ${{ matrix.workspace }}
 
       - name: Unit tests
-        run: make -C ${{ matrix.project }} unit-test
+        run: npm run test -w ${{ matrix.workspace }}
 
       - name: Upload reports
         if: always()

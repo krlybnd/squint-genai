@@ -177,10 +177,10 @@ The gate runs the **real chat graph** and scores **ContextualPrecision** + **Con
 
 ## Local development
 
-Each project owns its own lockfile and virtualenv. The root `Makefile` fans out; templates live in `make/`.
+Each Python project owns its lockfile (`uv.lock`). Node projects share the root `package.json` workspaces and a single `package-lock.json`. The root `Makefile` fans out; templates live in `make/`.
 
 ```bash
-make sync          # uv sync + npm ci for every project + OpenAPI export
+make sync          # uv sync + npm ci (root) + OpenAPI export
 make -C services/api dev    # :8000
 make -C services/chat dev   # :8002
 make dev-ui                 # :5173
@@ -235,26 +235,27 @@ Contract is **generated**, not hand-written:
 
 ```bash
 make sync   # sync every project + export openapi/*.yaml
-make -C frontend/app-ui install   # postinstall → generate:api
+make -C frontend/app-ui install   # alias: npm ci at repo root; postinstall → generate:api
 ```
 
 Edit routes/schemas in `services/api`, `services/chat`, or `services/admin`, then re-run `make generate-openapi`. Specs are **committed** under `openapi/`.
 
 ## Project structure
 
-Independent projects — no root `pyproject.toml` or `package.json`:
+Independent Python projects (each `uv.lock`). Node apps/libs/tests share root npm workspaces:
 
 ```
+package.json          root npm workspaces + package-lock.json
 make/                 templates (python.mk, node.mk, projects.mk)
 packages/
   shared/             agentic-shared (uv.lock)
-  ui-core/            @are/ui-core (package-lock.json)
+  ui-core/            @are/ui-core
 services/
   api/ chat/ admin/ indexing/   each with uv.lock + Makefile
 frontend/
-  app-ui/ admin-app-ui/         each with package-lock.json + Makefile
+  app-ui/ admin-app-ui/         @are/* workspace packages
 tests/
-  api/ eval/ e2e/               standalone test projects
+  api/ eval/ e2e/               api + e2e in npm workspaces; eval is Python
 openapi/              committed OpenAPI artifacts (api, chat, admin)
 operations/           Postgres, Redis, MinIO, Qdrant, LiteLLM, Keycloak configs
 ```

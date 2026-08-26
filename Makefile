@@ -1,5 +1,5 @@
-# agentic-rag-eval — monorepo orchestrator (no root manifest)
-# Each project owns its deps; make/ provides templates.
+# agentic-rag-eval — monorepo orchestrator
+# Python projects own uv.lock; Node projects share root package.json workspaces.
 
 ROOT         := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 UV           ?= uv
@@ -26,9 +26,10 @@ help: ## List top-level targets
 # ── Sync / install ───────────────────────────────────────────────────────────
 
 .PHONY: sync install
-sync: ## uv sync + npm ci for all projects (generates/updates lockfiles when UV_SYNC_FLAGS empty)
+sync: ## uv sync + npm ci (root workspaces) + OpenAPI export
 	@set -e; for p in $(ALL_PYTHON_SYNC); do echo "==> $$p"; $(MAKE) -C $$p sync UV_SYNC_FLAGS=; done
-	@set -e; for p in $(ALL_NODE_SYNC); do echo "==> $$p"; $(MAKE) -C $$p install; done
+	@echo "==> node workspaces"
+	@cd "$(ROOT)" && npm ci
 	@$(MAKE) generate-openapi
 
 install: sync ## Alias for sync
@@ -36,7 +37,7 @@ install: sync ## Alias for sync
 .PHONY: sync-frozen
 sync-frozen: ## Frozen sync (CI) — requires committed lockfiles
 	@set -e; for p in $(ALL_PYTHON_SYNC); do $(MAKE) -C $$p sync; done
-	@set -e; for p in $(ALL_NODE_SYNC); do $(MAKE) -C $$p install; done
+	@cd "$(ROOT)" && npm ci
 
 # ── OpenAPI / codegen ─────────────────────────────────────────────────────────
 

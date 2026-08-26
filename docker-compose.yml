@@ -117,6 +117,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
+        NPM_WORKSPACE: "@are/app-ui"
+        APP_DIR: frontend/app-ui
         VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-false}
         VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost}
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
@@ -141,8 +143,10 @@ services:
     profiles: [ui]
     build:
       context: .
-      dockerfile: frontend/admin-app-ui/Dockerfile
+      dockerfile: frontend/Dockerfile
       args:
+        NPM_WORKSPACE: "@are/admin-app-ui"
+        APP_DIR: frontend/admin-app-ui
         VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-false}
         VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost}
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
