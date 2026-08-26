@@ -1,5 +1,5 @@
 import { apiBase, buildHeadersAsync } from "./http";
-import i18n from "../i18n";
+import { getAppI18n } from "../i18n";
 import type { ChunkComment, DocumentChunksResponse, IndexedDocument } from "./types";
 
 export async function fetchDocumentChunks(
@@ -40,7 +40,7 @@ export async function createChunkComment(
     const reason =
       typeof detail?.detail?.rejection_reason === "string"
         ? detail.detail.rejection_reason
-        : i18n.t("annotations.rejection.default");
+        : getAppI18n().t("annotations.rejection.default");
     throw new Error(reason);
   }
   if (!res.ok) throw new Error(`Failed to save comment (${res.status})`);
