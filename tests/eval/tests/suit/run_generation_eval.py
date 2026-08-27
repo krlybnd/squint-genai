@@ -25,6 +25,12 @@ from agentic_eval.core.goldendata import (
     labeled_goldens,
     load_goldens,
 )
+from agentic_eval.core.reports import (
+    EVAL_REPORTS_DIR,
+    GENERATION_REPORT,
+    append_abstention_section,
+    promote_deepeval_report,
+)
 from agentic_eval.modules.generation.app import answer_questions, build_eval_graph
 from agentic_eval.modules.generation.evaluators import looks_like_refusal
 from agentic_eval.modules.generation.types import GenerationResult
@@ -101,6 +107,7 @@ def main() -> int:
         for golden, result in zip(labeled, labeled_results, strict=True)
     ]
 
+    EVAL_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     report = evaluate(
         test_cases,
         [
@@ -115,6 +122,7 @@ def main() -> int:
                 async_mode=False,
             ),
         ],
+        identifier="generation",
         async_config=AsyncConfig(
             run_async=True,
             max_concurrent=suit.judge_max_concurrency,
@@ -124,9 +132,12 @@ def main() -> int:
             show_indicator=True,
             print_results=True,
             inspect_after_run=False,
+            file_type="md",
+            file_output_dir=str(EVAL_REPORTS_DIR),
         ),
         error_config=ErrorConfig(ignore_errors=True, skip_on_missing_params=True),
     )
+    promote_deepeval_report(EVAL_REPORTS_DIR, stem="generation", dest=GENERATION_REPORT)
     failed = [item for item in report.test_results if not item.success]
 
     abstention: list[AbstentionGolden] = abstention_goldens(goldens)
@@ -146,6 +157,11 @@ def main() -> int:
     ]
     for question in abstention_failed:
         print(f"abstention FAIL: {question}", file=sys.stderr)
+    append_abstention_section(
+        GENERATION_REPORT,
+        total=len(abstention),
+        failed=abstention_failed,
+    )
 
     if failed:
         print(

@@ -25,6 +25,10 @@ def test_generation_runner_uses_deepeval_evaluate() -> None:
     assert "judge_throttle_seconds" in source
     assert "async_mode=False" in source
     assert "deepeval.apply" in adapter
+    assert 'file_type="md"' in source
+    assert "file_output_dir" in source
+    assert 'identifier="generation"' in source
+    assert "promote_deepeval_report" in source
     assert "os.environ" not in adapter
     assert "os.environ" not in inspect.getsource(DeepEvalSettings.apply)
     assert "retry_env" not in source

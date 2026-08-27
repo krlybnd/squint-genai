@@ -40,6 +40,9 @@ coverage/
 .deepeval/
 .deepeval-cache.json
 
+# DeepEval timestamped copies (stable reports/eval/generation.md is committed)
+reports/eval/generation_*.md
+
 # Generated OpenAPI (committed — regenerate with `make generate-openapi`)
 # openapi/*.yaml and openapi/*.json are tracked
 

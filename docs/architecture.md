@@ -229,7 +229,7 @@ Retrieval read path ([QdrantSettings](../packages/shared/src/agentic_shared/infr
 | `top_k` | `5` | Final results after reranking |
 | Collection | `agentic_rag_eval_hybrid` | Dense + sparse (BM25) vectors |
 
-Live eval goldens ([dataset.json](../tests/eval/dataset.json)) are questions against the PDFs in `resources/` (`make resources`). Retrieval IR is Pydantic Evals (`make eval-live`). Generation is DeepEval `evaluate()` (`make eval-live-generation` → `python tests/suit/run_generation_eval.py`), judged by the LiteLLM `judge` alias (not `generate`). Live stack wiring is `tests/eval/tests/suit` (`SutSettings`, `EVAL_SUT_*` localhost defaults). Config is `tests/eval/.env`. Not in default CI.
+Live eval goldens ([dataset.json](../tests/eval/dataset.json)) are questions against the PDFs in `resources/` (`make resources`). Retrieval IR is Pydantic Evals (`make eval-live`). Generation is DeepEval `evaluate()` (`make eval-live-generation` → `python tests/suit/run_generation_eval.py`), judged by the LiteLLM `judge` alias (not `generate`). Live stack wiring is `tests/eval/tests/suit` (`SutSettings`, `EVAL_SUT_*` localhost defaults). Config is `tests/eval/.env`. Snapshots: [`reports/eval/`](../reports/eval/). Not in default CI.
 
 ---
 

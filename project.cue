@@ -176,10 +176,11 @@ folders: {
 			modules/retrieval and modules/generation. Live stack wiring is tests/suit
 			(SutSettings, EVAL_SUT_*). Own .env / .env.example (not repo-root).
 			make eval-live / eval-live-generation against running stack. Not in CI.
+			Committed snapshots: reports/eval/.
 			"""
 		contains: ["src/agentic_eval/core/", "src/agentic_eval/modules/", "tests/unittest/", "tests/suit/", "dataset.json", ".env.example"]
 		mustNot: ["hand-rolled .env parsers", "eval config on LLMSettings", "os.environ host rewrites", "src importing tests/", "DeepEval SDK calls from modules without the judge adapter"]
-		related: ["resources/", "services/chat"]
+		related: ["resources/", "services/chat", "reports"]
 	}
 
 	"openapi": #Folder & {
@@ -244,6 +245,19 @@ folders: {
 		phase:   1
 		purpose: "Per-project CycloneDX SBOM fragments and merged bom.cdx.json for Grant license policy."
 		related: ["make licenses", ".grant.yaml"]
+	}
+
+	"reports": #Folder & {
+		path:    "reports"
+		stack:   "docs"
+		phase:   1
+		adr:     ["007"]
+		purpose: """
+			Committed live-eval snapshots under reports/eval/ (retrieval IR + DeepEval
+			generation). Generated locally, not CI. Distinct from gitignored .reports/.
+			"""
+		contains: ["eval/"]
+		related: ["tests/eval"]
 	}
 
 	".reports": #Folder & {
