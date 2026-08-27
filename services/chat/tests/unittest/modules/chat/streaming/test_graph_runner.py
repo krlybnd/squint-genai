@@ -47,8 +47,12 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
         session_id = uuid.uuid4()
 
         async def astream(_input, config=None, stream_mode=None):
-            yield {AgentGraphNode.GUARD.value: {"guard_blocked": False, "pii_redactions": 0}}
-            yield {AgentGraphNode.GENERATE.value: {"answer": "done", "citations": []}}
+            self.assertEqual(stream_mode, ["updates", "custom"])
+            yield (
+                "updates",
+                {AgentGraphNode.GUARD.value: {"guard_blocked": False, "pii_redactions": 0}},
+            )
+            yield ("updates", {AgentGraphNode.GENERATE.value: {"answer": "done", "citations": []}})
 
         graph.astream = astream
         graph.aget_state = AsyncMock(
@@ -66,13 +70,41 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
         ]
         self.assertTrue(any('"checkpoint_id": "cp-1"' in r["data"] for r in reasoning))
 
-    async def test_early_return_streams_tokens_on_generate(self) -> None:
+    async def test_generate_does_not_slice_finished_answer(self) -> None:
         # Arrange
         runner, graph, messages_write = self._runner()
         session_id = uuid.uuid4()
 
         async def astream(_input, config=None, stream_mode=None):
-            yield {AgentGraphNode.GENERATE.value: {"answer": "hello world", "citations": []}}
+            yield (
+                "updates",
+                {AgentGraphNode.GENERATE.value: {"answer": "hello world", "citations": []}},
+            )
+
+        graph.astream = astream
+        graph.aget_state = AsyncMock(return_value=MagicMock(config={"configurable": {}}))
+
+        # Act
+        events = await _collect(runner.stream_execute(session_id, {}, input_state={"query": "hi"}))
+
+        # Assert
+        types = [parse_sse_chunk(e)["event"] for e in events]
+        self.assertNotIn(SseEventType.TOKEN.value, types)
+        self.assertIn(SseEventType.DONE.value, types)
+        messages_write.add.assert_awaited_once()
+
+    async def test_custom_stream_payloads_become_sse_tokens(self) -> None:
+        # Arrange
+        runner, graph, messages_write = self._runner()
+        session_id = uuid.uuid4()
+
+        async def astream(_input, config=None, stream_mode=None):
+            yield ("custom", "hello ")
+            yield ("custom", "world")
+            yield (
+                "updates",
+                {AgentGraphNode.GENERATE.value: {"answer": "hello world", "citations": []}},
+            )
 
         graph.astream = astream
         graph.aget_state = AsyncMock(return_value=MagicMock(config={"configurable": {}}))
@@ -86,14 +118,16 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
         self.assertIn(SseEventType.DONE.value, types)
         messages_write.add.assert_awaited_once()
 
-    async def test_simulated_tokens_preserve_punctuation_and_newlines(self) -> None:
+    async def test_custom_tokens_preserve_punctuation_and_newlines(self) -> None:
         # Arrange
         runner, graph, _ = self._runner()
         session_id = uuid.uuid4()
         answer = "it's a & b\nnext"
 
         async def astream(_input, config=None, stream_mode=None):
-            yield {AgentGraphNode.GENERATE.value: {"answer": answer, "citations": []}}
+            yield ("custom", "it's a ")
+            yield ("custom", "& b\nnext")
+            yield ("updates", {AgentGraphNode.GENERATE.value: {"answer": answer, "citations": []}})
 
         graph.astream = astream
         graph.aget_state = AsyncMock(return_value=MagicMock(config={"configurable": {}}))
@@ -115,7 +149,10 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
         session_id = uuid.uuid4()
 
         async def astream(_input, config=None, stream_mode=None):
-            yield {AgentGraphNode.BLOCK.value: {"answer": "blocked answer", "citations": []}}
+            yield (
+                "updates",
+                {AgentGraphNode.BLOCK.value: {"answer": "blocked answer", "citations": []}},
+            )
 
         graph.astream = astream
         graph.aget_state = AsyncMock(return_value=MagicMock(config={"configurable": {}}))
@@ -129,6 +166,8 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
             for e in events
             if parse_sse_chunk(e)["event"] == SseEventType.DONE.value
         ]
+        types = [parse_sse_chunk(e)["event"] for e in events]
+        self.assertNotIn(SseEventType.TOKEN.value, types)
         self.assertEqual(len(done_events), 1)
         self.assertIn("blocked answer", done_events[0]["data"])
         messages_write.add.assert_awaited_once()
@@ -159,13 +198,16 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
         session_id = uuid.uuid4()
 
         async def astream(_input, config=None, stream_mode=None):
-            yield {
-                AgentGraphNode.RETRIEVE.value: {
-                    "answer": "final answer",
-                    "retrieved_chunks": [],
-                    "citations": [],
+            yield (
+                "updates",
+                {
+                    AgentGraphNode.RETRIEVE.value: {
+                        "answer": "final answer",
+                        "retrieved_chunks": [],
+                        "citations": [],
+                    },
                 },
-            }
+            )
 
         graph.astream = astream
         graph.aget_state = AsyncMock(return_value=MagicMock(config={"configurable": {}}))

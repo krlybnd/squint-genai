@@ -1,9 +1,10 @@
 import logging
-from typing import Any, cast
+from collections.abc import AsyncIterator
+from typing import cast
 
 import httpx
-from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletionMessageParam
+from openai import AsyncOpenAI, AsyncStream
+from openai.types.chat import ChatCompletionChunk, ChatCompletionMessageParam
 
 from agentic_shared.core.resources.client import BaseResourceClient
 from agentic_shared.integrations.llm.models import ChatCompletionResult
@@ -41,33 +42,45 @@ class OpenAIChatClient(BaseResourceClient[LLMSettings]):
         finally:
             await super().aclose()
 
+    def _messages(self, messages: list[dict[str, str]]) -> list[ChatCompletionMessageParam]:
+        return cast(list[ChatCompletionMessageParam], messages)
+
     async def chat_completion(
         self,
         messages: list[dict[str, str]],
         *,
-        stream: bool = False,
         temperature: float = 0.2,
         model: str | None = None,
-    ) -> ChatCompletionResult | Any:
+    ) -> ChatCompletionResult:
         resolved = model or self._model
-        logger.debug(
-            "chat completion model=%s messages=%d stream=%s",
-            resolved,
-            len(messages),
-            stream,
-        )
-        payload = cast(list[ChatCompletionMessageParam], messages)
-        if stream:
-            return await self._client.chat.completions.create(
-                model=resolved,
-                messages=payload,
-                temperature=temperature,
-                stream=True,
-            )
+        logger.debug("chat completion model=%s messages=%d", resolved, len(messages))
         response = await self._client.chat.completions.create(
             model=resolved,
-            messages=payload,
+            messages=self._messages(messages),
             temperature=temperature,
             stream=False,
         )
         return ChatCompletionResult.from_api_response(response.model_dump())
+
+    async def stream_chat_completion(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        temperature: float = 0.2,
+        model: str | None = None,
+    ) -> AsyncIterator[str]:
+        resolved = model or self._model
+        logger.debug("chat completion stream model=%s messages=%d", resolved, len(messages))
+        stream: AsyncStream[ChatCompletionChunk] = await self._client.chat.completions.create(
+            model=resolved,
+            messages=self._messages(messages),
+            temperature=temperature,
+            stream=True,
+        )
+        async for event in stream:
+            if not event.choices:
+                continue
+            content = event.choices[0].delta.content
+            if content is None:
+                continue
+            yield content

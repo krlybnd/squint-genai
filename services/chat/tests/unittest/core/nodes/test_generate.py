@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, MagicMock
 
 from agentic_shared.integrations.llm.settings import LLMSettings
@@ -10,9 +11,19 @@ from agentic_chat.core.nodes.generate.node import GenerateNode
 from agentic_chat.core.nodes.generate.settings import get_module_settings
 
 
+def _text_stream(*parts: str) -> AsyncIterator[str]:
+    async def _gen() -> AsyncIterator[str]:
+        for part in parts:
+            yield part
+
+    return _gen()
+
+
 class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
-    def _node(self) -> tuple[GenerateNode, AsyncMock]:
-        chat_client = AsyncMock()
+    def _node(self) -> tuple[GenerateNode, MagicMock]:
+        chat_client = MagicMock()
+        chat_client.chat_completion = AsyncMock()
+        chat_client.stream_chat_completion = MagicMock(return_value=_text_stream(""))
         deps = AgentGraphDeps(
             chat_client=chat_client,
             retrieval=MagicMock(),
@@ -61,9 +72,9 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
     async def test_success_includes_citations_when_chunks_present(self) -> None:
         # Arrange
         node, chat_client = self._node()
-        chat_client.chat_completion.return_value = {
-            "choices": [{"message": {"content": "The answer is 42."}}],
-        }
+        chat_client.stream_chat_completion = MagicMock(
+            side_effect=lambda *_args, **_kwargs: _text_stream("The answer is 42."),
+        )
         chunks = [
             {
                 "chunk_id": "c1",
@@ -81,15 +92,16 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(update["answer"], "The answer is 42.")
         self.assertEqual(len(update["citations"]), 1)
         self.assertEqual(update["citations"][0]["chunk_id"], "c1")
-        kwargs = chat_client.chat_completion.await_args.kwargs
+        chat_client.chat_completion.assert_not_called()
+        kwargs = chat_client.stream_chat_completion.call_args.kwargs
         self.assertEqual(kwargs["model"], LLMSettings().litellm_model)
 
     async def test_success_no_citations_without_chunks(self) -> None:
         # Arrange
         node, chat_client = self._node()
-        chat_client.chat_completion.return_value = {
-            "choices": [{"message": {"content": "Hi there!"}}],
-        }
+        chat_client.stream_chat_completion = MagicMock(
+            side_effect=lambda *_args, **_kwargs: _text_stream("Hi there!"),
+        )
 
         # Act
         update = await node({"query": "hello", "retrieved_chunks": [], "locale": "en"})
@@ -97,11 +109,12 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         # Assert
         self.assertEqual(update["answer"], "Hi there!")
         self.assertEqual(update["citations"], [])
+        chat_client.chat_completion.assert_not_called()
 
     async def test_llm_error_returns_localized_fallback(self) -> None:
         # Arrange
         node, chat_client = self._node()
-        chat_client.chat_completion.side_effect = RuntimeError("timeout")
+        chat_client.stream_chat_completion = MagicMock(side_effect=RuntimeError("timeout"))
 
         # Act
         update = await node({"query": "fail", "retrieved_chunks": [], "locale": "en"})
@@ -116,6 +129,7 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
 
         # Act / Assert
         self.assertIs(node.node_id, AgentGraphNode.GENERATE)
+        self.assertTrue(node.streams_tokens())
 
     def test_default_prompts_answer_only_from_indexed_context(self) -> None:
         # Arrange / Act
@@ -152,13 +166,12 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
             },
         ]
 
-        async def fake_completion(messages: list[dict[str, str]], **_: object) -> dict[str, object]:
+        def fake_stream(messages: list[dict[str, str]], **_: object) -> AsyncIterator[str]:
             body = messages[1]["content"]
-            if "q-a" in body:
-                return {"choices": [{"message": {"content": "answer-a"}}]}
-            return {"choices": [{"message": {"content": "answer-b"}}]}
+            text = "answer-a" if "q-a" in body else "answer-b"
+            return _text_stream(text)
 
-        chat_client.chat_completion = AsyncMock(side_effect=fake_completion)
+        chat_client.stream_chat_completion = MagicMock(side_effect=fake_stream)
 
         # Act
         update_a, update_b = await asyncio.gather(

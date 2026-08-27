@@ -272,7 +272,6 @@ Squint is a **reference architecture demo**, not a production deployment. The RE
 | **Guardrails** | Prompt-injection detection is still regex patterns, not a classifier; PII redaction runs on the query and retrieved context, not on model output |
 | **Compliance** | GDPR / NIS2 / EU AI Act modules are extension points (NoOp stubs) — audit logging and retention are not wired end-to-end |
 | **Multitenancy** | JWT prefers the `tenant_id` claim over `X-Tenant-Id`; API-key and internal-service auth still take `X-Tenant-Id` as-is (misconfiguration risk in prod) |
-| **Chat streaming** | SSE token events are sliced from the finished answer, not native LLM token streaming |
 | **Chunk comments** | Comments persist on the chunk and have their own vectors, but generate does not attach comment text when answering |
 | **Frontend resilience** | No global React error boundary; chat state lives in a large `useChatController` hook with thin coverage ([#21](https://github.com/krlybnd/squint-genai/issues/21)) |
 
