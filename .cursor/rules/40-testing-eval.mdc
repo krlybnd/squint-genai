@@ -8,8 +8,9 @@ globs: tests/**/*
 - **Default CI is unit-only** — no docker-compose, `tests/api`, `tests/e2e`, or `eval-live`; see [ADR 007](../docs/adr/007-no-live-tests-in-ci.md) (demo/reference project, not production revenue software)
 - API Gherkin (`tests/api`): Playwright-BDD against live api/chat/admin; steps use **only** clients generated from `openapi/*.yaml`; `make test-api`; manual / on-demand
 - **DeepEval** RAG eval: `make eval-live` (`EVAL_MODE=live`, needs running stack); manual / on-demand — runs the real chat graph
-- Eval layout follows DeepEval convention: `tests/eval/test_rag_eval.py` + `metrics.py` + `dataset.json`; run via `deepeval test run`, never raw `pytest`
-- Goldens are grounded in `resources/` PDFs (not the repo itself). Metrics: ContextualPrecision + ContextualRecall (0.6) and Faithfulness + AnswerRelevancy (0.7)
+- Eval layout follows DeepEval convention: `tests/eval/test_rag_eval.py` + `metrics.py` + `dataset.json`; run via `deepeval test run`, never raw `pytest` for generation gate
+- Goldens are grounded in `resources/` PDFs (not the repo itself). Tier 1 IR: Recall@k, Precision@k, Hit Rate@k, MRR, nDCG@k on labeled `expected_source_file` (`test_retrieval_eval.py`, offline math in `retrieval_metrics.py`). Tier 2 generation: ContextualPrecision + ContextualRecall (0.6) and Faithfulness + AnswerRelevancy (0.7)
+- `make eval-live` loads repo-root `.env` so eval uses the same `OPENAI_API_KEY` / LiteLLM settings as the stack
 - **LangSmith** prod tracing: `LANGSMITH_ENABLED=true` on chat service (LangGraph auto-traces)
 - Test profiles: Dagger functions in `tools/ops` (`test-unit`, `test-all`); `make test-profiles`
 - E2E UI: `tests/e2e` (Playwright + Gherkin); not in default CI; `npm test` is fast by default, `npm run test:demo` for slow human-like video

@@ -40,11 +40,11 @@ requires-dist = [
 dev = [
     { name = "coverage", specifier = ">=7.6" },
     { name = "httpx", specifier = ">=0.28" },
+    { name = "mypy", specifier = ">=1.13" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", specifier = ">=0.8" },
-    { name = "schemathesis", specifier = ">=3.38" },
 ]
 
 [[package]]
@@ -130,6 +130,7 @@ dev = [
     { name = "alembic", specifier = ">=1.14" },
     { name = "coverage", specifier = ">=7.6" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "mypy", specifier = ">=1.13" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "ruff", specifier = ">=0.8" },

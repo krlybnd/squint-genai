@@ -173,7 +173,14 @@ Index those documents, then:
 make eval-live
 ```
 
-The gate runs the **real chat graph** and scores **ContextualPrecision** + **ContextualRecall** (retrieval, 0.6) plus **Faithfulness** + **AnswerRelevancy** (generation, 0.7). Not part of CI; needs Qdrant + LiteLLM.
+The gate loads repo-root `.env` (same `OPENAI_API_KEY` / LiteLLM settings as the stack) and runs two tiers:
+
+| Tier | Metrics | When |
+|------|---------|------|
+| **1 — Retrieval IR** | Recall@k, Precision@k, Hit Rate@k, MRR, nDCG@k on labeled `expected_source_file` | Deterministic; no judge LLM |
+| **2 — Generation** | ContextualPrecision + ContextualRecall (0.6), Faithfulness + AnswerRelevancy (0.7) | DeepEval judge via LiteLLM |
+
+Not part of CI; needs indexed `resources/` PDFs, Qdrant, and LiteLLM.
 
 ## Local development
 

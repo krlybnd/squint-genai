@@ -28,7 +28,7 @@ exclude = [".venv"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = [".", "tests"]
-markers = ["eval: live RAG evaluation"]
+markers = ["eval: live RAG evaluation", "integration: needs running stack"]
 addopts = "--import-mode=importlib"
 
 [build-system]

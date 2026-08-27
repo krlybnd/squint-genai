@@ -1,82 +1,117 @@
 [
   {
     "input": "What architecture does Attention Is All You Need propose instead of recurrence and convolution?",
-    "expected_output": "The Transformer, a sequence transduction model based solely on attention mechanisms, dispensing with recurrence and convolutions entirely."
+    "expected_output": "The Transformer, a sequence transduction model based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+    "expected_source_file": "attention-is-all-you-need.pdf"
   },
   {
     "input": "In the Transformer base model, how many attention heads are used and what is the dimension d_k of each head?",
-    "expected_output": "The base Transformer uses h = 8 parallel attention heads with d_k = d_v = 64 (and d_model = 512)."
+    "expected_output": "The base Transformer uses h = 8 parallel attention heads with d_k = d_v = 64 (and d_model = 512).",
+    "expected_source_file": "attention-is-all-you-need.pdf"
   },
   {
     "input": "What BLEU scores did the big Transformer report on WMT 2014 English-to-German and English-to-French?",
-    "expected_output": "The big Transformer scored 28.4 BLEU on WMT 2014 English-to-German and 41.8 BLEU on English-to-French."
+    "expected_output": "The big Transformer scored 28.4 BLEU on WMT 2014 English-to-German and 41.8 BLEU on English-to-French.",
+    "expected_source_file": "attention-is-all-you-need.pdf"
   },
   {
     "input": "How does the Transformer encode token order without recurrence?",
-    "expected_output": "It adds sinusoidal positional encodings (sine and cosine functions of different frequencies) to the input embeddings."
+    "expected_output": "It adds sinusoidal positional encodings (sine and cosine functions of different frequencies) to the input embeddings.",
+    "expected_source_file": "attention-is-all-you-need.pdf"
   },
   {
     "input": "How does RAG-Sequence differ from RAG-Token in the Lewis et al. 2020 RAG paper?",
-    "expected_output": "RAG-Sequence uses the same retrieved documents for the entire generated sequence. RAG-Token can retrieve different documents for each generated token."
+    "expected_output": "RAG-Sequence uses the same retrieved documents for the entire generated sequence. RAG-Token can retrieve different documents for each generated token.",
+    "expected_source_file": "rag-lewis-2020.pdf"
   },
   {
     "input": "What parametric generator and non-parametric memory does RAG combine?",
-    "expected_output": "RAG combines a pre-trained seq2seq generator (BART) with a dense non-parametric memory of Wikipedia passages retrieved by a neural retriever (DPR)."
+    "expected_output": "RAG combines a pre-trained seq2seq generator (BART) with a dense non-parametric memory of Wikipedia passages retrieved by a neural retriever (DPR).",
+    "expected_source_file": "rag-lewis-2020.pdf"
   },
   {
     "input": "When is RAG-Sequence preferable to RAG-Token according to the RAG paper?",
-    "expected_output": "RAG-Sequence is better when the answer should stay consistent with one set of retrieved documents for the whole generation; RAG-Token is more flexible when different tokens benefit from different sources."
+    "expected_output": "RAG-Sequence is better when the answer should stay consistent with one set of retrieved documents for the whole generation; RAG-Token is more flexible when different tokens benefit from different sources.",
+    "expected_source_file": "rag-lewis-2020.pdf"
   },
   {
     "input": "What corpus does the original RAG paper retrieve documents from?",
-    "expected_output": "A dense index of Wikipedia passages (December 2018 Wikipedia dump, split into 100-word chunks)."
+    "expected_output": "A dense index of Wikipedia passages (December 2018 Wikipedia dump, split into 100-word chunks).",
+    "expected_source_file": "rag-lewis-2020.pdf"
   },
   {
     "input": "What does Article I of the United States Constitution establish?",
-    "expected_output": "Article I establishes the legislative branch: a Congress consisting of a Senate and a House of Representatives."
+    "expected_output": "Article I establishes the legislative branch: a Congress consisting of a Senate and a House of Representatives.",
+    "expected_source_file": "us-constitution.pdf"
   },
   {
     "input": "How is the President of the United States chosen under the Constitution?",
-    "expected_output": "The President is chosen by electors appointed by each state (the Electoral College), not by a direct nationwide popular vote."
+    "expected_output": "The President is chosen by electors appointed by each state (the Electoral College), not by a direct nationwide popular vote.",
+    "expected_source_file": "us-constitution.pdf"
   },
   {
     "input": "What rights does the First Amendment protect?",
-    "expected_output": "The First Amendment protects freedom of religion, speech, the press, assembly, and the right to petition the government."
+    "expected_output": "The First Amendment protects freedom of religion, speech, the press, assembly, and the right to petition the government.",
+    "expected_source_file": "us-constitution.pdf"
   },
   {
     "input": "How can the United States Constitution be amended?",
-    "expected_output": "Article V: an amendment may be proposed by two-thirds of both houses of Congress, or by a convention called by two-thirds of the states, and must then be ratified by three-fourths of the states."
+    "expected_output": "Article V: an amendment may be proposed by two-thirds of both houses of Congress, or by a convention called by two-thirds of the states, and must then be ratified by three-fourths of the states.",
+    "expected_source_file": "us-constitution.pdf"
   },
   {
     "input": "How many Senators does each state have, and how long is a Senate term?",
-    "expected_output": "Each state has two Senators, elected for six-year terms."
+    "expected_output": "Each state has two Senators, elected for six-year terms.",
+    "expected_source_file": "us-constitution.pdf"
   },
   {
     "input": "What is the purpose of NASA's Artemis II mission?",
-    "expected_output": "Artemis II is the first crewed flight of the Artemis program: it sends astronauts around the Moon and back in Orion, without landing."
+    "expected_output": "Artemis II is the first crewed flight of the Artemis program: it sends astronauts around the Moon and back in Orion, without landing.",
+    "expected_source_file": "nasa-fy2025-mission-fact-sheets.pdf"
   },
   {
     "input": "What is the Orion spacecraft used for in NASA's Artemis program?",
-    "expected_output": "Orion is the crew capsule that carries astronauts beyond low Earth orbit toward the Moon and returns them to Earth."
+    "expected_output": "Orion is the crew capsule that carries astronauts beyond low Earth orbit toward the Moon and returns them to Earth.",
+    "expected_source_file": "nasa-fy2025-mission-fact-sheets.pdf"
   },
   {
     "input": "What launch vehicle sends Orion toward the Moon in the Artemis program?",
-    "expected_output": "The Space Launch System (SLS) heavy-lift rocket launches Orion for Artemis missions."
+    "expected_output": "The Space Launch System (SLS) heavy-lift rocket launches Orion for Artemis missions.",
+    "expected_source_file": "nasa-fy2025-mission-fact-sheets.pdf"
   },
   {
     "input": "What are the four functions of the NIST AI Risk Management Framework?",
-    "expected_output": "GOVERN, MAP, MEASURE, and MANAGE."
+    "expected_output": "GOVERN, MAP, MEASURE, and MANAGE.",
+    "expected_source_file": "nist-ai-rmf-1.0.pdf"
   },
   {
     "input": "Is the NIST AI Risk Management Framework a mandatory regulation?",
-    "expected_output": "No. NIST AI RMF 1.0 is a voluntary framework for managing AI risks, not a binding regulation."
+    "expected_output": "No. NIST AI RMF 1.0 is a voluntary framework for managing AI risks, not a binding regulation.",
+    "expected_source_file": "nist-ai-rmf-1.0.pdf"
   },
   {
     "input": "What characteristics of trustworthy AI does the NIST AI RMF list?",
-    "expected_output": "Valid and reliable, safe, secure and resilient, accountable and transparent, explainable and interpretable, privacy-enhanced, and fair with harmful bias managed."
+    "expected_output": "Valid and reliable, safe, secure and resilient, accountable and transparent, explainable and interpretable, privacy-enhanced, and fair with harmful bias managed.",
+    "expected_source_file": "nist-ai-rmf-1.0.pdf"
   },
   {
     "input": "What is the GOVERN function responsible for in the NIST AI RMF?",
-    "expected_output": "GOVERN is a cross-cutting function: policies, roles, culture, and accountability that permeate MAP, MEASURE, and MANAGE throughout the AI lifecycle."
+    "expected_output": "GOVERN is a cross-cutting function: policies, roles, culture, and accountability that permeate MAP, MEASURE, and MANAGE throughout the AI lifecycle.",
+    "expected_source_file": "nist-ai-rmf-1.0.pdf"
+  },
+  {
+    "input": "What is the capital of France?",
+    "expected_output": "This information is not available in the indexed documents.",
+    "expect_abstention": true
+  },
+  {
+    "input": "What was OpenAI's GPT-4 training data cutoff date?",
+    "expected_output": "This information is not available in the indexed documents.",
+    "expect_abstention": true
+  },
+  {
+    "input": "Who won the UEFA Champions League in 2024?",
+    "expected_output": "This information is not available in the indexed documents.",
+    "expect_abstention": true
   }
 ]
