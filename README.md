@@ -261,6 +261,23 @@ On successful **`main`** builds:
 
 PR runs upload artifacts only; they do not update `stable` or Pages.
 
+## Current limitations (Phase 1)
+
+Squint is a **reference architecture demo**, not a production deployment. The README capabilities table describes design intent; the gaps below are known and intentional for Phase 1:
+
+| Area | Limitation |
+|------|------------|
+| **CI scope** | No live-stack suites in default CI — e2e, API acceptance, and `make eval-live` are manual/on-demand ([ADR 007](docs/adr/007-no-live-tests-in-ci.md)) |
+| **Infra** | Docker Compose is dev/demo grade: default secrets, HTTP-only Traefik, floating image tags, no resource limits |
+| **Guardrails** | Prompt-injection detection is still regex patterns, not a classifier; PII redaction runs on the query and retrieved context, not on model output |
+| **Compliance** | GDPR / NIS2 / EU AI Act modules are extension points (NoOp stubs) — audit logging and retention are not wired end-to-end |
+| **Multitenancy** | JWT prefers the `tenant_id` claim over `X-Tenant-Id`; API-key and internal-service auth still take `X-Tenant-Id` as-is (misconfiguration risk in prod) |
+| **Chat streaming** | SSE token events are word-split from the finished answer, not native LLM token streaming |
+| **Chunk comments** | Comments persist on the chunk and have their own vectors, but generate does not attach comment text when answering |
+| **Frontend resilience** | No global React error boundary; chat state lives in a large `useChatController` hook with thin coverage ([#21](https://github.com/krlybnd/squint-genai/issues/21)) |
+
+Run live suites locally after `make up-auth` when validating end-to-end behavior before a demo or release.
+
 ## API-first (OpenAPI)
 
 Contract is **generated**, not hand-written:
