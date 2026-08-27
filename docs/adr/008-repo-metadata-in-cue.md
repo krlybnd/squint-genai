@@ -27,9 +27,9 @@ and checkable in CI.
 - **`docs/adr/` stays the canonical “why”** — ADR IDs are referenced from CUE (`adr:
   ["004"]`), not duplicated as long prose in `project.cue`.
 - **Drift gates:**
-  - `make verify-repo-map` — `cue vet` + every `folders` path exists + `build.*`
-    matches `make/projects.mk`
-  - `make sync-projects-mk` — regenerate `make/projects.mk` lists from `project.cue`
+  - `make verify-repo-map` — `cue vet` + every required `folders` path exists +
+    `projectsMk` render matches `make/projects.mk`
+  - `make sync-projects-mk` — `cue export -e projectsMk --out text` → `make/projects.mk`
   - **pre-commit** — `verify-repo-map` hook when `project.cue`, `projects.mk`, or
     top-level monorepo paths change (requires `cue` CLI locally)
   - CI runs `make verify-repo-map` on every PR
@@ -43,7 +43,7 @@ and checkable in CI.
   monorepo project membership — CI fails otherwise.
 - `make/projects.mk` derived lists can lag if someone edits the file by hand; use
   `make sync-projects-mk` after changing `build.*` in CUE.
-- CUE adds a lightweight toolchain dependency (`cue` CLI); verify script uses it in CI
+- CUE adds a lightweight toolchain dependency (`cue` CLI); `make verify-repo-map` uses it in CI
   (install via `setup-go` or pinned binary — see workflow).
 - Diagrams, ports, and narrative architecture remain in `docs/architecture.md`; CUE
   does not replace visual docs.

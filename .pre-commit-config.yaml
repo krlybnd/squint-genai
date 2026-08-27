@@ -25,7 +25,7 @@ repos:
         entry: scripts/precommit_verify_repo_map.sh
         language: system
         pass_filenames: false
-        files: ^(project\.cue|cue\.mod/|make/projects\.mk|scripts/(verify_repo_map|render_projects_mk|precommit_verify_repo_map)\.sh|\.github/workflows/ci\.yml|(packages|services|frontend|tests)/[^/]+/)
+        files: ^(project\.cue|cue\.mod/|make/projects\.mk|scripts/(verify_repo_map|precommit_verify_repo_map)\.sh|\.github/workflows/ci\.yml|(packages|services|frontend|tests)/[^/]+/)
       - id: workspace-lint
         name: workspace lint (ruff + eslint + stylelint + tsc)
         entry: make lint
