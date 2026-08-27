@@ -7,6 +7,7 @@ from agentic_shared.core.settings.base import EnvSettings
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
+from agentic_eval.core.deepeval.settings import DeepEvalSettings
 from agentic_eval.core.goldendata.settings import GoldenSettings
 from agentic_eval.modules.generation.settings import GenerationSettings
 from agentic_eval.modules.retrieval.settings import RetrievalSettings
@@ -33,6 +34,7 @@ class EvalSettings(EnvSettings):
     # fan out N claim checks; keep this at 1 under LiteLLM judge rpm: 30.
     judge_max_concurrency: int = 1
     judge_throttle_seconds: float = 2.0
+    deepeval: DeepEvalSettings = Field(default_factory=DeepEvalSettings)
     golden: GoldenSettings = Field(default_factory=GoldenSettings)
     retrieval: RetrievalSettings = Field(default_factory=RetrievalSettings)
     generation: GenerationSettings = Field(default_factory=GenerationSettings)

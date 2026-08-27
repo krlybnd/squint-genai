@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from deepeval.models import OpenAIModel
 
-from agentic_eval.core.deepeval.retry_env import configure_judge_retries
 from agentic_eval.core.protocols import HostStack
 from agentic_eval.settings import EvalSettings
 
 
 def judge_model(settings: EvalSettings, stack: HostStack) -> OpenAIModel:
-    configure_judge_retries()
+    settings.deepeval.apply()
     alias = settings.judge_model.strip() or "judge"
     api_key = stack.proxy_api_key.strip()
     if not api_key:

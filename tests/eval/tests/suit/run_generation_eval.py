@@ -18,7 +18,6 @@ from deepeval.test_case import LLMTestCase
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn
 
 from agentic_eval.core.deepeval.judge import judge_model
-from agentic_eval.core.deepeval.retry_env import configure_judge_retries
 from agentic_eval.core.goldendata import (
     AbstentionGolden,
     LabeledGolden,
@@ -65,7 +64,6 @@ async def _call_app(
 
 
 def main() -> int:
-    configure_judge_retries()
     if eval_env_file() is None:
         print(
             "Live eval needs tests/eval/.env — cp tests/eval/.env.example tests/eval/.env",

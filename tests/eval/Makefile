@@ -22,8 +22,6 @@ eval-live: run-live ## Same as run-live (root `make eval-live` also works)
 
 run-live-generation: sync ## DeepEval generation gate (slow: graph + Faithfulness/Relevancy judges)
 	DEEPEVAL_TELEMETRY_OPT_OUT=YES DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=180 \
-		DEEPEVAL_RETRY_MAX_ATTEMPTS=10 DEEPEVAL_RETRY_INITIAL_SECONDS=2 \
-		DEEPEVAL_RETRY_CAP_SECONDS=60 \
 		EVAL_MODE=live PYTHONPATH=tests PYTHONUNBUFFERED=1 \
 		$(UV) run python tests/suit/run_generation_eval.py
 

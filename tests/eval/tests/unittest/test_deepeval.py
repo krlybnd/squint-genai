@@ -1,11 +1,11 @@
 import inspect
-import os
 from types import SimpleNamespace
 
 import pytest
+from deepeval.config.settings import get_settings
 
 from agentic_eval.core.deepeval.judge import judge_model
-from agentic_eval.core.deepeval.retry_env import JUDGE_RETRY_ENV, configure_judge_retries
+from agentic_eval.core.deepeval.settings import DeepEvalSettings
 from agentic_eval.settings import EVAL_ROOT, EvalSettings
 
 
@@ -24,10 +24,10 @@ def test_generation_runner_uses_deepeval_evaluate() -> None:
     assert "judge_max_concurrency" in source
     assert "judge_throttle_seconds" in source
     assert "async_mode=False" in source
-    assert "configure_judge_retries" in source
-    assert "DEEPEVAL_RETRY_MAX_ATTEMPTS" in (
-        EVAL_ROOT / "src" / "agentic_eval" / "core" / "deepeval" / "retry_env.py"
-    ).read_text(encoding="utf-8")
+    assert "deepeval.apply" in adapter
+    assert "os.environ" not in adapter
+    assert "os.environ" not in inspect.getsource(DeepEvalSettings.apply)
+    assert "retry_env" not in source
     assert "answer_questions" in source
     assert "[index/" not in source
     assert "FaithfulnessMetric" in source
@@ -47,17 +47,32 @@ def test_live_retrieval_makefile_prints_ir_report() -> None:
     assert "eval-live: run-live" in makefile
 
 
-def test_configure_judge_retries_does_not_override_existing(monkeypatch) -> None:
+def test_deepeval_settings_apply_retries_on_live_singleton(monkeypatch) -> None:
     # Arrange
-    monkeypatch.delenv("DEEPEVAL_RETRY_CAP_SECONDS", raising=False)
-    monkeypatch.setenv("DEEPEVAL_RETRY_MAX_ATTEMPTS", "3")
+    monkeypatch.setenv("EVAL_JUDGE_RETRY_MAX_ATTEMPTS", "7")
+    monkeypatch.setenv("EVAL_JUDGE_RETRY_INITIAL_SECONDS", "3")
+    monkeypatch.setenv("EVAL_JUDGE_RETRY_CAP_SECONDS", "45")
+    settings = DeepEvalSettings()
+    live = get_settings()
+    before = (
+        live.DEEPEVAL_RETRY_MAX_ATTEMPTS,
+        live.DEEPEVAL_RETRY_INITIAL_SECONDS,
+        live.DEEPEVAL_RETRY_CAP_SECONDS,
+    )
 
     # Act
-    configure_judge_retries()
+    try:
+        settings.apply()
 
-    # Assert
-    assert os.environ["DEEPEVAL_RETRY_MAX_ATTEMPTS"] == "3"
-    assert os.environ["DEEPEVAL_RETRY_CAP_SECONDS"] == JUDGE_RETRY_ENV["DEEPEVAL_RETRY_CAP_SECONDS"]
+        # Assert
+        assert settings.max_attempts == 7
+        assert live.DEEPEVAL_RETRY_MAX_ATTEMPTS == 7
+        assert live.DEEPEVAL_RETRY_INITIAL_SECONDS == 3.0
+        assert live.DEEPEVAL_RETRY_CAP_SECONDS == 45.0
+    finally:
+        live.DEEPEVAL_RETRY_MAX_ATTEMPTS = before[0]
+        live.DEEPEVAL_RETRY_INITIAL_SECONDS = before[1]
+        live.DEEPEVAL_RETRY_CAP_SECONDS = before[2]
 
 
 def test_litellm_judge_does_not_fall_back_to_generate() -> None:

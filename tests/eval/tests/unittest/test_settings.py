@@ -30,6 +30,9 @@ def test_eval_settings_defaults_use_judge_alias_not_generator() -> None:
     assert settings.max_concurrency == 20
     assert settings.judge_max_concurrency == 1
     assert settings.judge_throttle_seconds == 2.0
+    assert settings.deepeval.max_attempts == 10
+    assert settings.deepeval.initial_seconds == 2.0
+    assert settings.deepeval.cap_seconds == 60.0
     assert not settings.judge_model.startswith("openai/")
     assert settings.retrieval.k == 5
     assert settings.generation.faithfulness_threshold == 0.70
@@ -77,3 +80,18 @@ def test_golden_settings_own_prefix(monkeypatch) -> None:
     # Assert
     assert settings.known_source_files == ("custom.pdf",)
     assert nested.golden.known_source_files == ("custom.pdf",)
+
+
+def test_deepeval_settings_own_prefix(monkeypatch) -> None:
+    # Arrange
+    monkeypatch.setenv("EVAL_JUDGE_RETRY_MAX_ATTEMPTS", "7")
+    monkeypatch.setenv("EVAL_JUDGE_RETRY_INITIAL_SECONDS", "3")
+    monkeypatch.setenv("EVAL_JUDGE_RETRY_CAP_SECONDS", "45")
+
+    # Act
+    nested = EvalSettings()
+
+    # Assert
+    assert nested.deepeval.max_attempts == 7
+    assert nested.deepeval.initial_seconds == 3.0
+    assert nested.deepeval.cap_seconds == 45.0
