@@ -32,6 +32,15 @@ logger = logging.getLogger(__name__)
 
 GraphConfig = RunnableConfig
 
+_SIMULATED_TOKEN_CHARS = 24
+
+
+def simulated_token_chunks(answer: str, *, size: int = _SIMULATED_TOKEN_CHARS) -> list[str]:
+    """Split a finished answer for SSE without destroying whitespace or punctuation."""
+    if not answer:
+        return []
+    return [answer[i : i + size] for i in range(0, len(answer), size)]
+
 
 class ChatGraphRunner:
     def __init__(
@@ -77,9 +86,8 @@ class ChatGraphRunner:
         stream_tokens: bool,
     ) -> AsyncIterator[str]:
         if stream_tokens:
-            words = answer.split(" ")
-            for i, word in enumerate(words):
-                yield sse_token(TokenEventData(content=(" " if i else "") + word))
+            for chunk in simulated_token_chunks(answer):
+                yield sse_token(TokenEventData(content=chunk))
         await self._persist_assistant(session_id, answer, citations)
         yield sse_done(DoneEventData(answer=answer, citations=citations))
 

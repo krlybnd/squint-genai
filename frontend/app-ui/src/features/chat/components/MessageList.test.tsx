@@ -62,7 +62,7 @@ describe("MessageList", () => {
     expect(emptyTitle).toBeTruthy();
   });
 
-  it("escapes assistant HTML and exposes citation chips", () => {
+  it("renders assistant punctuation as text and exposes citation chips", () => {
     // Arrange
     const onOpenCitation = vi.fn();
     render(
@@ -84,7 +84,7 @@ describe("MessageList", () => {
     screen.getByRole("button", { name: /doc.pdf/ }).click();
 
     // Assert
-    expect(screen.getByText("&lt;b&gt;hi&lt;/b&gt;")).toBeTruthy();
+    expect(screen.getByText("<b>hi</b>")).toBeTruthy();
     expect(onOpenCitation).toHaveBeenCalled();
   });
 
@@ -95,7 +95,7 @@ describe("MessageList", () => {
         t={t}
         messages={[]}
         streaming={true}
-        streamText="  <i>typing</i>  "
+        streamText="it's a & b"
         canWrite={true}
         bottomRef={createRef<HTMLDivElement>()}
         getMessageText={(m) => m.content}
@@ -106,7 +106,7 @@ describe("MessageList", () => {
     );
 
     // Act
-    const streamingBubble = screen.getByText("&lt;i&gt;typing&lt;/i&gt;");
+    const streamingBubble = screen.getByText("it's a & b");
 
     // Assert
     expect(streamingBubble.className).toContain("streaming");

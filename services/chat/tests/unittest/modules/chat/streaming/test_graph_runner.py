@@ -1,3 +1,4 @@
+import json
 import unittest
 import uuid
 from unittest.mock import AsyncMock, MagicMock
@@ -84,6 +85,29 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
         self.assertIn(SseEventType.TOKEN.value, types)
         self.assertIn(SseEventType.DONE.value, types)
         messages_write.add.assert_awaited_once()
+
+    async def test_simulated_tokens_preserve_punctuation_and_newlines(self) -> None:
+        # Arrange
+        runner, graph, _ = self._runner()
+        session_id = uuid.uuid4()
+        answer = "it's a & b\nnext"
+
+        async def astream(_input, config=None, stream_mode=None):
+            yield {AgentGraphNode.GENERATE.value: {"answer": answer, "citations": []}}
+
+        graph.astream = astream
+        graph.aget_state = AsyncMock(return_value=MagicMock(config={"configurable": {}}))
+
+        # Act
+        events = await _collect(runner.stream_execute(session_id, {}, input_state={"query": "hi"}))
+
+        # Assert
+        pieces = [
+            json.loads(parse_sse_chunk(event)["data"])["content"]
+            for event in events
+            if parse_sse_chunk(event)["event"] == SseEventType.TOKEN.value
+        ]
+        self.assertEqual("".join(pieces), answer)
 
     async def test_block_node_also_finishes_early(self) -> None:
         # Arrange
