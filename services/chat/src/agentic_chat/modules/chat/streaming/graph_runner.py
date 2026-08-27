@@ -32,17 +32,10 @@ logger = logging.getLogger(__name__)
 
 GraphConfig = RunnableConfig
 
-_SIMULATED_TOKEN_CHARS = 24
-
-
-def simulated_token_chunks(answer: str, *, size: int = _SIMULATED_TOKEN_CHARS) -> list[str]:
-    """Split a finished answer for SSE without destroying whitespace or punctuation."""
-    if not answer:
-        return []
-    return [answer[i : i + size] for i in range(0, len(answer), size)]
-
 
 class ChatGraphRunner:
+    _simulated_token_chars = 24
+
     def __init__(
         self,
         graph: ChatCompiledGraph,
@@ -50,6 +43,13 @@ class ChatGraphRunner:
     ) -> None:
         self._graph = graph
         self._messages_write = messages_write
+
+    def _simulated_token_chunks(self, answer: str) -> list[str]:
+        """Split a finished answer for SSE without destroying whitespace or punctuation."""
+        if not answer:
+            return []
+        size = self._simulated_token_chars
+        return [answer[i : i + size] for i in range(0, len(answer), size)]
 
     async def find_start_checkpoint(self, config: GraphConfig) -> str | None:
         async for state in self._graph.aget_state_history(config):
@@ -86,7 +86,7 @@ class ChatGraphRunner:
         stream_tokens: bool,
     ) -> AsyncIterator[str]:
         if stream_tokens:
-            for chunk in simulated_token_chunks(answer):
+            for chunk in self._simulated_token_chunks(answer):
                 yield sse_token(TokenEventData(content=chunk))
         await self._persist_assistant(session_id, answer, citations)
         yield sse_done(DoneEventData(answer=answer, citations=citations))
