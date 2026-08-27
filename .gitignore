@@ -40,8 +40,12 @@ coverage/
 .deepeval/
 .deepeval-cache.json
 
-# Generated OpenAPI (committed — regenerate with `make generate-openapi`)
-# openapi/*.yaml and openapi/*.json are tracked
+# DeepEval timestamped copies (stable reports/eval/generation.md is committed)
+reports/eval/generation_*.md
+
+# Generated OpenAPI YAML (committed — regenerate with `make generate-openapi`)
+# openapi/*.yaml is tracked; JSON twins are not used
+openapi/*.json
 
 # OpenAPI-generated Python clients (run `make generate-keycloak-client`)
 packages/generated/

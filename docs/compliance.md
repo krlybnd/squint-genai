@@ -174,7 +174,7 @@ Replace NoOp adapters in Dishka providers per service — same pattern as `Datab
 | `core/auth/` | Access control, tenant resolution |
 | `domains/persistence/entities/base.py` | `AuditMixin`, `TenantMixin` |
 | `services/chat/core/guard/` | Agent guard node (PII + injection rules) |
-| `tests/eval/` | **DeepEval** live gate + offline golden dataset (AI quality evidence) |
+| `tests/eval/` | DeepEval generation gate + Pydantic Evals retrieval IR + golden dataset (AI quality evidence) |
 | Chat + `LANGSMITH_*` | Production LangGraph trace export for monitoring |
 
 ---

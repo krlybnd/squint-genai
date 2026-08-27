@@ -19,11 +19,28 @@ class RoleSettings(EnvSettings):
     title: str = "auth"
     roles: dict[str, AppRole] = Field(default_factory=lambda: dict(DEFAULT_ROLE_MAPPING))
 
+    @staticmethod
+    def _parse_loose_role_map(value: str) -> dict[str, str]:
+        """Parse bash-sourced ``ROLES={admin:admin,...}`` after JSON quotes are stripped."""
+        trimmed = value.strip()
+        if trimmed.startswith("{") and trimmed.endswith("}"):
+            trimmed = trimmed[1:-1]
+        parsed: dict[str, str] = {}
+        for part in trimmed.split(","):
+            if ":" not in part:
+                continue
+            key, role = part.split(":", 1)
+            parsed[key.strip()] = role.strip()
+        return parsed
+
     @field_validator("roles", mode="before")
     @classmethod
     def parse_roles(cls, value: object) -> object:
         if isinstance(value, str):
-            parsed = json.loads(value)
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError:
+                parsed = cls._parse_loose_role_map(value)
             return {key: AppRole(role) for key, role in parsed.items()}
         return value
 

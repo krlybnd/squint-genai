@@ -4,6 +4,8 @@
 
 package project
 
+import "strings"
+
 #Stack: "python" | "node" | "infra" | "docs" | "tests" | "tooling" | "meta"
 
 #Folder: {
@@ -36,6 +38,31 @@ build: {
 	nodeSuites:     ["tests/e2e", "tests/api"]
 	pythonReportNames: ["shared", "admin", "api", "chat", "indexing"]
 }
+
+// Rendered GNU Make include — regenerate with: make sync-projects-mk
+projectsMk: """
+	# Single source of truth for all projects in the monorepo.
+	# Canonical lists live in ../project.cue (build.*) — ADR 008.
+	# Regenerate: make sync-projects-mk | Verify: make verify-repo-map
+
+	PYTHON_LIBS         := \(strings.Join(build.pythonLibs, " "))
+	PYTHON_SERVICES     := \(strings.Join(build.pythonServices, " "))
+	PYTHON_SUITES       := \(strings.Join(build.pythonSuites, " "))
+	NODE_LIBS           := \(strings.Join(build.nodeLibs, " "))
+	NODE_APPS           := \(strings.Join(build.nodeApps, " "))
+	NODE_SUITES         := \(strings.Join(build.nodeSuites, " "))
+	PYTHON_REPORT_NAMES := \(strings.Join(build.pythonReportNames, " "))
+
+	PYTHON_PROJECTS := $(PYTHON_LIBS) $(PYTHON_SERVICES)
+
+	NODE_PROJECTS   := $(NODE_LIBS) $(NODE_APPS)
+
+	# Sync/install fan-out (includes test runners)
+	ALL_PYTHON_SYNC := $(PYTHON_PROJECTS) $(PYTHON_SUITES)
+	ALL_NODE_SYNC   := $(NODE_PROJECTS) $(NODE_SUITES)
+
+	# Short names for report paths (.reports/python/<name>/, .reports/node/<name>/)
+	"""
 
 folders: {
 	"packages/shared": #Folder & {
@@ -169,9 +196,18 @@ folders: {
 		path:    "tests/eval"
 		stack:   "tests"
 		phase:   1
-		adr:     ["007"]
-		purpose: "DeepEval RAG quality gate (ContextualPrecision/Recall, Faithfulness). make eval-live against running stack."
-		related: ["resources/", "services/chat"]
+		adr:     ["002", "007"]
+		purpose: """
+			DeepEval generation (`evaluate()` script, TTY progress bar) plus Pydantic Evals
+			retrieval IR. Generic core (goldendata, judge_model, HostStack) plus
+			modules/retrieval and modules/generation. Live stack wiring is tests/suit
+			(SutSettings, EVAL_SUT_*). Own .env / .env.example (not repo-root).
+			make eval-live / eval-live-generation against running stack. Not in CI.
+			Committed snapshots: reports/eval/.
+			"""
+		contains: ["src/agentic_eval/core/", "src/agentic_eval/modules/", "tests/unittest/", "tests/suit/", "dataset.json", ".env.example"]
+		mustNot: ["hand-rolled .env parsers", "eval config on LLMSettings", "os.environ host rewrites", "src importing tests/", "DeepEval SDK calls from modules without the judge adapter"]
+		related: ["resources/", "services/chat", "reports"]
 	}
 
 	"openapi": #Folder & {
@@ -179,7 +215,12 @@ folders: {
 		stack:   "meta"
 		phase:   1
 		adr:     ["004"]
-		purpose: "Committed OpenAPI specs (api, chat, admin). Source for UI client generation and tests/api contract."
+		purpose: """
+			Committed OpenAPI YAML (api.yaml, chat.yaml, admin.yaml). Source for UI
+			client generation and tests/api contract. YAML only — regenerate with
+			make generate-openapi.
+			"""
+		mustNot: ["duplicate JSON specs (api.json / chat.json / admin.json)"]
 		related: ["make generate-openapi", "tests/api"]
 	}
 
@@ -238,6 +279,19 @@ folders: {
 		related: ["make licenses", ".grant.yaml"]
 	}
 
+	"reports": #Folder & {
+		path:    "reports"
+		stack:   "docs"
+		phase:   1
+		adr:     ["007"]
+		purpose: """
+			Committed live-eval snapshots under reports/eval/ (retrieval IR + DeepEval
+			generation). Generated locally, not CI. Distinct from gitignored .reports/.
+			"""
+		contains: ["eval/"]
+		related: ["tests/eval"]
+	}
+
 	".reports": #Folder & {
 		path:    ".reports"
 		stack:   "meta"
@@ -265,3 +319,16 @@ folders: {
 		related: ["make/projects.mk", "project.cue"]
 	}
 }
+
+// Folders that may be absent locally (generated / optional).
+optionalFolderPaths: {
+	".reports":           true
+	"licenses":           true
+	"packages/generated": true
+}
+
+requiredFolderPaths: [
+	for k, _ in folders if optionalFolderPaths[k] == _|_ {k},
+]
+
+requiredFolderPathsText: strings.Join(requiredFolderPaths, "\n")

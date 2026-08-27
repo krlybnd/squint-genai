@@ -19,7 +19,7 @@ def _resource_health_service_method(
     """Build a typed provider method without runtime code generation."""
     param_names = [_param_name(resource_type) for resource_type in resource_types]
 
-    def resource_health_service(self, **clients: object) -> ResourceHealthService:
+    def resource_health_service(self: object, **clients: object) -> ResourceHealthService:
         resources = cast(
             list[ResourceHealthCheckable],
             [clients[name] for name in param_names],

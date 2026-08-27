@@ -47,7 +47,7 @@ Services:
 1. **One slice per change** — each feature is a vertical module (`router`, `service`, `providers`, `settings`).
 2. **Protocols over concrete types** — repositories and clients are `@runtime_checkable` Protocols; Dishka wires implementations.
 3. **Settings in three tiers** — integration `EnvSettings`, service `AppSettings`, module `ModuleSettings` ([ADR 002](adr/002-service-and-module-settings.md)).
-4. **Eval-driven** — **DeepEval** live gate (`make eval-live`, manual — [ADR 007](adr/007-no-live-tests-in-ci.md)) and **LangSmith** for prod traceability.
+4. **Eval-driven** — retrieval IR + **DeepEval** generation gate (`make eval-live` / `make eval-live-generation`, manual — [ADR 007](adr/007-no-live-tests-in-ci.md)) and **LangSmith** for prod traceability.
 5. **Compliance by extension** — GDPR / NIS2 / EU AI Act hooks live in `core/compliance`; services opt in via ports, not hard-coded SIEM tools.
 
 ## Who is this for?

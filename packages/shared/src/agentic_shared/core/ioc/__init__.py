@@ -1,5 +1,7 @@
 """Dishka IoC registry — provider implementations live in their owning modules."""
 
+from dishka import Provider
+
 from agentic_shared.core.auth.providers import AuthProvider
 from agentic_shared.core.health.providers import make_resource_health_provider
 from agentic_shared.core.ioc.container import make_service_container
@@ -30,7 +32,7 @@ __all__ = [
 ]
 
 
-def resource_health_provider():
+def resource_health_provider() -> Provider:
     return make_resource_health_provider(
         DatabaseClient,
         QdrantReader,

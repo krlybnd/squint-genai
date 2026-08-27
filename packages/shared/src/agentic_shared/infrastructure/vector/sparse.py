@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from fastembed import SparseTextEmbedding
 from qdrant_client.http.models import SparseVector
 
 
 @lru_cache
-def _sparse_model(model_name: str):
-    from fastembed import SparseTextEmbedding
-
+def _sparse_model(model_name: str) -> SparseTextEmbedding:
     return SparseTextEmbedding(model_name=model_name)
 
 

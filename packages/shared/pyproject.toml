@@ -68,10 +68,10 @@ omit = [
     "**/configure.py",
     "**/binder.py",
     "**/checkpointer.py",
+    # Thin SDK adapters — integration behavior is covered by service/domain tests.
     "**/infrastructure/**/client.py",
     "**/integrations/**/client.py",
-    "**/integrations/**/gateway.py",
-    "**/integrations/**/openai.py",
+    "**/integrations/keycloak_admin/gateway.py",
     "**/integrations/langsmith/**",
 ]
 
