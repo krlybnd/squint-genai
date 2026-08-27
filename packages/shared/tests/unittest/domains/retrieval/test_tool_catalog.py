@@ -19,6 +19,7 @@ class TestRetrievalToolCatalog(unittest.TestCase):
         self.assertIn("Query / usage guidelines:", doc)
         self.assertIn("Returns:", doc)
         self.assertIn("Hybrid search", doc)
+        self.assertIn("Do not translate the query into another language.", doc)
 
     def test_format_retrieval_tools_prompt_lists_all_tools(self) -> None:
         # Act

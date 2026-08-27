@@ -21,8 +21,12 @@ def apply_test_env() -> None:
         "QDRANT_URL": "http://localhost:6333",
         "QDRANT_COLLECTION": "agentic_rag_eval_test",
         "LITELLM_BASE_URL": "http://localhost:4000",
-        "LITELLM_MODEL": "gpt-4o-mini",
+        "LITELLM_MODEL": "generate",
+        "LITELLM_ROUTER_MODEL": "router",
+        "LITELLM_JUDGE_MODEL": "judge",
         "OPENAI_API_KEY": "test-key",
+        "EMBEDDING_MODEL": "embed",
+        "RERANK_MODEL": "rerank",
         "RERANK_ENABLED": "false",
         "DEEPEVAL_TELEMETRY_OPT_OUT": "YES",
     }

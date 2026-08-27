@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from pydantic import BaseModel, ConfigDict
+
 
 @dataclass(frozen=True, slots=True)
 class RetrievalEvalCase:
@@ -14,24 +16,31 @@ class RetrievalEvalCase:
     k: int = 5
 
 
-@dataclass(frozen=True, slots=True)
-class RetrievalMetricScores:
+class RetrievalScores(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     recall_at_k: float
     precision_at_k: float
     hit_rate_at_k: float
     mrr: float
     ndcg_at_k: float
 
+    def assert_at_least(self, minimums: RetrievalScores) -> None:
+        missed = {
+            name: {"actual": actual, "min": getattr(minimums, name)}
+            for name, actual in self.model_dump().items()
+            if actual < getattr(minimums, name)
+        }
+        assert not missed, missed
 
-def is_relevant(source_file: str, expected_source_file: str) -> bool:
-    return source_file == expected_source_file
 
-
-def binary_relevances(ranked_source_files: list[str], expected_source_file: str) -> list[int]:
-    return [
-        1 if is_relevant(source_file, expected_source_file) else 0
-        for source_file in ranked_source_files
-    ]
+DEFAULT_RETRIEVAL_MINIMUMS = RetrievalScores(
+    recall_at_k=0.75,
+    precision_at_k=0.45,
+    hit_rate_at_k=0.75,
+    mrr=0.65,
+    ndcg_at_k=0.65,
+)
 
 
 def recall_at_k(relevances: list[int], *, k: int) -> float:
@@ -73,10 +82,12 @@ def ndcg_at_k(relevances: list[int], *, k: int) -> float:
     return dcg_at_k(relevances, k=k) / ideal_dcg
 
 
-def score_retrieval(case: RetrievalEvalCase) -> RetrievalMetricScores:
-    relevances = binary_relevances(case.ranked_source_files, case.expected_source_file)
+def score_retrieval(case: RetrievalEvalCase) -> RetrievalScores:
+    relevances = [
+        1 if source == case.expected_source_file else 0 for source in case.ranked_source_files
+    ]
     k = case.k
-    return RetrievalMetricScores(
+    return RetrievalScores(
         recall_at_k=recall_at_k(relevances, k=k),
         precision_at_k=precision_at_k(relevances, k=k),
         hit_rate_at_k=hit_rate_at_k(relevances, k=k),
@@ -85,11 +96,17 @@ def score_retrieval(case: RetrievalEvalCase) -> RetrievalMetricScores:
     )
 
 
-def aggregate_scores(scores: list[RetrievalMetricScores]) -> RetrievalMetricScores:
+def aggregate_scores(scores: list[RetrievalScores]) -> RetrievalScores:
     if not scores:
-        return RetrievalMetricScores(0.0, 0.0, 0.0, 0.0, 0.0)
+        return RetrievalScores(
+            recall_at_k=0.0,
+            precision_at_k=0.0,
+            hit_rate_at_k=0.0,
+            mrr=0.0,
+            ndcg_at_k=0.0,
+        )
     count = len(scores)
-    return RetrievalMetricScores(
+    return RetrievalScores(
         recall_at_k=sum(item.recall_at_k for item in scores) / count,
         precision_at_k=sum(item.precision_at_k for item in scores) / count,
         hit_rate_at_k=sum(item.hit_rate_at_k for item in scores) / count,

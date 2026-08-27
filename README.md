@@ -170,17 +170,19 @@ Goldens live in [`tests/eval/dataset.json`](tests/eval/dataset.json) and are wri
 Index those documents, then:
 
 ```bash
-make eval-live
+cd tests/eval && cp .env.example .env   # set OPENAI_API_KEY to the stack LiteLLM bearer token
+make eval-live                          # Tier 1 — seconds
+make eval-live-generation               # Tier 2 — many LLM calls, minutes
 ```
 
-The gate loads repo-root `.env` (same `OPENAI_API_KEY` / LiteLLM settings as the stack) and runs two tiers:
+The gate loads `tests/eval/.env` via the pytest `suit` fixture into `EvalSettings` + suite `SutSettings` (`EVAL_SUT_*`, localhost defaults). Same LiteLLM/Qdrant roles as the stack. Package layout: `src/agentic_eval` core (goldens, DeepEval judge model) + `modules/retrieval` (Pydantic Evals IR) / `modules/generation` (chat-graph SUT); live wiring in `tests/suit`. Generation runs `python tests/suit/run_generation_eval.py` (`evaluate()` on a TTY).
 
-| Tier | Metrics | When |
-|------|---------|------|
-| **1 — Retrieval IR** | Recall@k, Precision@k, Hit Rate@k, MRR, nDCG@k on labeled `expected_source_file` | Deterministic; no judge LLM |
-| **2 — Generation** | ContextualPrecision + ContextualRecall (0.6), Faithfulness + AnswerRelevancy (0.7) | DeepEval judge via LiteLLM |
+| Tier | Target | Metrics |
+|------|--------|---------|
+| **1 — Retrieval IR** | `make eval-live` | Recall@k, Precision@k, Hit Rate@k, MRR, nDCG@k on labeled `expected_source_file` (no judge LLM) |
+| **2 — Generation** | `make eval-live-generation` (`run_generation_eval.py`) | Labeled goldens: parallel chat-graph SUT, then one DeepEval `evaluate()` (Faithfulness + Answer Relevancy, single TTY progress bar). Judge: LiteLLM **`judge`** alias (`EVAL_JUDGE_MODEL`). Abstention goldens check refusal markers. Retrieval ranking is Tier 1, not DeepEval contextual precision/recall. |
 
-Not part of CI; needs indexed `resources/` PDFs, Qdrant, and LiteLLM.
+Not part of CI. Needs indexed `resources/` PDFs, Qdrant, and LiteLLM. `EVAL_SUT_QDRANT_COLLECTION` must match the stack's `QDRANT_COLLECTION`. With `AUTH_MODE=jwt`, set `EVAL_TENANT_ID` in `tests/eval/.env` to the tenant that owns the vectors (often `tenant-a`), not `default`.
 
 ## Local development
 
@@ -203,7 +205,8 @@ make dev-ui                 # :5173
 | `make test` | Unit tests (all projects) |
 | `make test-unit` | Per-project unit tests + Vitest |
 | `make test-unit-coverage` | Per-project coverage gates + combined HTML report |
-| `make eval-live` | **DeepEval** RAG eval against the running stack (not in CI) |
+| `make eval-live` | Retrieval IR gate (Recall@k / MRR / nDCG@k; needs indexed corpus) |
+| `make eval-live-generation` | DeepEval generation gate (slow; judge LLM) |
 | `make e2e` | Playwright UI BDD locally (needs `make up-ui`; not in default CI) |
 | `make test-api` | Playwright API Gherkin locally (needs `make up`; OpenAPI clients only) |
 | `make resources` | Download demo PDFs into `resources/` |

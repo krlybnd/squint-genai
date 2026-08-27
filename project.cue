@@ -169,8 +169,16 @@ folders: {
 		path:    "tests/eval"
 		stack:   "tests"
 		phase:   1
-		adr:     ["007"]
-		purpose: "DeepEval RAG quality gate (ContextualPrecision/Recall, Faithfulness). make eval-live against running stack."
+		adr:     ["002", "007"]
+		purpose: """
+			DeepEval generation (`evaluate()` script, TTY progress bar) plus Pydantic Evals
+			retrieval IR. Generic core (goldendata, judge_model, HostStack) plus
+			modules/retrieval and modules/generation. Live stack wiring is tests/suit
+			(SutSettings, EVAL_SUT_*). Own .env / .env.example (not repo-root).
+			make eval-live / eval-live-generation against running stack. Not in CI.
+			"""
+		contains: ["src/agentic_eval/core/", "src/agentic_eval/modules/", "tests/unittest/", "tests/suit/", "dataset.json", ".env.example"]
+		mustNot: ["hand-rolled .env parsers", "eval config on LLMSettings", "os.environ host rewrites", "src importing tests/", "DeepEval SDK calls from modules without the judge adapter"]
 		related: ["resources/", "services/chat"]
 	}
 

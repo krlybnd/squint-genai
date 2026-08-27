@@ -16,6 +16,7 @@ from agentic_shared.infrastructure.vector.payload import payload_page
 from agentic_shared.infrastructure.vector.types import CommentPointPayload
 from agentic_shared.integrations.llm.content import extract_chat_completion_content
 from agentic_shared.integrations.llm.messages import llm_system_user
+from agentic_shared.integrations.llm.settings import LLMSettings
 
 from agentic_api.modules.annotations.deps import CommentGraphDeps
 from agentic_api.modules.annotations.settings import get_module_settings
@@ -98,6 +99,7 @@ async def moderate_node(state: CommentState, deps: CommentGraphDeps) -> CommentS
                 f"Selected excerpt:\n{selected}\n\nUser comment:\n{comment}",
             ),
             temperature=module.moderation_temperature,
+            model=LLMSettings().litellm_model,
         )
         content = extract_chat_completion_content(result)
         parsed = _parse_moderation(content)

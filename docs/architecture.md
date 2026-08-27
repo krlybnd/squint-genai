@@ -214,9 +214,11 @@ Indexing pipeline ([pipeline.py](../services/indexing/src/agentic_indexing/modul
 | Setting | Default | Source |
 |---------|---------|--------|
 | Splitter | `SemanticSplitterNodeParser` | LlamaIndex |
+| PDF pages | joined into one document before split | headings that span page breaks stay retrievable |
+| Short headings | prepended to the next chunk | e.g. `Article. I.` stays with Section 1 |
 | `semantic_buffer_size` | `1` | `INDEXING_PDF_SEMANTIC_BUFFER_SIZE` |
 | `semantic_breakpoint_percentile_threshold` | `95` | `INDEXING_PDF_SEMANTIC_BREAKPOINT_PERCENTILE_THRESHOLD` |
-| Embedding model | `text-embedding-3-small` | LiteLLM / OpenAI-compatible |
+| Embedding model | `embed` alias → `text-embedding-3-small` | LiteLLM (`EMBEDDING_MODEL`) |
 | Chunk metadata | `doc_id`, `page`, `source_file`, `tenant_id` | set at index time |
 
 Retrieval read path ([QdrantSettings](../packages/shared/src/agentic_shared/infrastructure/vector/settings.py)):
@@ -227,7 +229,7 @@ Retrieval read path ([QdrantSettings](../packages/shared/src/agentic_shared/infr
 | `top_k` | `5` | Final results after reranking |
 | Collection | `agentic_rag_eval_hybrid` | Dense + sparse (BM25) vectors |
 
-Live eval goldens ([dataset.json](../tests/eval/dataset.json)) are questions against the PDFs in `resources/` (`make resources`). Metrics: ContextualPrecision + ContextualRecall (0.6) and Faithfulness + AnswerRelevancy (0.7). Not in default CI.
+Live eval goldens ([dataset.json](../tests/eval/dataset.json)) are questions against the PDFs in `resources/` (`make resources`). Retrieval IR is Pydantic Evals (`make eval-live`). Generation is DeepEval `evaluate()` (`make eval-live-generation` → `python tests/suit/run_generation_eval.py`), judged by the LiteLLM `judge` alias (not `generate`). Live stack wiring is `tests/eval/tests/suit` (`SutSettings`, `EVAL_SUT_*` localhost defaults). Config is `tests/eval/.env`. Not in default CI.
 
 ---
 
@@ -256,7 +258,7 @@ frontend/app-ui/        React chat + documents UI
 frontend/admin-app-ui/  React admin UI
 
 tests/api/              Playwright BDD HTTP against live services (OpenAPI clients)
-tests/eval/             DeepEval golden dataset + live gate
+tests/eval/             retrieval IR (Pydantic Evals) + generation (DeepEval test run)
 tests/e2e/              Playwright BDD UI (needs running stack)
 
 openapi/                committed OpenAPI YAML (api, chat, admin)

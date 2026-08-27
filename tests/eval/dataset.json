@@ -100,17 +100,17 @@
     "expected_source_file": "nist-ai-rmf-1.0.pdf"
   },
   {
-    "input": "What is the capital of France?",
+    "input": "What mixture-of-experts routing algorithm does Attention Is All You Need introduce?",
     "expected_output": "This information is not available in the indexed documents.",
     "expect_abstention": true
   },
   {
-    "input": "What was OpenAI's GPT-4 training data cutoff date?",
+    "input": "What is the crew manifest for NASA's Artemis V lunar landing?",
     "expected_output": "This information is not available in the indexed documents.",
     "expect_abstention": true
   },
   {
-    "input": "Who won the UEFA Champions League in 2024?",
+    "input": "What does the Twenty-Eighth Amendment to the United States Constitution provide?",
     "expected_output": "This information is not available in the indexed documents.",
     "expect_abstention": true
   }

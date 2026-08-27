@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from agentic_shared.core.i18n import t
 from agentic_shared.domains.retrieval.models import IndexedDocumentEntry
 from agentic_shared.integrations.llm.messages import llm_system_user
+from agentic_shared.integrations.llm.settings import LLMSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
@@ -64,10 +65,10 @@ class RewriteQueryNode(LlmCallNode[_RewriteContext]):
     def on_success(self, state: AgentState, content: str, ctx: _RewriteContext) -> AgentStateUpdate:
         parsed = _parse_rewrite_response(content)
         needs = parsed.needs_document_search
-        search_query = parsed.search_query.strip()
+        # Keep the original utterance (Elasticsearch / LangChain include_original):
+        # LLM query rewrites drop rare terms and can change language.
+        search_query = ctx.query if needs else ""
         reason = parsed.rewrite_reason.strip()
-        if needs and not search_query:
-            search_query = ctx.query
         logger.debug(
             "rewrite routing needs_retrieval=%s indexed=%d",
             needs,
@@ -96,3 +97,6 @@ class RewriteQueryNode(LlmCallNode[_RewriteContext]):
 
     def llm_temperature(self) -> float:
         return get_module_settings().llm_temperature
+
+    def llm_model(self) -> str | None:
+        return LLMSettings().litellm_router_model
