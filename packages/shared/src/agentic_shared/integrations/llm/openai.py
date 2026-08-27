@@ -47,23 +47,25 @@ class OpenAIChatClient(BaseResourceClient[LLMSettings]):
         *,
         stream: bool = False,
         temperature: float = 0.2,
+        model: str | None = None,
     ) -> ChatCompletionResult | Any:
+        resolved = model or self._model
         logger.debug(
             "chat completion model=%s messages=%d stream=%s",
-            self._model,
+            resolved,
             len(messages),
             stream,
         )
         payload = cast(list[ChatCompletionMessageParam], messages)
         if stream:
             return await self._client.chat.completions.create(
-                model=self._model,
+                model=resolved,
                 messages=payload,
                 temperature=temperature,
                 stream=True,
             )
         response = await self._client.chat.completions.create(
-            model=self._model,
+            model=resolved,
             messages=payload,
             temperature=temperature,
             stream=False,

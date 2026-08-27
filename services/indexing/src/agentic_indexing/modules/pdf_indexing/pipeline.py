@@ -8,7 +8,7 @@ from agentic_shared.integrations.embedding.settings import EmbeddingSettings
 from agentic_shared.integrations.llm.settings import LLMSettings
 from llama_index.core import Settings as LISettings
 from llama_index.core.node_parser import SemanticSplitterNodeParser
-from llama_index.core.schema import BaseNode
+from llama_index.core.schema import BaseNode, Document
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.readers.file import PDFReader
 
@@ -36,6 +36,69 @@ def materialize_nltk_cache() -> int:
 
 def _non_empty_nodes(nodes: list[BaseNode]) -> list[BaseNode]:
     return [node for node in nodes if node.get_content().strip()]
+
+
+def _join_pdf_pages(
+    docs: list[Document],
+    *,
+    doc_id: str,
+    source_file: str,
+    tenant_id: str,
+) -> list[Document]:
+    """Concatenate PDF pages so headings split across page breaks stay searchable.
+
+    PDFReader emits one Document per page. Semantic split on each page in isolation
+    drops queries like "Article I" when the heading is ``Article.`` on page N and
+    ``I. Section. 1.`` on page N+1.
+    """
+    parts: list[str] = []
+    page = None
+    for index, doc in enumerate(docs):
+        text = doc.get_content()
+        if not text.strip():
+            continue
+        if page is None:
+            page = doc.metadata.get("page_label", index + 1)
+        parts.append(text)
+    if not parts:
+        return []
+    return [
+        Document(
+            text="\n\n".join(parts),
+            metadata={
+                "doc_id": doc_id,
+                "source_file": source_file,
+                "tenant_id": tenant_id,
+                "page": page,
+            },
+        )
+    ]
+
+
+def _attach_short_headings(nodes: list[BaseNode], *, max_heading_chars: int = 80) -> list[BaseNode]:
+    """Keep isolated headings in the same chunk as the following body.
+
+    Semantic split often isolates ``Article. I.`` from ``Section. 1. …``, so a query
+    for "Article I" never hits the legislative-powers paragraph.
+    """
+    attached: list[BaseNode] = []
+    heading: BaseNode | None = None
+    for node in nodes:
+        text = node.get_content().strip()
+        if not text:
+            continue
+        if heading is not None:
+            node.set_content(f"{heading.get_content().strip()}\n\n{text}")
+            attached.append(node)
+            heading = None
+            continue
+        if len(text) <= max_heading_chars:
+            heading = node
+            continue
+        attached.append(node)
+    if heading is not None:
+        attached.append(heading)
+    return attached
 
 
 def index_pdf_bytes(
@@ -69,17 +132,14 @@ def index_pdf_bytes(
     try:
         reader = PDFReader()
         docs = reader.load_data(file=tmp_path)
-        for i, doc in enumerate(docs):
-            doc.metadata.update(
-                {
-                    "doc_id": doc_id,
-                    "source_file": source_file,
-                    "tenant_id": tenant_id,
-                    "page": doc.metadata.get("page_label", i + 1),
-                }
-            )
-
-        nodes = _non_empty_nodes(splitter.get_nodes_from_documents(docs))
+        joined = _join_pdf_pages(
+            docs,
+            doc_id=doc_id,
+            source_file=source_file,
+            tenant_id=tenant_id,
+        )
+        nodes = _non_empty_nodes(splitter.get_nodes_from_documents(joined)) if joined else []
+        nodes = _attach_short_headings(nodes)
         if not nodes:
             logger.warning(
                 "pdf produced no chunks doc_id=%s source_file=%s pages=%d",

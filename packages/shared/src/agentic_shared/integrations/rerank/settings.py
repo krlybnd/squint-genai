@@ -5,7 +5,7 @@ from agentic_shared.core.resources.settings import ResourceSettings
 
 class RerankSettings(ResourceSettings):
     title: str = "rerank"
-    rerank_model: str = "rerank-multilingual-v3.0"
+    rerank_model: str = "rerank"
     rerank_enabled: bool = False
     cohere_api_key: str = ""
 

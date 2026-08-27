@@ -58,6 +58,7 @@ class LlmCallNode[TContext](ABC):
             result = await self._deps.chat_client.chat_completion(
                 messages,
                 temperature=self.llm_temperature(),
+                model=self.llm_model(),
             )
             content = extract_chat_completion_content(result)
             return self.on_success(state, content, ctx)
@@ -67,6 +68,10 @@ class LlmCallNode[TContext](ABC):
 
     def llm_temperature(self) -> float:
         return 0.2
+
+    def llm_model(self) -> str | None:
+        """LiteLLM alias; ``None`` uses the chat client's default (``generate``)."""
+        return None
 
 
 __all__ = ["GraphNode", "LlmCallNode", "TContext"]

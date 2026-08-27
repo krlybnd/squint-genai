@@ -170,10 +170,39 @@ Goldens live in [`tests/eval/dataset.json`](tests/eval/dataset.json) and are wri
 Index those documents, then:
 
 ```bash
-make eval-live
+cd tests/eval && cp .env.example .env   # set OPENAI_API_KEY to the stack LiteLLM bearer token
+make eval-live                          # Tier 1 — seconds
+make eval-live-generation               # Tier 2 — many LLM calls, minutes
 ```
 
-The gate runs the **real chat graph** and scores **ContextualPrecision** + **ContextualRecall** (retrieval, 0.6) plus **Faithfulness** + **AnswerRelevancy** (generation, 0.7). Not part of CI; needs Qdrant + LiteLLM.
+The gate loads `tests/eval/.env` via the pytest `suit` fixture into `EvalSettings` + suite `SutSettings` (`EVAL_SUT_*`, localhost defaults). Same LiteLLM/Qdrant roles as the stack. Package layout: `src/agentic_eval` core (goldens, DeepEval judge model) + `modules/retrieval` (Pydantic Evals IR) / `modules/generation` (chat-graph SUT); live wiring in `tests/suit`. Generation runs `python tests/suit/run_generation_eval.py` (`evaluate()` on a TTY).
+
+| Tier | Target | Metrics |
+|------|--------|---------|
+| **1 — Retrieval IR** | `make eval-live` | Recall@k, Precision@k, Hit Rate@k, MRR, nDCG@k on labeled `expected_source_file` (no judge LLM) |
+| **2 — Generation** | `make eval-live-generation` (`run_generation_eval.py`) | Labeled goldens: parallel chat-graph SUT, then one DeepEval `evaluate()` (Faithfulness + Answer Relevancy, single TTY progress bar). Judge: LiteLLM **`judge`** alias (`EVAL_JUDGE_MODEL`). Abstention goldens check refusal markers. Retrieval ranking is Tier 1, not DeepEval contextual precision/recall. |
+
+Needs indexed `resources/` PDFs, Qdrant, and LiteLLM. `EVAL_SUT_QDRANT_COLLECTION` must match the stack's `QDRANT_COLLECTION`. With `AUTH_MODE=jwt`, set `EVAL_TENANT_ID` in `tests/eval/.env` to the tenant that owns the vectors (often `tenant-a`), not `default`.
+
+Live eval is **not** in default CI ([ADR 007](docs/adr/007-no-live-tests-in-ci.md)). Unit/lint CI: [![CI](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml)
+
+### Quality snapshot
+
+GitHub renders this table in the README. Full case lists are markdown files in the repo (click through — tables and `<details>` work there). Refresh locally, then commit; numbers do not update from Actions.
+
+[![Recall@5](https://img.shields.io/badge/Recall%405-1.00-brightgreen)](reports/eval/retrieval.md)
+[![Faithfulness](https://img.shields.io/badge/Faithfulness-0.95-green)](reports/eval/generation.md)
+[![Answer%20Relevancy](https://img.shields.io/badge/Answer%20Relevancy-0.90-green)](reports/eval/generation.md)
+[![Labeled%20pass](https://img.shields.io/badge/Labeled%20pass-17%2F20-yellow)](reports/eval/generation.md)
+
+| Gate | Score | Pass | Run |
+|------|------:|-----:|-----|
+| Retrieval IR (Recall / Prec / Hit / MRR / nDCG @5) | 1.00 / 1.00 / 1.00 / 1.00 / 1.00 | 20/20 | [2026-08-27 21:05](reports/eval/retrieval.md) |
+| Faithfulness (threshold 0.70) | 0.95 | 18/20 | [2026-08-27 21:12](reports/eval/generation.md) |
+| Answer Relevancy (threshold 0.55) | 0.90 | 19/20 | [2026-08-27 21:12](reports/eval/generation.md) |
+| Abstention | — | 3/3 | [generation.md](reports/eval/generation.md) |
+
+Index: [`reports/eval/`](reports/eval/).
 
 ## Local development
 
@@ -196,7 +225,8 @@ make dev-ui                 # :5173
 | `make test` | Unit tests (all projects) |
 | `make test-unit` | Per-project unit tests + Vitest |
 | `make test-unit-coverage` | Per-project coverage gates + combined HTML report |
-| `make eval-live` | **DeepEval** RAG eval against the running stack (not in CI) |
+| `make eval-live` | Retrieval IR gate (Recall@k / MRR / nDCG@k; needs indexed corpus) |
+| `make eval-live-generation` | DeepEval generation gate (slow; judge LLM) |
 | `make e2e` | Playwright UI BDD locally (needs `make up-ui`; not in default CI) |
 | `make test-api` | Playwright API Gherkin locally (needs `make up`; OpenAPI clients only) |
 | `make resources` | Download demo PDFs into `resources/` |

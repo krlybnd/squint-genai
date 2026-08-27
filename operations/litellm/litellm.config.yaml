@@ -1,11 +1,42 @@
+# Role aliases are what the app calls. Provider ids stay in this file.
+# Legacy names (gpt-4o-mini, text-embedding-3-small, rerank-multilingual-v3.0)
+# stay registered so existing .env values keep working.
 model_list:
+  - model_name: router
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      rpm: 60
+      tpm: 100000
+  - model_name: generate
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      rpm: 60
+      tpm: 100000
+  - model_name: judge
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      rpm: 30
+      tpm: 200000
+  - model_name: embed
+    litellm_params:
+      model: openai/text-embedding-3-small
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: rerank
+    litellm_params:
+      model: cohere/rerank-multilingual-v3.0
+      api_key: os.environ/COHERE_API_KEY
+    model_info:
+      mode: rerank
   - model_name: gpt-4o-mini
     litellm_params:
-      model: gpt-4o-mini
+      model: openai/gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
   - model_name: text-embedding-3-small
     litellm_params:
-      model: text-embedding-3-small
+      model: openai/text-embedding-3-small
       api_key: os.environ/OPENAI_API_KEY
   - model_name: rerank-multilingual-v3.0
     litellm_params:
@@ -13,6 +44,13 @@ model_list:
       api_key: os.environ/COHERE_API_KEY
     model_info:
       mode: rerank
+
+# Judge stays on gpt-4o. Do not fall back to `generate` (gpt-4o-mini):
+# DeepEval Faithfulness/Relevancy need valid JSON from the judge.
+# Rate-limit retries: DeepEval also backs off (DEEPEVAL_RETRY_*); keep both.
+litellm_settings:
+  num_retries: 8
+  request_timeout: 120
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

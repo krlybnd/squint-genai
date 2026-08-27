@@ -5,6 +5,7 @@ from agentic_shared.core.i18n import t
 from agentic_shared.core.security.guard import redact_for_provider
 from agentic_shared.domains.retrieval.models import ChunkCitation, RetrievedChunk
 from agentic_shared.integrations.llm.messages import llm_system_user
+from agentic_shared.integrations.llm.settings import LLMSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
@@ -87,3 +88,6 @@ class GenerateNode(LlmCallNode[_GenerateContext]):
 
     def llm_temperature(self) -> float:
         return get_module_settings().llm_temperature
+
+    def llm_model(self) -> str | None:
+        return LLMSettings().litellm_model

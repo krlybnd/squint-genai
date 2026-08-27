@@ -11,4 +11,5 @@ class ChatClient(Protocol):
         *,
         stream: bool = False,
         temperature: float = 0.2,
+        model: str | None = None,
     ) -> ChatCompletionResult | Any: ...

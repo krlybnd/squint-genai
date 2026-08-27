@@ -2,6 +2,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from agentic_indexing.modules.pdf_indexing.pipeline import (
+    _attach_short_headings,
+    _join_pdf_pages,
     _non_empty_nodes,
     index_pdf_bytes,
     materialize_nltk_cache,
@@ -31,6 +33,87 @@ class TestPdfIndexingPipeline(unittest.TestCase):
         # Assert
         self.assertEqual(result, [populated])
 
+    def test_join_pdf_pages_keeps_heading_split_across_pages(self) -> None:
+        # Arrange
+        page_one = MagicMock()
+        page_one.metadata = {"page_label": 2}
+        page_one.get_content.return_value = "Article."
+        page_two = MagicMock()
+        page_two.metadata = {"page_label": 3}
+        page_two.get_content.return_value = (
+            "I. Section. 1. All legislative Powers herein granted shall be vested in a Congress."
+        )
+
+        # Act
+        joined = _join_pdf_pages(
+            [page_one, page_two],
+            doc_id="doc-1",
+            source_file="us-constitution.pdf",
+            tenant_id="acme",
+        )
+
+        # Assert
+        self.assertEqual(len(joined), 1)
+        text = joined[0].get_content()
+        self.assertIn("Article.", text)
+        self.assertIn("I. Section. 1.", text)
+        self.assertEqual(joined[0].metadata["page"], 2)
+        self.assertEqual(joined[0].metadata["source_file"], "us-constitution.pdf")
+
+    def test_join_pdf_pages_skips_blank_pages(self) -> None:
+        # Arrange
+        blank = MagicMock()
+        blank.metadata = {}
+        blank.get_content.return_value = "  \n"
+        filled = MagicMock()
+        filled.metadata = {"page_label": 1}
+        filled.get_content.return_value = "Congress"
+
+        # Act
+        joined = _join_pdf_pages(
+            [blank, filled],
+            doc_id="doc-1",
+            source_file="us-constitution.pdf",
+            tenant_id="acme",
+        )
+
+        # Assert
+        self.assertEqual(joined[0].get_content(), "Congress")
+
+    def test_attach_short_headings_keeps_article_label_with_section_body(self) -> None:
+        # Arrange
+        heading = MagicMock()
+        heading.get_content.return_value = "Article. I."
+        body = MagicMock()
+        body.get_content.return_value = (
+            "Section. 1. All legislative Powers herein granted shall be vested in a Congress "
+            "of the United States, which shall consist of a Senate and House of Representatives."
+        )
+
+        # Act
+        result = _attach_short_headings([heading, body])
+
+        # Assert
+        self.assertEqual(result, [body])
+        combined = body.set_content.call_args[0][0]
+        self.assertIn("Article. I.", combined)
+        self.assertIn("All legislative Powers", combined)
+
+    def test_attach_short_headings_leaves_long_chunks_alone(self) -> None:
+        # Arrange
+        first = MagicMock()
+        first.get_content.return_value = "A" * 200
+        second = MagicMock()
+        second.get_content.return_value = "B" * 200
+
+        # Act
+        result = _attach_short_headings([first, second])
+
+        # Assert
+        self.assertEqual(result, [first, second])
+        first.set_content.assert_not_called()
+        second.set_content.assert_not_called()
+
     @patch("agentic_indexing.modules.pdf_indexing.pipeline.Path.unlink")
     @patch("agentic_indexing.modules.pdf_indexing.pipeline.SemanticSplitterNodeParser")
     @patch("agentic_indexing.modules.pdf_indexing.pipeline.PDFReader")
@@ -55,6 +138,7 @@ class TestPdfIndexingPipeline(unittest.TestCase):
         )
         doc = MagicMock()
         doc.metadata = {"page_label": 1}
+        doc.get_content.return_value = "page text"
         mock_pdf_reader.return_value.load_data.return_value = [doc]
         empty_node = MagicMock()
         empty_node.get_content.return_value = ""
@@ -101,6 +185,7 @@ class TestPdfIndexingPipeline(unittest.TestCase):
         )
         doc = MagicMock()
         doc.metadata = {"page_label": 2}
+        doc.get_content.return_value = "chunk"
         mock_pdf_reader.return_value.load_data.return_value = [doc]
         node = MagicMock()
         node.get_content.return_value = "chunk"

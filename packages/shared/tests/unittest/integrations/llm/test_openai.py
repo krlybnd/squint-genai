@@ -48,6 +48,26 @@ class TestOpenAIChatClient(unittest.IsolatedAsyncioTestCase):
         client.close.assert_awaited_once()
 
     @patch("agentic_shared.integrations.llm.openai.AsyncOpenAI")
+    async def test_chat_completion_model_override(self, openai_cls: MagicMock) -> None:
+        # Arrange
+        from agentic_shared.integrations.llm.openai import OpenAIChatClient
+
+        dumped = {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
+        api_response = MagicMock()
+        api_response.model_dump.return_value = dumped
+        client = MagicMock()
+        client.chat.completions.create = AsyncMock(return_value=api_response)
+        openai_cls.return_value = client
+        chat = OpenAIChatClient(self.settings)
+
+        # Act
+        await chat.chat_completion([{"role": "user", "content": "hi"}], model="router")
+
+        # Assert
+        kwargs = client.chat.completions.create.await_args.kwargs
+        self.assertEqual(kwargs["model"], "router")
+
+    @patch("agentic_shared.integrations.llm.openai.AsyncOpenAI")
     async def test_streaming_returns_raw_response(self, openai_cls: MagicMock) -> None:
         # Arrange
         from agentic_shared.integrations.llm.openai import OpenAIChatClient

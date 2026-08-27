@@ -2,10 +2,12 @@ import unittest
 from unittest.mock import AsyncMock
 
 from agentic_shared.domains.retrieval.models import IndexedDocumentEntry
+from agentic_shared.integrations.llm.settings import LLMSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
 from agentic_chat.core.nodes.rewrite.node import RewriteQueryNode, _parse_rewrite_response
+from agentic_chat.core.nodes.rewrite.prompt import build_rewrite_router_system_prompt
 
 
 class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
@@ -57,8 +59,10 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
 
         # Assert
         self.assertTrue(update["needs_retrieval"])
-        self.assertEqual(update["search_query"], "pdf topic")
+        self.assertEqual(update["search_query"], "what is in the pdf?")
         self.assertEqual(update["indexed_document_count"], 1)
+        kwargs = chat_client.chat_completion.await_args.kwargs
+        self.assertEqual(kwargs["model"], LLMSettings().litellm_router_model)
 
     async def test_success_needs_retrieval_false(self) -> None:
         # Arrange
@@ -82,7 +86,7 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(update["search_query"], "")
         self.assertIn("greeting", update["rewrite_reason"])
 
-    async def test_search_query_falls_back_to_user_query(self) -> None:
+    async def test_search_uses_original_user_query(self) -> None:
         # Arrange
         node, retrieval, chat_client = self._node()
         retrieval.list_indexed_documents.return_value = []
@@ -127,6 +131,20 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
 
         # Act / Assert
         self.assertIs(node.node_id, AgentGraphNode.REWRITE)
+
+    def test_router_prompt_classifies_without_rewriting(self) -> None:
+        # Arrange
+        indexed = [
+            IndexedDocumentEntry(doc_id="d1", source_file="paper.pdf", chunk_count=2),
+        ]
+
+        # Act
+        prompt = build_rewrite_router_system_prompt(indexed=indexed)
+
+        # Assert
+        self.assertIn("user's original message", prompt)
+        self.assertIn("Do not rewrite, translate, or keyword-ize", prompt)
+        self.assertIn("parametric knowledge", prompt)
 
 
 if __name__ == "__main__":

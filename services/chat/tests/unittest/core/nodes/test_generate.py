@@ -2,6 +2,8 @@ import asyncio
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
+from agentic_shared.integrations.llm.settings import LLMSettings
+
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
 from agentic_chat.core.nodes.generate.node import GenerateNode
@@ -79,6 +81,8 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(update["answer"], "The answer is 42.")
         self.assertEqual(len(update["citations"]), 1)
         self.assertEqual(update["citations"][0]["chunk_id"], "c1")
+        kwargs = chat_client.chat_completion.await_args.kwargs
+        self.assertEqual(kwargs["model"], LLMSettings().litellm_model)
 
     async def test_success_no_citations_without_chunks(self) -> None:
         # Arrange
@@ -112,6 +116,28 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
 
         # Act / Assert
         self.assertIs(node.node_id, AgentGraphNode.GENERATE)
+
+    def test_default_prompts_answer_only_from_indexed_context(self) -> None:
+        # Arrange / Act
+        module = get_module_settings()
+        rag = module.rag_system_prompt.lower()
+        no_context = module.no_context_system_prompt.lower()
+
+        # Assert — RAG must not fall back to parametric knowledge or upload CTAs
+        self.assertIn("only", rag)
+        self.assertIn("cannot find it in the indexed excerpts", rag)
+        self.assertIn("copy numbers", rag)
+        self.assertIn("results table", rag)
+        self.assertIn("one to three sentences", rag)
+        self.assertIn("substance of the answer is missing", rag)
+        self.assertIn("plain prose", rag)
+        self.assertIn("latex", rag)
+        self.assertIn("do not add offers to upload documents", rag)
+        self.assertNotIn("answer directly if you can", no_context)
+        self.assertIn("no matching indexed excerpts were found", no_context)
+        self.assertIn("do not answer from", no_context)
+        self.assertIn("memory or general knowledge", no_context)
+        self.assertEqual(module.llm_temperature, 0.0)
 
     async def test_concurrent_calls_do_not_share_mutable_state(self) -> None:
         # Arrange — one APP-scoped node instance must serve concurrent requests safely.

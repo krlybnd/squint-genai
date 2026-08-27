@@ -24,11 +24,13 @@ SEARCH_DOCUMENTS = RetrievalToolSpec(
     query_guidelines="""
 How to formulate `query` for best recall:
 - Use short declarative keyword phrases, not conversational questions.
-  Good: "szerződés fizetési határidő késedelmi kamat"
+  Good (HU): "szerződés fizetési határidő késedelmi kamat"
+  Good (EN): "Transformer attention heads d_k base model"
   Bad: "Mennyi a késedelmi kamat a szerződésben?"
 - Include named entities: filenames, people, products, dates, section topics when known.
 - One focused topic per call; split multi-part questions into separate searches.
-- Prefer the language of the indexed PDFs (often Hungarian) when content is Hungarian.
+- Keep the user's language. Match indexed filenames (English PDFs → English terms).
+  Do not translate the query into another language.
 - Avoid filler words (please, can you, tell me about).
 - For summaries use broader terms; for facts use precise terms.
 - For "what is in the document" / overview questions use: document title, main subject,
