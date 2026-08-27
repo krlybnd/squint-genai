@@ -4,6 +4,8 @@
 
 package project
 
+import "strings"
+
 #Stack: "python" | "node" | "infra" | "docs" | "tests" | "tooling" | "meta"
 
 #Folder: {
@@ -36,6 +38,31 @@ build: {
 	nodeSuites:     ["tests/e2e", "tests/api"]
 	pythonReportNames: ["shared", "admin", "api", "chat", "indexing"]
 }
+
+// Rendered GNU Make include — regenerate with: make sync-projects-mk
+projectsMk: """
+	# Single source of truth for all projects in the monorepo.
+	# Canonical lists live in ../project.cue (build.*) — ADR 008.
+	# Regenerate: make sync-projects-mk | Verify: make verify-repo-map
+
+	PYTHON_LIBS         := \(strings.Join(build.pythonLibs, " "))
+	PYTHON_SERVICES     := \(strings.Join(build.pythonServices, " "))
+	PYTHON_SUITES       := \(strings.Join(build.pythonSuites, " "))
+	NODE_LIBS           := \(strings.Join(build.nodeLibs, " "))
+	NODE_APPS           := \(strings.Join(build.nodeApps, " "))
+	NODE_SUITES         := \(strings.Join(build.nodeSuites, " "))
+	PYTHON_REPORT_NAMES := \(strings.Join(build.pythonReportNames, " "))
+
+	PYTHON_PROJECTS := $(PYTHON_LIBS) $(PYTHON_SERVICES)
+
+	NODE_PROJECTS   := $(NODE_LIBS) $(NODE_APPS)
+
+	# Sync/install fan-out (includes test runners)
+	ALL_PYTHON_SYNC := $(PYTHON_PROJECTS) $(PYTHON_SUITES)
+	ALL_NODE_SYNC   := $(NODE_PROJECTS) $(NODE_SUITES)
+
+	# Short names for report paths (.reports/python/<name>/, .reports/node/<name>/)
+	"""
 
 folders: {
 	"packages/shared": #Folder & {
@@ -188,7 +215,12 @@ folders: {
 		stack:   "meta"
 		phase:   1
 		adr:     ["004"]
-		purpose: "Committed OpenAPI specs (api, chat, admin). Source for UI client generation and tests/api contract."
+		purpose: """
+			Committed OpenAPI YAML (api.yaml, chat.yaml, admin.yaml). Source for UI
+			client generation and tests/api contract. YAML only — regenerate with
+			make generate-openapi.
+			"""
+		mustNot: ["duplicate JSON specs (api.json / chat.json / admin.json)"]
 		related: ["make generate-openapi", "tests/api"]
 	}
 
@@ -287,3 +319,16 @@ folders: {
 		related: ["make/projects.mk", "project.cue"]
 	}
 }
+
+// Folders that may be absent locally (generated / optional).
+optionalFolderPaths: {
+	".reports":           true
+	"licenses":           true
+	"packages/generated": true
+}
+
+requiredFolderPaths: [
+	for k, _ in folders if optionalFolderPaths[k] == _|_ {k},
+]
+
+requiredFolderPathsText: strings.Join(requiredFolderPaths, "\n")

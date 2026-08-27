@@ -288,7 +288,7 @@ frontend/
   app-ui/ admin-app-ui/         @are/* workspace packages
 tests/
   api/ eval/ e2e/               api + e2e in npm workspaces; eval is Python
-openapi/              committed OpenAPI artifacts (api, chat, admin)
+openapi/              committed OpenAPI YAML (api, chat, admin)
 operations/           Postgres, Redis, MinIO, Qdrant, LiteLLM, Keycloak configs
 ```
 

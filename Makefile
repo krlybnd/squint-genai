@@ -48,9 +48,9 @@ KEYCLOAK_CLIENT_CONFIG := $(ROOT)/operations/keycloak/openapi/openapi-python-cli
 .PHONY: generate-openapi generate-keycloak-client openapi
 generate-openapi: ## Export OpenAPI specs → openapi/
 	@mkdir -p $(ROOT)/openapi
-	@cd $(ROOT)/services/api && $(UV) run python -c 'import json, yaml; from pathlib import Path; from agentic_api.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("api.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); p.joinpath("api.json").write_text(json.dumps(s, indent=2), encoding="utf-8"); print("Wrote openapi/api.yaml")'
-	@cd $(ROOT)/services/chat && $(UV) run python -c 'import json, yaml; from pathlib import Path; from agentic_chat.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("chat.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); p.joinpath("chat.json").write_text(json.dumps(s, indent=2), encoding="utf-8"); print("Wrote openapi/chat.yaml")'
-	@cd $(ROOT)/services/admin && $(UV) run python -c 'import json, yaml; from pathlib import Path; from agentic_admin.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("admin.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); p.joinpath("admin.json").write_text(json.dumps(s, indent=2), encoding="utf-8"); print("Wrote openapi/admin.yaml")'
+	@cd $(ROOT)/services/api && $(UV) run python -c 'import yaml; from pathlib import Path; from agentic_api.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("api.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); print("Wrote openapi/api.yaml")'
+	@cd $(ROOT)/services/chat && $(UV) run python -c 'import yaml; from pathlib import Path; from agentic_chat.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("chat.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); print("Wrote openapi/chat.yaml")'
+	@cd $(ROOT)/services/admin && $(UV) run python -c 'import yaml; from pathlib import Path; from agentic_admin.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("admin.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); print("Wrote openapi/admin.yaml")'
 
 generate-keycloak-client: ## Keycloak Admin OpenAPI → packages/generated/
 	@test -f "$(KEYCLOAK_OPENAPI)" || (echo "Missing $(KEYCLOAK_OPENAPI)" >&2; exit 1)
@@ -79,10 +79,11 @@ db-revision: ## Alembic autogenerate (MSG=...)
 
 .PHONY: verify-repo-map sync-projects-mk
 verify-repo-map: ## cue vet + folder paths + projects.mk parity (ADR 008)
-	python3 scripts/verify_repo_map.py
+	"$(ROOT)/scripts/verify_repo_map.sh"
 
 sync-projects-mk: ## Regenerate make/projects.mk lists from project.cue
-	python3 scripts/render_projects_mk.py
+	cue export project.cue -e projectsMk --out text > "$(ROOT)/make/projects.mk"
+	@echo "Wrote make/projects.mk"
 	@$(MAKE) verify-repo-map
 
 # ── Quality ────────────────────────────────────────────────────────────────────
