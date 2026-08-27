@@ -68,18 +68,45 @@ class TestOpenAIChatClient(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kwargs["model"], "router")
 
     @patch("agentic_shared.integrations.llm.openai.AsyncOpenAI")
-    async def test_streaming_returns_raw_response(self, openai_cls: MagicMock) -> None:
+    async def test_stream_chat_completion_yields_delta_text(self, openai_cls: MagicMock) -> None:
         # Arrange
+        from openai.types.chat import ChatCompletionChunk
+
         from agentic_shared.integrations.llm.openai import OpenAIChatClient
 
-        stream = object()
+        def chunk(*, content: str | None = None, choices: bool = True) -> ChatCompletionChunk:
+            payload: dict[str, object] = {
+                "id": "chatcmpl-1",
+                "created": 1,
+                "model": "gpt-test",
+                "object": "chat.completion.chunk",
+                "choices": [],
+            }
+            if choices:
+                delta: dict[str, str] = {} if content is None else {"content": content}
+                payload["choices"] = [{"delta": delta, "index": 0}]
+            return ChatCompletionChunk.model_validate(payload)
+
+        async def events():
+            yield chunk(content="hel")
+            yield chunk(choices=False)
+            yield chunk(content=None)
+            yield chunk(content="lo")
+
         client = MagicMock()
-        client.chat.completions.create = AsyncMock(return_value=stream)
+        client.chat.completions.create = AsyncMock(return_value=events())
         openai_cls.return_value = client
         chat = OpenAIChatClient(self.settings)
 
-        # Act / Assert
-        self.assertIs(await chat.chat_completion([], stream=True), stream)
+        # Act
+        pieces = [
+            part async for part in chat.stream_chat_completion([{"role": "user", "content": "hi"}])
+        ]
+
+        # Assert
+        self.assertEqual("".join(pieces), "hello")
+        kwargs = client.chat.completions.create.await_args.kwargs
+        self.assertTrue(kwargs["stream"])
 
     @patch("agentic_shared.integrations.llm.openai.httpx.AsyncClient")
     @patch("agentic_shared.integrations.llm.openai.AsyncOpenAI")

@@ -2,7 +2,7 @@ import json
 import logging
 import uuid
 from collections.abc import AsyncIterator
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from agentic_shared.core.i18n import DEFAULT_LOCALE, t
 from agentic_shared.domains.chat.roles import ChatMessageRole
@@ -31,6 +31,8 @@ from agentic_chat.modules.chat.streaming.sse_reasoning import events_for_node
 logger = logging.getLogger(__name__)
 
 GraphConfig = RunnableConfig
+GraphNodeUpdates = dict[str, AgentStateUpdate]
+AstreamItem = tuple[Literal["updates"], GraphNodeUpdates] | tuple[Literal["custom"], str]
 
 
 class ChatGraphRunner:
@@ -41,6 +43,20 @@ class ChatGraphRunner:
     ) -> None:
         self._graph = graph
         self._messages_write = messages_write
+
+    def _astream(
+        self,
+        input_state: AgentGraphInputState | None,
+        config: GraphConfig,
+    ) -> AsyncIterator[AstreamItem]:
+        return cast(
+            AsyncIterator[AstreamItem],
+            self._graph.astream(
+                input_state,
+                config=config,
+                stream_mode=["updates", "custom"],
+            ),
+        )
 
     async def find_start_checkpoint(self, config: GraphConfig) -> str | None:
         async for state in self._graph.aget_state_history(config):
@@ -73,13 +89,7 @@ class ChatGraphRunner:
         session_id: uuid.UUID,
         answer: str,
         citations: list[dict[str, Any]],
-        *,
-        stream_tokens: bool,
     ) -> AsyncIterator[str]:
-        if stream_tokens:
-            words = answer.split(" ")
-            for i, word in enumerate(words):
-                yield sse_token(TokenEventData(content=(" " if i else "") + word))
         await self._persist_assistant(session_id, answer, citations)
         yield sse_done(DoneEventData(answer=answer, citations=citations))
 
@@ -93,37 +103,33 @@ class ChatGraphRunner:
     ) -> AsyncIterator[str]:
         final_state: AgentStateUpdate = {}
         try:
-            async for update in self._graph.astream(
-                input_state,
-                config=config,
-                stream_mode="updates",
-            ):
-                for node, output in update.items():
-                    if not isinstance(output, dict):
-                        continue
-                    node_output = cast(AgentStateUpdate, output)
-                    final_state.update(node_output)
-                    checkpoint_id = await self._checkpoint_id(config)
-                    async for event in events_for_node(node, node_output, checkpoint_id, locale):
-                        yield event
-
-                    if node in (AgentGraphNode.GENERATE, AgentGraphNode.BLOCK):
-                        answer = str(node_output.get("answer", ""))
-                        citations = citation_states(citations_from_output(node_output))
-                        logger.info(
-                            "chat graph completed session_id=%s node=%s citations=%d",
-                            session_id,
-                            node,
-                            len(citations),
-                        )
-                        async for event in self._finish_with_answer(
-                            session_id,
-                            answer,
-                            citations,
-                            stream_tokens=True,
-                        ):
-                            yield event
-                        return
+            async for item in self._astream(input_state, config):
+                match item:
+                    case ("custom", token) if token != "":
+                        yield sse_token(TokenEventData(content=token))
+                    case ("updates", updates):
+                        for node, node_output in updates.items():
+                            final_state.update(node_output)
+                            checkpoint_id = await self._checkpoint_id(config)
+                            async for event in events_for_node(
+                                node, node_output, checkpoint_id, locale
+                            ):
+                                yield event
+                            if node not in (AgentGraphNode.GENERATE, AgentGraphNode.BLOCK):
+                                continue
+                            answer = str(node_output.get("answer", ""))
+                            citations = citation_states(citations_from_output(node_output))
+                            logger.info(
+                                "chat graph completed session_id=%s node=%s citations=%d",
+                                session_id,
+                                node,
+                                len(citations),
+                            )
+                            async for event in self._finish_with_answer(
+                                session_id, answer, citations
+                            ):
+                                yield event
+                            return
         except Exception as exc:
             logger.exception("chat graph execution failed session_id=%s", session_id)
             yield sse_error(
@@ -134,10 +140,5 @@ class ChatGraphRunner:
         answer = str(final_state.get("answer", ""))
         if answer:
             citations = citation_states(citations_from_output(final_state))
-            async for event in self._finish_with_answer(
-                session_id,
-                answer,
-                citations,
-                stream_tokens=False,
-            ):
+            async for event in self._finish_with_answer(session_id, answer, citations):
                 yield event

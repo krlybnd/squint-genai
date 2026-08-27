@@ -52,6 +52,9 @@ class GenerateNode(LlmCallNode[_GenerateContext]):
     def node_id(self) -> AgentGraphNode:
         return AgentGraphNode.GENERATE
 
+    def streams_tokens(self) -> bool:
+        return True
+
     async def prepare(self, state: AgentState) -> tuple[AgentStateUpdate | None, _GenerateContext]:
         locale = locale_of(state)
         query = state.get("safe_query") or state.get("query", "")

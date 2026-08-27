@@ -829,6 +829,7 @@
   border-radius: 16px;
   font-size: 0.95rem;
   line-height: 1.6;
+  white-space: pre-wrap;
 }
 .message.user .message-bubble {
   background: var(--gradient-avatar);

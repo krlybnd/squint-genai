@@ -1,4 +1,5 @@
-from typing import Any, Protocol, runtime_checkable
+from collections.abc import AsyncIterator
+from typing import Protocol, runtime_checkable
 
 from agentic_shared.integrations.llm.models import ChatCompletionResult
 
@@ -9,7 +10,14 @@ class ChatClient(Protocol):
         self,
         messages: list[dict[str, str]],
         *,
-        stream: bool = False,
         temperature: float = 0.2,
         model: str | None = None,
-    ) -> ChatCompletionResult | Any: ...
+    ) -> ChatCompletionResult: ...
+
+    def stream_chat_completion(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        temperature: float = 0.2,
+        model: str | None = None,
+    ) -> AsyncIterator[str]: ...

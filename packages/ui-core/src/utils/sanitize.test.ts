@@ -14,14 +14,14 @@ describe("escapeHtml", () => {
 });
 
 describe("sanitizeText", () => {
-  it("trims then escapes", () => {
+  it("leaves punctuation for React text nodes", () => {
     // Arrange
-    const raw = "  <b>x</b>  ";
+    const raw = "it's a & b\nnext";
 
     // Act
     const sanitized = sanitizeText(raw);
 
     // Assert
-    expect(sanitized).toBe("&lt;b&gt;x&lt;/b&gt;");
+    expect(sanitized).toBe(raw);
   });
 });
