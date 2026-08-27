@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml)
 
-**Squint** is an eval-driven **agentic RAG** platform for asking questions about your own documents — built on the premise that a generated answer is worthless unless you can check it. Every response carries citations back to the exact source chunk, the agent's reasoning steps are visible while it works, and answer quality is measured by an automated eval gate instead of gut feeling.
+**Squint** is an eval-driven **agentic RAG** platform for asking questions about your own documents — built on the premise that a generated answer is worthless unless you can check it. Every response carries citations back to the exact source chunk; you can select a passage and leave a comment on it, so expert review lives on the same text the answer came from. The agent's reasoning steps are visible while it works, and answer quality is measured by an automated eval gate instead of gut feeling.
 
-> **Why "Squint"?** Because the product is about leaning in and looking closer at the source — not taking the model's word for it.
+> **Why "Squint"?** Because the product is about leaning in and looking closer at the source — citations, comments on the passage, not taking the model's word for it.
 
 ## What it does
 
