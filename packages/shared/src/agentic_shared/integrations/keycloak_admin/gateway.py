@@ -321,9 +321,11 @@ class TenantGateway:
             if not user_id or not username or str(username).startswith("service-account-"):
                 continue
             email = item.email if item.email is not UNSET and item.email else None
-            tenant_roles = _parse_tenant_roles(
-                item.attributes if item.attributes is not UNSET else None
+            member_attrs = item.attributes if item.attributes is not UNSET else None
+            parsed_attrs = (
+                member_attrs if isinstance(member_attrs, MemberRepresentationAttributes) else None
             )
+            tenant_roles = _parse_tenant_roles(parsed_attrs)
             members.append(
                 TenantMemberRecord(
                     id=str(user_id),
