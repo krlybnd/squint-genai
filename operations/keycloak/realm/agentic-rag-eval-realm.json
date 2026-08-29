@@ -28,7 +28,7 @@
   "clientScopes": [
     {
       "name": "tenant",
-      "description": "Multitenancy — tenant_id claim in bearer token",
+      "description": "Multitenancy \u2014 tenant_id claim in bearer token",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true",
@@ -177,8 +177,12 @@
       "publicClient": true,
       "directAccessGrantsEnabled": true,
       "standardFlowEnabled": false,
-      "redirectUris": ["*"],
-      "webOrigins": ["*"],
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
       "defaultClientScopes": [
         "tenant",
         "app-roles"
@@ -195,9 +199,15 @@
       "lastName": "User",
       "requiredActions": [],
       "attributes": {
-        "tenant_id": ["tenant-a"]
+        "tenant_id": [
+          "tenant-a"
+        ]
       },
-      "realmRoles": ["admin", "read", "write"],
+      "realmRoles": [
+        "admin",
+        "read",
+        "write"
+      ],
       "credentials": [
         {
           "type": "password",
@@ -214,9 +224,13 @@
       "firstName": "Reader",
       "lastName": "TenantA",
       "attributes": {
-        "tenant_id": ["tenant-a"]
+        "tenant_id": [
+          "tenant-a"
+        ]
       },
-      "realmRoles": ["read"],
+      "realmRoles": [
+        "read"
+      ],
       "credentials": [
         {
           "type": "password",
@@ -233,9 +247,13 @@
       "firstName": "Writer",
       "lastName": "TenantA",
       "attributes": {
-        "tenant_id": ["tenant-a"]
+        "tenant_id": [
+          "tenant-a"
+        ]
       },
-      "realmRoles": ["write"],
+      "realmRoles": [
+        "write"
+      ],
       "credentials": [
         {
           "type": "password",
@@ -252,9 +270,14 @@
       "firstName": "Alice",
       "lastName": "TenantA",
       "attributes": {
-        "tenant_id": ["tenant-a"]
+        "tenant_id": [
+          "tenant-a"
+        ]
       },
-      "realmRoles": ["read", "write"],
+      "realmRoles": [
+        "read",
+        "write"
+      ],
       "credentials": [
         {
           "type": "password",
@@ -271,9 +294,13 @@
       "firstName": "Bob",
       "lastName": "TenantB",
       "attributes": {
-        "tenant_id": ["tenant-b"]
+        "tenant_id": [
+          "tenant-b"
+        ]
       },
-      "realmRoles": ["read"],
+      "realmRoles": [
+        "read"
+      ],
       "credentials": [
         {
           "type": "password",
@@ -295,5 +322,19 @@
         ]
       }
     }
-  ]
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "name": "declarative-user-profile",
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"tenant_id\",\"displayName\":\"Active tenant\",\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"tenant_roles\",\"displayName\":\"Tenant roles (JSON map)\",\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"},{\"name\":\"multitenancy\",\"displayHeader\":\"Multitenancy\",\"displayDescription\":\"Active tenant and per-tenant role assignments\"}]}"
+          ]
+        }
+      }
+    ]
+  }
 }

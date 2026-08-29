@@ -364,6 +364,103 @@ class TestUserGateway(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(record.tenant_roles["acme"], ["admin", "read"])
         self.assertEqual(record.realm_roles, ["admin", "read"])
 
+    def test_merged_tenant_attributes_preserves_other_keys(self) -> None:
+        # Arrange
+        from keycloak_admin_client.models.user_representation_attributes import (
+            UserRepresentationAttributes,
+        )
+
+        attrs = UserRepresentationAttributes()
+        attrs.additional_properties = {
+            "locale": ["en"],
+            "tenant_id": ["old"],
+            "tenant_roles": ['{"old":["read"]}'],
+        }
+
+        # Act
+        merged = self.gateway._merged_tenant_attributes(
+            attrs,
+            tenant_id="acme",
+            tenant_roles={"acme": ["write"]},
+        )
+
+        # Assert
+        self.assertEqual(merged.additional_properties["locale"], ["en"])
+        self.assertEqual(merged.additional_properties["tenant_id"], ["acme"])
+        stored = json.loads(merged.additional_properties["tenant_roles"][0])
+        self.assertEqual(stored, {"acme": ["write"]})
+
+    async def test_put_user_attributes_preserves_profile_fields(self) -> None:
+        # Arrange
+        from keycloak_admin_client.models.user_representation_attributes import (
+            UserRepresentationAttributes,
+        )
+
+        from agentic_shared.integrations.keycloak_admin.gateway import UserRecord
+
+        attrs = UserRepresentationAttributes()
+        attrs.additional_properties = {"locale": ["en"]}
+        rep = MagicMock()
+        rep.id = "u1"
+        rep.username = "alice"
+        rep.email = "alice@example.com"
+        rep.first_name = "Alice"
+        rep.last_name = "TenantA"
+        rep.enabled = True
+        rep.attributes = attrs
+        user = UserRecord(
+            id="u1",
+            username="alice",
+            email="alice@example.com",
+            enabled=True,
+            tenant_id="tenant-a",
+            tenant_ids=["tenant-a"],
+            realm_roles=["read"],
+            tenant_roles={},
+        )
+        self.gateway._get_user_representation = AsyncMock(return_value=rep)  # type: ignore[method-assign]
+        self.gateway._put_user_representation = AsyncMock()  # type: ignore[method-assign]
+
+        # Act
+        await self.gateway._put_user_attributes(
+            user,
+            tenant_id="tenant-a",
+            tenant_roles={"tenant-a": ["write"]},
+        )
+
+        # Assert
+        self.gateway._put_user_representation.assert_awaited_once()
+        sent = self.gateway._put_user_representation.await_args.args[0]
+        self.assertEqual(sent.email, "alice@example.com")
+        self.assertEqual(sent.first_name, "Alice")
+        self.assertEqual(sent.last_name, "TenantA")
+        merged_attrs = sent.attributes.additional_properties
+        self.assertEqual(merged_attrs["locale"], ["en"])
+        self.assertEqual(merged_attrs["tenant_id"], ["tenant-a"])
+        self.assertEqual(json.loads(merged_attrs["tenant_roles"][0]), {"tenant-a": ["write"]})
+
+    async def test_set_tenant_roles_requires_membership(self) -> None:
+        # Arrange
+        from agentic_shared.integrations.keycloak_admin.errors import KeycloakNotFoundError
+        from agentic_shared.integrations.keycloak_admin.gateway import UserRecord
+
+        self.gateway.get_by_username = AsyncMock(  # type: ignore[method-assign]
+            return_value=UserRecord(
+                id="u1",
+                username="alice",
+                email="alice@example.com",
+                enabled=True,
+                tenant_id="tenant-a",
+                tenant_ids=["tenant-a"],
+                realm_roles=["read"],
+                tenant_roles={"tenant-a": ["read"]},
+            )
+        )
+
+        # Act / Assert
+        with self.assertRaises(KeycloakNotFoundError):
+            await self.gateway.set_tenant_roles("alice", "missing", ["write"])
+
     async def test_sync_realm_roles_resolves_role_ids(self) -> None:
         # Arrange
         from keycloak_admin_client.models.role_representation import RoleRepresentation

@@ -1,6 +1,11 @@
 #!/bin/sh
 # Create Keycloak organizations after realm import (orgs cannot live in realm.json).
+# Also applies declarative user profile (tenant_id, tenant_roles) and repairs demo users.
 set -eu
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+REALM_DIR="$(dirname "$SCRIPT_DIR")/realm"
+USER_PROFILE_JSON="${REALM_DIR}/user-profile.json"
 
 KC_URL="${KEYCLOAK_URL:-http://keycloak:8080}"
 REALM="${KEYCLOAK_REALM:-agentic-rag-eval}"
@@ -29,6 +34,52 @@ if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
 fi
 
 API="${KC_URL}/admin/realms/${REALM}"
+
+apply_user_profile() {
+  if [ ! -f "${USER_PROFILE_JSON}" ]; then
+    echo "Missing ${USER_PROFILE_JSON}" >&2
+    exit 1
+  fi
+  echo "Applying declarative user profile (tenant_id, tenant_roles)..."
+  curl -sf -X PUT "${API}/users/profile" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" \
+    --data-binary "@${USER_PROFILE_JSON}" >/dev/null
+  echo "User profile updated."
+}
+
+# Restore demo user fields wiped by partial Admin API updates before profile fix.
+repair_demo_user() {
+  username="$1"
+  email="$2"
+  first_name="$3"
+  last_name="$4"
+  user_id="$(
+    curl -sf "${API}/users?username=${username}&exact=true" \
+      -H "Authorization: Bearer ${TOKEN}" | jq -r '.[0].id // empty'
+  )"
+  if [ -z "${user_id}" ]; then
+    echo "Skip repair: user ${username} not found"
+    return
+  fi
+  body="$(jq -n \
+    --arg email "${email}" \
+    --arg firstName "${first_name}" \
+    --arg lastName "${last_name}" \
+    '{email: $email, firstName: $firstName, lastName: $lastName, enabled: true}')"
+  curl -sf -X PUT "${API}/users/${user_id}" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "${body}" >/dev/null
+  echo "Repaired demo user ${username}"
+}
+
+repair_demo_users() {
+  echo "Repairing demo users (email / name) if needed..."
+  repair_demo_user "admin" "admin@local" "Admin" "User"
+  repair_demo_user "alice@tenant-a.local" "alice@tenant-a.local" "Alice" "TenantA"
+  repair_demo_user "bob@tenant-b.local" "bob@tenant-b.local" "Bob" "TenantB"
+}
 
 create_org() {
   name="$1"
@@ -70,6 +121,9 @@ add_member() {
     || echo "Member ${username} may already belong to org"
   echo "Added ${username} to organization ${org_id}"
 }
+
+apply_user_profile
+repair_demo_users
 
 ORG_A="$(create_org "Tenant A" "tenant-a")"
 ORG_B="$(create_org "Tenant B" "tenant-b")"
