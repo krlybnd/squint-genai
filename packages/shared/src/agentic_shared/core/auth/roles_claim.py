@@ -15,7 +15,12 @@ class RealmAccessClaims(BaseModel):
 
 
 class AccessTokenClaims(BaseModel):
-    """Validated OIDC access-token claims used by Squint auth."""
+    """OIDC access-token claims used by Squint auth.
+
+    Role source of truth:
+    1. ``tenant_roles[tenant_id]`` when present
+    2. else flat ``roles`` / ``realm_access.roles`` (legacy tokens)
+    """
 
     model_config = ConfigDict(extra="ignore")
 
@@ -40,47 +45,32 @@ class AccessTokenClaims(BaseModel):
         return None
 
     @property
-    def active_tenant_id(self) -> str | None:
-        return self.tenant_id
+    def user_id(self) -> str:
+        for value in (self.sub, self.preferred_username, self.sid, self.email):
+            if value:
+                return value
+        return ""
 
-    def tenant_roles_map(self) -> TenantRolesMap:
-        return TenantRolesMap.parse_raw_value(self.tenant_roles)
-
-    def flat_app_roles(self) -> frozenset[AppRole]:
-        names: set[str] = set(self.roles)
+    def app_roles(self) -> frozenset[AppRole]:
+        if self.tenant_id is not None:
+            tenant_map = TenantRolesMap.parse_raw_value(self.tenant_roles)
+            if self.tenant_id in tenant_map.root:
+                return tenant_map.for_tenant(self.tenant_id)
+        names = list(self.roles)
         if self.realm_access is not None:
-            names.update(self.realm_access.roles)
-        roles: set[AppRole] = set()
-        for name in names:
-            try:
-                roles.add(AppRole(name))
-            except ValueError:
-                continue
-        return frozenset(roles)
-
-    def effective_app_roles(self) -> frozenset[AppRole]:
-        tenant_id = self.active_tenant_id
-        tenant_roles = self.tenant_roles_map()
-        if tenant_id is not None and tenant_id in tenant_roles.root:
-            return tenant_roles.for_tenant(tenant_id)
-        return self.flat_app_roles()
+            names.extend(self.realm_access.roles)
+        return _roles_from_names(names)
 
 
 def parse_access_token_claims(claims: dict[str, Any]) -> AccessTokenClaims:
     return AccessTokenClaims.model_validate(claims)
 
 
-def parse_tenant_id_from_claims(claims: dict[str, Any]) -> str | None:
-    return parse_access_token_claims(claims).active_tenant_id
-
-
-def parse_tenant_roles_claim(raw: object) -> dict[str, list[str]]:
-    return TenantRolesMap.parse_raw_value(raw).to_role_strings()
-
-
-def extract_flat_keycloak_roles(claims: dict[str, Any]) -> set[str]:
-    return {role.value for role in parse_access_token_claims(claims).flat_app_roles()}
-
-
-def extract_keycloak_roles(claims: dict[str, Any]) -> set[str]:
-    return {role.value for role in parse_access_token_claims(claims).effective_app_roles()}
+def _roles_from_names(names: list[str]) -> frozenset[AppRole]:
+    roles: set[AppRole] = set()
+    for name in names:
+        try:
+            roles.add(AppRole(name))
+        except ValueError:
+            continue
+    return frozenset(roles)

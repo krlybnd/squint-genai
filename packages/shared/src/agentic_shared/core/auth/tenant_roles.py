@@ -9,7 +9,7 @@ from agentic_shared.core.auth.roles import AppRole
 
 
 class TenantRolesMap(RootModel[dict[str, list[AppRole]]]):
-    """Per-tenant role map stored in Keycloak ``tenant_roles`` user attribute / JWT claim."""
+    """Per-tenant role map from Keycloak ``tenant_roles`` attribute / JWT claim."""
 
     root: dict[str, list[AppRole]]
 
@@ -33,11 +33,10 @@ class TenantRolesMap(RootModel[dict[str, list[AppRole]]]):
 
     @classmethod
     def parse_raw_value(cls, raw: object) -> Self:
+        """Accept JWT multivalued claim or admin-attribute list / JSON string / dict."""
         if raw is None:
             return cls({})
-        payload: object = raw
-        if isinstance(raw, list) and raw:
-            payload = raw[0]
+        payload: object = raw[0] if isinstance(raw, list) and raw else raw
         if isinstance(payload, str):
             try:
                 payload = json.loads(payload)
@@ -53,14 +52,6 @@ class TenantRolesMap(RootModel[dict[str, list[AppRole]]]):
     def to_role_strings(self) -> dict[str, list[str]]:
         return {alias: [role.value for role in roles] for alias, roles in sorted(self.root.items())}
 
-    def normalize(self) -> TenantRolesMap:
-        return TenantRolesMap(
-            {
-                alias: sorted(set(roles), key=lambda item: item.value)
-                for alias, roles in self.root.items()
-            }
-        )
-
 
 def serialize_tenant_roles_json(tenant_roles: dict[str, list[str]]) -> list[str]:
     coerced: dict[str, list[AppRole]] = {}
@@ -71,6 +62,6 @@ def serialize_tenant_roles_json(tenant_roles: dict[str, list[str]]) -> list[str]
                 app_roles.append(AppRole(role))
             except ValueError:
                 continue
-        coerced[alias] = app_roles
-    payload = TenantRolesMap(coerced).normalize().to_role_strings()
+        coerced[alias] = sorted(set(app_roles), key=lambda item: item.value)
+    payload = TenantRolesMap(coerced).to_role_strings()
     return [json.dumps(payload, sort_keys=True, separators=(",", ":"))]

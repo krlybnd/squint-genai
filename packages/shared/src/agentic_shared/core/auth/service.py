@@ -1,6 +1,5 @@
 import logging
 import secrets
-from typing import Any
 
 from jwt import PyJWTError
 
@@ -62,12 +61,12 @@ class AuthService:
         except PyJWTError:
             logger.warning("jwt validation failed")
             return AuthContext(user_id=None, tenant_id=None, roles=frozenset())
-        token_claims = parse_access_token_claims(raw_claims)
-        jwt_tenant = token_claims.active_tenant_id or _header_tenant_id(x_tenant_id)
+
+        claims = parse_access_token_claims(raw_claims)
         return AuthContext(
-            user_id=_claim_user_id(raw_claims),
-            tenant_id=jwt_tenant,
-            roles=self._map_roles(token_claims),
+            user_id=claims.user_id or None,
+            tenant_id=claims.tenant_id or _header_tenant_id(x_tenant_id),
+            roles=self._map_roles(claims),
         )
 
     def _resolve_internal_service(
@@ -88,12 +87,11 @@ class AuthService:
         )
 
     def _map_roles(self, claims: AccessTokenClaims) -> frozenset[AppRole]:
-        mapped: set[AppRole] = set()
-        for keycloak_role in {role.value for role in claims.effective_app_roles()}:
-            app_role = self._role_settings.roles.get(keycloak_role)
-            if app_role is not None:
-                mapped.add(app_role)
-        return frozenset(mapped)
+        """Filter claim roles through configured Keycloak→AppRole mapping."""
+        mapping = self._role_settings.roles
+        return frozenset(
+            mapping[role.value] for role in claims.app_roles() if role.value in mapping
+        )
 
 
 def _header_tenant_id(value: str | None) -> str | None:
@@ -109,11 +107,3 @@ def _extract_bearer(authorization: str | None) -> str | None:
     if scheme.lower() != "bearer" or not token:
         return None
     return token
-
-
-def _claim_user_id(claims: dict[str, Any]) -> str:
-    for key in ("sub", "preferred_username", "sid", "email"):
-        value = claims.get(key)
-        if isinstance(value, str) and value:
-            return value
-    return ""
