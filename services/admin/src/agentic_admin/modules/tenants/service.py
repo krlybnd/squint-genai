@@ -33,7 +33,12 @@ class TenantAdminService:
 
     @staticmethod
     def _member_out(record: TenantMemberRecord) -> TenantMemberOut:
-        return TenantMemberOut(id=record.id, username=record.username, email=record.email)
+        return TenantMemberOut(
+            id=record.id,
+            username=record.username,
+            email=record.email,
+            roles=list(record.roles),
+        )
 
     async def list_tenants(self) -> list[TenantOut]:
         records = await self._tenants.list_tenants()
@@ -61,17 +66,41 @@ class TenantAdminService:
         )
         return [self._member_out(r) for r in records], has_more
 
-    async def add_member(self, alias: str, username: str) -> TenantMemberOut:
-        await self._users.assign_tenant(username, alias)
-        logger.info("added tenant member alias=%s username=%s", alias, username)
+    async def add_member(
+        self, alias: str, username: str, *, roles: list[str] | None = None
+    ) -> TenantMemberOut:
+        await self._users.assign_tenant(username, alias, roles=roles)
+        logger.info("added tenant member alias=%s username=%s roles=%s", alias, username, roles)
         members, _ = await self._tenants.list_members(alias, first=0, max_results=200)
         match = next((m for m in members if m.username == username), None)
         if not match:
             user = await self._users.get_by_username(username)
             if not user:
                 raise KeycloakNotFoundError(f"User not found: {username}")
-            return TenantMemberOut(id=user.id, username=user.username, email=user.email)
+            return TenantMemberOut(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                roles=list(user.tenant_roles.get(alias, [])),
+            )
         return self._member_out(match)
+
+    async def update_member_roles(
+        self, alias: str, username: str, roles: list[str]
+    ) -> TenantMemberOut:
+        user = await self._users.set_tenant_roles(username, alias, roles)
+        logger.info(
+            "updated tenant member roles alias=%s username=%s roles=%s",
+            alias,
+            username,
+            roles,
+        )
+        return TenantMemberOut(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            roles=list(user.tenant_roles.get(alias, [])),
+        )
 
     async def remove_member(self, alias: str, username: str) -> None:
         await self._users.remove_from_tenant_org(username, alias)

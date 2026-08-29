@@ -22,6 +22,7 @@ class UserAdminService:
             tenant_id=record.tenant_id,
             tenant_ids=list(record.tenant_ids),
             realm_roles=list(record.realm_roles),
+            tenant_roles={k: list(v) for k, v in record.tenant_roles.items()},
         )
 
     async def list_users(
@@ -61,14 +62,32 @@ class UserAdminService:
         return self._out(record)
 
     async def assign_tenant(
-        self, username: str, tenant_alias: str, *, set_active: bool | None = None
+        self,
+        username: str,
+        tenant_alias: str,
+        *,
+        set_active: bool | None = None,
+        roles: list[str] | None = None,
     ) -> UserOut:
-        record = await self._gateway.assign_tenant(username, tenant_alias, set_active=set_active)
+        record = await self._gateway.assign_tenant(
+            username, tenant_alias, set_active=set_active, roles=roles
+        )
         logger.info(
-            "assigned tenant username=%s tenant=%s set_active=%s",
+            "assigned tenant username=%s tenant=%s set_active=%s roles=%s",
             username,
             tenant_alias,
             set_active,
+            roles,
+        )
+        return self._out(record)
+
+    async def set_tenant_roles(self, username: str, tenant_alias: str, roles: list[str]) -> UserOut:
+        record = await self._gateway.set_tenant_roles(username, tenant_alias, roles)
+        logger.info(
+            "set tenant roles username=%s tenant=%s roles=%s",
+            username,
+            tenant_alias,
+            roles,
         )
         return self._out(record)
 

@@ -1,4 +1,5 @@
 import { Select, type SelectOption } from "@are/ui-core";
+import { APP_ROLES } from "../../api/admin";
 import "./AdminForm.css";
 
 export type MembershipRowAction = {
@@ -14,6 +15,9 @@ export type MembershipRow = {
   primary: string;
   secondary?: string;
   badge?: string;
+  roles?: string[];
+  onRolesChange?: (roles: string[]) => void;
+  rolesDisabled?: boolean;
   actions: MembershipRowAction[];
 };
 
@@ -35,6 +39,9 @@ export type MembershipPanelAdd = {
   buttonLabel: string;
   onAdd: () => void;
   addDisabled?: boolean;
+  roles?: string[];
+  onRolesChange?: (roles: string[]) => void;
+  rolesLabel?: string;
 };
 
 export type MembershipPanelLoadMore = {
@@ -60,6 +67,41 @@ export type MembershipPanelProps = {
   loadMore?: MembershipPanelLoadMore[];
   className?: string;
 };
+
+function toggleRole(roles: string[], role: string): string[] {
+  return roles.includes(role) ? roles.filter((r) => r !== role) : [...roles, role];
+}
+
+function RoleCheckboxes({
+  roles,
+  onChange,
+  disabled,
+  label,
+}: {
+  roles: string[];
+  onChange: (roles: string[]) => void;
+  disabled?: boolean;
+  label?: string;
+}) {
+  return (
+    <div className="admin-membership-roles">
+      {label ? <span className="admin-membership-roles-label">{label}</span> : null}
+      <div className="admin-form-roles">
+        {APP_ROLES.map((role) => (
+          <label key={role} className="ui-checkbox">
+            <input
+              type="checkbox"
+              checked={roles.includes(role)}
+              disabled={disabled}
+              onChange={() => onChange(toggleRole(roles, role))}
+            />
+            {role}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function LoadMoreButton({ entry }: { entry: MembershipPanelLoadMore }) {
   return (
@@ -130,6 +172,15 @@ export function MembershipPanel({
         </button>
       </div>
 
+      {add.onRolesChange ? (
+        <RoleCheckboxes
+          roles={add.roles ?? []}
+          onChange={add.onRolesChange}
+          disabled={add.disabled}
+          label={add.rolesLabel}
+        />
+      ) : null}
+
       {loadMoreBefore.map((entry) => (
         <LoadMoreButton key={entry.key} entry={entry} />
       ))}
@@ -143,7 +194,9 @@ export function MembershipPanel({
           {items.map((item) => (
             <li
               key={item.id}
-              className={`admin-membership-row${layout === "dual" ? " dual" : " compact"}`}
+              className={`admin-membership-row${layout === "dual" ? " dual" : " compact"}${
+                item.onRolesChange ? " with-roles" : ""
+              }`}
             >
               {layout === "dual" ? (
                 <>
@@ -175,6 +228,15 @@ export function MembershipPanel({
                 <span className="admin-membership-meta">
                   <span className="ui-badge">{item.badge}</span>
                 </span>
+              ) : null}
+              {item.onRolesChange ? (
+                <div className="admin-membership-row-roles">
+                  <RoleCheckboxes
+                    roles={item.roles ?? []}
+                    onChange={item.onRolesChange}
+                    disabled={item.rolesDisabled}
+                  />
+                </div>
               ) : null}
             </li>
           ))}

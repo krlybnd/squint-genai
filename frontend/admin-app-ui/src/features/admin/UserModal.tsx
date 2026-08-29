@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal, Select } from "@are/ui-core";
 import {
+  APP_ROLES,
   assignUserTenant,
   createUser,
   updateUser,
@@ -11,8 +12,6 @@ import {
 import { AdminFormField, AdminFormGrid, AdminFormSection } from "./AdminFormLayout";
 import { UserTenantMembershipSection } from "./UserTenantMembershipSection";
 import "./AdminForm.css";
-
-const REALM_ROLES = ["read", "write", "admin"] as const;
 
 export type UserModalMode = { kind: "create" } | { kind: "edit"; user: User };
 
@@ -33,7 +32,8 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
   const [enabled, setEnabled] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [tenantIds, setTenantIds] = useState<string[]>([]);
-  const [roles, setRoles] = useState<string[]>(["read"]);
+  const [tenantRoles, setTenantRoles] = useState<Record<string, string[]>>({});
+  const [createRoles, setCreateRoles] = useState<string[]>(["read"]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [createTenantId, setCreateTenantId] = useState("");
@@ -48,7 +48,7 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
       setEnabled(u.enabled);
       setTenantId(u.tenant_id);
       setTenantIds(u.tenant_ids ?? []);
-      setRoles(u.realm_roles.length ? [...u.realm_roles] : []);
+      setTenantRoles(u.tenant_roles ?? {});
     } else {
       setUsername("");
       setEmail("");
@@ -56,8 +56,9 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
       setEnabled(true);
       setTenantId(null);
       setTenantIds([]);
+      setTenantRoles({});
       setCreateTenantId("");
-      setRoles(["read"]);
+      setCreateRoles(["read"]);
     }
     setError(null);
   }, [open, mode]);
@@ -83,10 +84,13 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
   function syncFromUser(user: User) {
     setTenantId(user.tenant_id);
     setTenantIds(user.tenant_ids ?? []);
+    setTenantRoles(user.tenant_roles ?? {});
   }
 
-  function toggleRole(role: string) {
-    setRoles((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]));
+  function toggleCreateRole(role: string) {
+    setCreateRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
+    );
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -99,7 +103,6 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
         savedUser = await updateUser(mode.user.username, {
           email: email.trim() || null,
           enabled,
-          realm_roles: roles,
           password: password.trim() || undefined,
         });
       } else {
@@ -107,11 +110,12 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
           username: username.trim(),
           email: email.trim() || undefined,
           password,
-          realm_roles: roles,
+          realm_roles: createTenantId.trim() ? [] : createRoles,
         });
         if (createTenantId.trim()) {
           savedUser = await assignUserTenant(username.trim(), createTenantId.trim(), {
             setActive: true,
+            roles: createRoles,
           });
         }
       }
@@ -198,6 +202,7 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
               username={mode.user.username}
               tenantId={tenantId}
               tenantIds={tenantIds}
+              tenantRoles={tenantRoles}
               tenants={tenants}
               disabled={saving}
               onUpdated={async (user) => {
@@ -207,27 +212,33 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
               onError={setError}
             />
           ) : (
-            <AdminFormField id="user-create-tenant" label={t("admin.assignTenant")} span={2}>
-              <Select
-                value={createTenantId}
-                options={createTenantOptions}
-                onChange={setCreateTenantId}
-                ariaLabel={t("admin.tenantLabel")}
-                placeholder={t("admin.noTenant")}
-              />
-            </AdminFormField>
+            <>
+              <AdminFormField id="user-create-tenant" label={t("admin.assignTenant")} span={2}>
+                <Select
+                  value={createTenantId}
+                  options={createTenantOptions}
+                  onChange={setCreateTenantId}
+                  ariaLabel={t("admin.tenantLabel")}
+                  placeholder={t("admin.noTenant")}
+                />
+              </AdminFormField>
+              <div className="admin-membership-roles">
+                <span className="admin-membership-roles-label">{t("admin.tenantRolesLabel")}</span>
+                <div className="admin-form-roles">
+                  {APP_ROLES.map((role) => (
+                    <label key={role} className="ui-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={createRoles.includes(role)}
+                        onChange={() => toggleCreateRole(role)}
+                      />
+                      {role}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
-        </AdminFormSection>
-
-        <AdminFormSection title={t("admin.sectionRoles")} description={t("admin.sectionRolesDesc")}>
-          <div className="admin-form-roles">
-            {REALM_ROLES.map((role) => (
-              <label key={role} className="ui-checkbox">
-                <input type="checkbox" checked={roles.includes(role)} onChange={() => toggleRole(role)} />
-                {role}
-              </label>
-            ))}
-          </div>
         </AdminFormSection>
       </form>
     </Modal>

@@ -4,6 +4,7 @@ import {
   assignUserTenant,
   removeUserFromTenant,
   setActiveUserTenant,
+  setUserTenantRoles,
   type Tenant,
   type User,
 } from "../../api/admin";
@@ -13,6 +14,7 @@ type UserTenantMembershipSectionProps = {
   username: string;
   tenantId: string | null;
   tenantIds: string[];
+  tenantRoles: Record<string, string[]>;
   tenants: Tenant[];
   disabled?: boolean;
   onUpdated: (user: User) => void | Promise<void>;
@@ -23,6 +25,7 @@ export function UserTenantMembershipSection({
   username,
   tenantId,
   tenantIds,
+  tenantRoles,
   tenants,
   disabled = false,
   onUpdated,
@@ -30,6 +33,7 @@ export function UserTenantMembershipSection({
 }: UserTenantMembershipSectionProps) {
   const { t } = useTranslation();
   const [pickTenant, setPickTenant] = useState("");
+  const [addRoles, setAddRoles] = useState<string[]>(["read"]);
   const [busy, setBusy] = useState(false);
 
   const tenantOptions = useMemo(
@@ -57,6 +61,7 @@ export function UserTenantMembershipSection({
     try {
       const updated = await action();
       setPickTenant("");
+      setAddRoles(["read"]);
       await onUpdated(updated);
     } catch (err) {
       onError(err instanceof Error ? err.message : String(err));
@@ -71,6 +76,7 @@ export function UserTenantMembershipSection({
     void runTenantAction(() =>
       assignUserTenant(username, alias, {
         setActive: tenantIds.length === 0,
+        roles: addRoles,
       }),
     );
   }
@@ -84,11 +90,18 @@ export function UserTenantMembershipSection({
     void runTenantAction(() => setActiveUserTenant(username, alias));
   }
 
+  function handleRolesChange(alias: string, roles: string[]) {
+    void runTenantAction(() => setUserTenantRoles(username, alias, roles));
+  }
+
   const items: MembershipRow[] = tenantIds.map((alias) => ({
     id: alias,
     primary: alias,
     secondary: tenantNameByAlias.get(alias),
     badge: tenantId === alias ? t("admin.activeTenant") : undefined,
+    roles: tenantRoles[alias] ?? [],
+    rolesDisabled: disabled || busy,
+    onRolesChange: (roles) => handleRolesChange(alias, roles),
     actions: [
       ...(tenantId !== alias
         ? [
@@ -126,6 +139,9 @@ export function UserTenantMembershipSection({
         buttonLabel: t("admin.addMember"),
         onAdd: handleAssignTenant,
         addDisabled: disabled || busy || !pickTenant.trim(),
+        roles: addRoles,
+        onRolesChange: setAddRoles,
+        rolesLabel: t("admin.tenantRolesLabel"),
       }}
     />
   );

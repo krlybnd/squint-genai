@@ -18,6 +18,7 @@ from agentic_admin.modules.tenants.schemas import (
     TenantMemberListResponse,
     TenantMemberOut,
     TenantOut,
+    UpdateTenantMemberRequest,
     UpdateTenantRequest,
 )
 from agentic_admin.modules.tenants.service import TenantAdminService
@@ -119,7 +120,26 @@ async def add_tenant_member(
 ) -> TenantMemberOut:
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
-        return await service.add_member(alias, body.username)
+        return await service.add_member(alias, body.username, roles=body.roles)
+    except KeycloakNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except KeycloakAdminError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.patch("/{alias}/members/{username}", response_model=TenantMemberOut)
+@inject
+async def update_tenant_member(
+    alias: str,
+    username: str,
+    body: UpdateTenantMemberRequest,
+    auth: FromDishka[AuthContext],
+    auth_settings: FromDishka[AuthSettings],
+    service: FromDishka[TenantAdminService],
+) -> TenantMemberOut:
+    require_roles(auth, auth_settings, AppRole.ADMIN)
+    try:
+        return await service.update_member_roles(alias, username, body.roles)
     except KeycloakNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except KeycloakAdminError as exc:

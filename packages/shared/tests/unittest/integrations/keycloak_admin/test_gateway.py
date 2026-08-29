@@ -19,6 +19,11 @@ def _install_keycloak_stubs() -> None:
         def __setitem__(self, key: str, value: object) -> None:
             self.additional_properties[key] = value
 
+    class _RoleRepresentation:
+        def __init__(self, **kwargs: object) -> None:
+            self.id = kwargs.get("id", unset)
+            self.name = kwargs.get("name", unset)
+
     class _UnsetType:
         pass
 
@@ -28,9 +33,11 @@ def _install_keycloak_stubs() -> None:
         "api",
         "api.organizations",
         "api.role_mapper",
+        "api.roles",
         "api.users",
         "models.credential_representation",
         "models.member_representation",
+        "models.member_representation_attributes",
         "models.organization_domain_representation",
         "models.organization_representation",
         "models.role_representation",
@@ -45,6 +52,8 @@ def _install_keycloak_stubs() -> None:
             module.UNSET = unset
         if name == "models.user_representation_attributes":
             module.UserRepresentationAttributes = _UserRepresentationAttributes
+        if name == "models.role_representation":
+            module.RoleRepresentation = _RoleRepresentation
         sys.modules[full_name] = module
 
 
@@ -324,6 +333,84 @@ class TestUserGateway(unittest.IsolatedAsyncioTestCase):
         assert record is not None
         self.assertEqual(record.tenant_id, "acme")
         self.assertEqual(record.realm_roles, ["read", "write"])
+        self.assertEqual(record.tenant_roles, {})
+
+    def test_to_record_parses_tenant_roles_attribute(self) -> None:
+        # Arrange
+        import json
+
+        from keycloak_admin_client.models.user_representation_attributes import (
+            UserRepresentationAttributes,
+        )
+
+        attrs = UserRepresentationAttributes()
+        attrs.additional_properties = {
+            "tenant_id": ["acme"],
+            "tenant_roles": [json.dumps({"acme": ["read", "admin"], "other": ["write"]})],
+        }
+        user = MagicMock()
+        user.id = "u1"
+        user.username = "alice"
+        user.email = None
+        user.enabled = True
+        user.attributes = attrs
+        user.realm_roles = []
+
+        # Act
+        record = self.gateway._to_record(user)
+
+        # Assert
+        assert record is not None
+        self.assertEqual(record.tenant_roles["acme"], ["admin", "read"])
+        self.assertEqual(record.realm_roles, ["admin", "read"])
+
+    async def test_sync_realm_roles_resolves_role_ids(self) -> None:
+        # Arrange
+        from keycloak_admin_client.models.role_representation import RoleRepresentation
+        from keycloak_admin_client.types import UNSET
+
+        from agentic_shared.integrations.keycloak_admin import gateway as gw
+
+        current = RoleRepresentation(id="id-read", name="read")
+        role_read = RoleRepresentation(id="id-read", name="read")
+        role_write = RoleRepresentation(id="id-write", name="write")
+        # Ensure UNSET default works for unused fields
+        self.assertIsNot(current.id, UNSET)
+
+        # Act
+        with (
+            patch.object(
+                gw.get_admin_realms_realm_users_user_id_role_mappings_realm,
+                "asyncio_detailed",
+                new=AsyncMock(return_value=_http(parsed=[current])),
+            ),
+            patch.object(
+                gw.get_admin_realms_realm_roles_role_name,
+                "asyncio_detailed",
+                new=AsyncMock(
+                    side_effect=[
+                        _http(parsed=role_read),
+                        _http(parsed=role_write),
+                    ]
+                ),
+            ) as get_role,
+            patch.object(
+                gw.delete_admin_realms_realm_users_user_id_role_mappings_realm,
+                "asyncio_detailed",
+                new=AsyncMock(return_value=_http(status=HTTPStatus.NO_CONTENT)),
+            ) as delete_roles,
+            patch.object(
+                gw.post_admin_realms_realm_users_user_id_role_mappings_realm,
+                "asyncio_detailed",
+                new=AsyncMock(return_value=_http(status=HTTPStatus.NO_CONTENT)),
+            ) as add_roles,
+        ):
+            await self.gateway._sync_realm_roles("u1", ["write"])
+
+        # Assert
+        delete_roles.assert_awaited_once()
+        add_roles.assert_awaited_once()
+        self.assertEqual(get_role.await_count, 2)
 
     async def test_get_by_username_returns_none_when_empty(self) -> None:
         # Arrange
@@ -351,6 +438,7 @@ class TestUserGateway(unittest.IsolatedAsyncioTestCase):
                 tenant_id=None,
                 tenant_ids=[],
                 realm_roles=[],
+                tenant_roles={},
             ),
         )
 

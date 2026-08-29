@@ -25,10 +25,18 @@ class AssignTenantRequest(BaseModel):
         default=None,
         description="Set JWT active tenant_id; default true only when user has no active tenant",
     )
+    roles: list[str] | None = Field(
+        default=None,
+        description="App roles for this tenant membership (read/write/admin)",
+    )
 
 
 class SetActiveTenantRequest(BaseModel):
     alias: str = Field(min_length=1, max_length=255)
+
+
+class SetTenantRolesRequest(BaseModel):
+    roles: list[str] = Field(default_factory=list)
 
 
 class UserOut(BaseModel):
@@ -39,6 +47,7 @@ class UserOut(BaseModel):
     tenant_id: str | None
     tenant_ids: list[str]
     realm_roles: list[str]
+    tenant_roles: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class UserListResponse(BaseModel):

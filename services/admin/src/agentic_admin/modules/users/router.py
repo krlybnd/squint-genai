@@ -15,6 +15,7 @@ from agentic_admin.modules.users.schemas import (
     AssignTenantRequest,
     CreateUserRequest,
     SetActiveTenantRequest,
+    SetTenantRolesRequest,
     UpdateUserRequest,
     UserListResponse,
     UserOut,
@@ -121,7 +122,28 @@ async def assign_user_tenant(
 ) -> UserOut:
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
-        return await service.assign_tenant(username, body.alias, set_active=body.set_active)
+        return await service.assign_tenant(
+            username, body.alias, set_active=body.set_active, roles=body.roles
+        )
+    except KeycloakNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except KeycloakAdminError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.put("/{username}/tenants/{alias}/roles", response_model=UserOut)
+@inject
+async def set_user_tenant_roles(
+    username: str,
+    alias: str,
+    body: SetTenantRolesRequest,
+    auth: FromDishka[AuthContext],
+    auth_settings: FromDishka[AuthSettings],
+    service: FromDishka[UserAdminService],
+) -> UserOut:
+    require_roles(auth, auth_settings, AppRole.ADMIN)
+    try:
+        return await service.set_tenant_roles(username, alias, body.roles)
     except KeycloakNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except KeycloakAdminError as exc:

@@ -145,6 +145,27 @@
   font-size: 0.88rem;
 }
 
+.admin-membership-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-membership-roles-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.admin-membership-row.with-roles {
+  grid-template-rows: auto auto;
+}
+
+.admin-membership-row-roles {
+  grid-column: 1 / -1;
+}
+
 .admin-form-roles {
   display: flex;
   flex-wrap: wrap;

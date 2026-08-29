@@ -172,7 +172,10 @@ export function AdminPage() {
                         .map((id) => (id === item.tenant_id ? `${id} (${t("admin.activeTenant")})` : id))
                         .join(", ")
                     : "—"}{" "}
-                  · {t("admin.rolesLabel")}: {item.realm_roles.join(", ") || "—"}
+                  · {t("admin.rolesLabel")}: {(item.tenant_id
+                    ? item.tenant_roles?.[item.tenant_id]
+                    : item.realm_roles
+                  )?.join(", ") || "—"}
                 </>
               )}
             />

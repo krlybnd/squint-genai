@@ -15,13 +15,18 @@ export type User = {
   tenant_id: string | null;
   tenant_ids: string[];
   realm_roles: string[];
+  tenant_roles: Record<string, string[]>;
 };
 
 export type TenantMember = {
   id: string;
   username: string;
   email: string | null;
+  roles: string[];
 };
+
+export const APP_ROLES = ["read", "write", "admin"] as const;
+export type AppRoleName = (typeof APP_ROLES)[number];
 
 export type AdminPage<T> = {
   items: T[];
@@ -105,15 +110,39 @@ export async function fetchTenantMembers(alias: string): Promise<TenantMember[]>
   return all;
 }
 
-export async function addTenantMember(alias: string, username: string): Promise<TenantMember> {
+export async function addTenantMember(
+  alias: string,
+  username: string,
+  roles: string[] = [],
+): Promise<TenantMember> {
   const res = await fetch(`${adminBase()}/v1/tenants/${encodeURIComponent(alias)}/members`, {
     method: "POST",
     headers: await buildHeadersAsync(),
-    body: JSON.stringify({ username }),
+    body: JSON.stringify({ username, roles }),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`Failed to add member (${res.status})${detail ? `: ${detail}` : ""}`);
+  }
+  return res.json() as Promise<TenantMember>;
+}
+
+export async function updateTenantMemberRoles(
+  alias: string,
+  username: string,
+  roles: string[],
+): Promise<TenantMember> {
+  const res = await fetch(
+    `${adminBase()}/v1/tenants/${encodeURIComponent(alias)}/members/${encodeURIComponent(username)}`,
+    {
+      method: "PATCH",
+      headers: await buildHeadersAsync(),
+      body: JSON.stringify({ roles }),
+    },
+  );
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Failed to update member roles (${res.status})${detail ? `: ${detail}` : ""}`);
   }
   return res.json() as Promise<TenantMember>;
 }
@@ -206,7 +235,7 @@ export async function updateUser(
 export async function assignUserTenant(
   username: string,
   alias: string,
-  options?: { setActive?: boolean },
+  options?: { setActive?: boolean; roles?: string[] },
 ): Promise<User> {
   const res = await fetch(`${adminBase()}/v1/users/${encodeURIComponent(username)}/tenant`, {
     method: "POST",
@@ -214,9 +243,33 @@ export async function assignUserTenant(
     body: JSON.stringify({
       alias,
       set_active: options?.setActive,
+      roles: options?.roles,
     }),
   });
-  if (!res.ok) throw new Error(`Failed to assign tenant (${res.status})`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Failed to assign tenant (${res.status})${detail ? `: ${detail}` : ""}`);
+  }
+  return res.json() as Promise<User>;
+}
+
+export async function setUserTenantRoles(
+  username: string,
+  alias: string,
+  roles: string[],
+): Promise<User> {
+  const res = await fetch(
+    `${adminBase()}/v1/users/${encodeURIComponent(username)}/tenants/${encodeURIComponent(alias)}/roles`,
+    {
+      method: "PUT",
+      headers: await buildHeadersAsync(),
+      body: JSON.stringify({ roles }),
+    },
+  );
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Failed to set tenant roles (${res.status})${detail ? `: ${detail}` : ""}`);
+  }
   return res.json() as Promise<User>;
 }
 
