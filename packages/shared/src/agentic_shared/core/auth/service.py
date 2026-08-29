@@ -8,6 +8,7 @@ from agentic_shared.core.auth.context import AuthContext
 from agentic_shared.core.auth.enums import AuthMode
 from agentic_shared.core.auth.jwt import JwtValidator
 from agentic_shared.core.auth.roles import AppRole
+from agentic_shared.core.auth.roles_claim import AccessTokenClaims, parse_access_token_claims
 from agentic_shared.core.auth.settings import AuthSettings, RoleSettings
 from agentic_shared.core.auth.tenant import DEFAULT_TENANT_ID
 
@@ -57,15 +58,16 @@ class AuthService:
             return AuthContext(user_id=None, tenant_id=None, roles=frozenset())
 
         try:
-            claims = self._jwt_validator.decode(token)
+            raw_claims = self._jwt_validator.decode(token)
         except PyJWTError:
             logger.warning("jwt validation failed")
             return AuthContext(user_id=None, tenant_id=None, roles=frozenset())
-        jwt_tenant = _claim_tenant_id(claims) or _header_tenant_id(x_tenant_id)
+        token_claims = parse_access_token_claims(raw_claims)
+        jwt_tenant = token_claims.active_tenant_id or _header_tenant_id(x_tenant_id)
         return AuthContext(
-            user_id=_claim_user_id(claims),
+            user_id=_claim_user_id(raw_claims),
             tenant_id=jwt_tenant,
-            roles=self._map_roles(claims),
+            roles=self._map_roles(token_claims),
         )
 
     def _resolve_internal_service(
@@ -85,10 +87,9 @@ class AuthService:
             roles=frozenset({AppRole.READ, AppRole.WRITE}),
         )
 
-    def _map_roles(self, claims: dict[str, Any]) -> frozenset[AppRole]:
-        keycloak_roles = _extract_keycloak_roles(claims)
+    def _map_roles(self, claims: AccessTokenClaims) -> frozenset[AppRole]:
         mapped: set[AppRole] = set()
-        for keycloak_role in keycloak_roles:
+        for keycloak_role in {role.value for role in claims.effective_app_roles()}:
             app_role = self._role_settings.roles.get(keycloak_role)
             if app_role is not None:
                 mapped.add(app_role)
@@ -116,25 +117,3 @@ def _claim_user_id(claims: dict[str, Any]) -> str:
         if isinstance(value, str) and value:
             return value
     return ""
-
-
-def _claim_tenant_id(claims: dict[str, Any]) -> str | None:
-    tenant_id = claims.get("tenant_id")
-    if isinstance(tenant_id, str) and tenant_id:
-        return tenant_id
-    if isinstance(tenant_id, list) and tenant_id:
-        return str(tenant_id[0])
-    return None
-
-
-def _extract_keycloak_roles(claims: dict[str, Any]) -> set[str]:
-    roles: set[str] = set()
-    top_level = claims.get("roles")
-    if isinstance(top_level, list):
-        roles.update(str(role) for role in top_level)
-    realm_access = claims.get("realm_access")
-    if isinstance(realm_access, dict):
-        realm_roles = realm_access.get("roles")
-        if isinstance(realm_roles, list):
-            roles.update(str(role) for role in realm_roles)
-    return roles

@@ -1,6 +1,7 @@
 from agentic_shared.core.auth.context import AuthContext
 from agentic_shared.core.auth.roles import AppRole
-from agentic_shared.core.auth.service import AuthService, _extract_keycloak_roles
+from agentic_shared.core.auth.roles_claim import extract_keycloak_roles
+from agentic_shared.core.auth.service import AuthService
 from agentic_shared.core.auth.settings import AuthSettings, RoleSettings
 
 
@@ -49,10 +50,25 @@ def test_admin_implies_all_roles() -> None:
 
 def test_extract_keycloak_roles_from_top_level_claim() -> None:
     # Arrange / Act
-    roles = _extract_keycloak_roles({"roles": ["admin", "read"]})
+    roles = extract_keycloak_roles({"roles": ["admin", "read"]})
 
     # Assert
     assert roles == {"admin", "read"}
+
+
+def test_extract_keycloak_roles_prefers_active_tenant_roles() -> None:
+    # Arrange
+    claims = {
+        "tenant_id": "tenant-b",
+        "roles": ["read", "write"],
+        "tenant_roles": ['{"tenant-b":["read"],"e2e-1":["read","write"]}'],
+    }
+
+    # Act
+    roles = extract_keycloak_roles(claims)
+
+    # Assert
+    assert roles == {"read"}
 
 
 class _FakeJwt:

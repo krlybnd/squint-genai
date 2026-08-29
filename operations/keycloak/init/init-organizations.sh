@@ -81,6 +81,108 @@ repair_demo_users() {
   repair_demo_user "bob@tenant-b.local" "bob@tenant-b.local" "Bob" "TenantB"
 }
 
+ensure_tenant_roles_mapper() {
+  scope_id="$(
+    curl -sf "${API}/client-scopes" \
+      -H "Authorization: Bearer ${TOKEN}" | jq -r '.[] | select(.name == "tenant") | .id // empty'
+  )"
+  if [ -z "${scope_id}" ]; then
+    echo "Tenant client scope not found; skip tenant_roles mapper"
+    return
+  fi
+  existing="$(
+    curl -sf "${API}/client-scopes/${scope_id}/protocol-mappers/models" \
+      -H "Authorization: Bearer ${TOKEN}" | jq -r '.[] | select(.name == "tenant-roles-mapper") | .id // empty'
+  )"
+  if [ -n "${existing}" ]; then
+    echo "tenant-roles-mapper already present"
+    return
+  fi
+  echo "Adding tenant-roles-mapper to tenant client scope..."
+  curl -sf -X POST "${API}/client-scopes/${scope_id}/protocol-mappers/models" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "name": "tenant-roles-mapper",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-attribute-mapper",
+      "config": {
+        "user.attribute": "tenant_roles",
+        "claim.name": "tenant_roles",
+        "jsonType.label": "String",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "userinfo.token.claim": "true",
+        "multivalued": "true",
+        "aggregate.attrs": "false"
+      }
+    }' >/dev/null
+  echo "tenant-roles-mapper installed."
+}
+
+sync_user_realm_roles_from_active_tenant() {
+  username="$1"
+  user_json="$(
+    curl -sf "${API}/users?username=${username}&exact=true" \
+      -H "Authorization: Bearer ${TOKEN}"
+  )"
+  user_id="$(echo "${user_json}" | jq -r '.[0].id // empty')"
+  if [ -z "${user_id}" ]; then
+    return
+  fi
+  tenant_id="$(echo "${user_json}" | jq -r '.[0].attributes.tenant_id[0] // empty')"
+  tenant_roles_raw="$(echo "${user_json}" | jq -r '.[0].attributes.tenant_roles[0] // empty')"
+  if [ -z "${tenant_roles_raw}" ] || [ -z "${tenant_id}" ]; then
+    return
+  fi
+  desired_json="$(echo "${tenant_roles_raw}" | jq -c --arg t "${tenant_id}" '.[$t] // []')"
+  current_json="$(
+    curl -sf "${API}/users/${user_id}/role-mappings/realm" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      | jq -c '[.[].name | select(. == "admin" or . == "read" or . == "write")] | sort'
+  )"
+  if [ "${desired_json}" = "${current_json}" ]; then
+    echo "Realm roles already match active tenant for ${username}"
+    return
+  fi
+  echo "Syncing realm roles for ${username} (active tenant ${tenant_id})..."
+  to_remove="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '$current - $desired | .[]')"
+  to_add="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '$desired - $current | .[]')"
+  for role in ${to_remove}; do
+    role_json="$(
+      curl -sf "${API}/roles/${role}" -H "Authorization: Bearer ${TOKEN}"
+    )"
+    curl -sf -X DELETE "${API}/users/${user_id}/role-mappings/realm" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d "[${role_json}]" >/dev/null
+  done
+  for role in ${to_add}; do
+    role_json="$(
+      curl -sf "${API}/roles/${role}" -H "Authorization: Bearer ${TOKEN}"
+    )"
+    curl -sf -X POST "${API}/users/${user_id}/role-mappings/realm" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d "[${role_json}]" >/dev/null
+  done
+  echo "Synced realm roles for ${username}."
+}
+
+sync_active_tenant_realm_roles() {
+  echo "Syncing realm roles from tenant_roles for users with multitenancy attributes..."
+  usernames="$(
+    curl -sf "${API}/users?max=200" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      | jq -r '.[] | select(.attributes.tenant_roles != null) | .username'
+  )"
+  for username in ${usernames}; do
+    sync_user_realm_roles_from_active_tenant "${username}"
+  done
+}
+
 create_org() {
   name="$1"
   alias="$2"
@@ -124,11 +226,93 @@ add_member() {
 
 apply_user_profile
 repair_demo_users
+ensure_tenant_roles_mapper
 
 ORG_A="$(create_org "Tenant A" "tenant-a")"
 ORG_B="$(create_org "Tenant B" "tenant-b")"
 add_member "${ORG_A}" "admin"
 add_member "${ORG_A}" "alice@tenant-a.local"
 add_member "${ORG_B}" "bob@tenant-b.local"
+
+sync_active_tenant_realm_roles
+
+repair_demo_user_realm_roles() {
+  username="$1"
+  desired_json="$2"
+  user_json="$(
+    curl -sf "${API}/users?username=${username}&exact=true" \
+      -H "Authorization: Bearer ${TOKEN}"
+  )"
+  user_id="$(echo "${user_json}" | jq -r '.[0].id // empty')"
+  if [ -z "${user_id}" ]; then
+    return
+  fi
+  current_json="$(
+    curl -sf "${API}/users/${user_id}/role-mappings/realm" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      | jq -c '[.[].name | select(. == "admin" or . == "read" or . == "write")] | sort'
+  )"
+  if [ "${desired_json}" = "${current_json}" ]; then
+    return
+  fi
+  echo "Repairing demo realm roles for ${username}..."
+  to_remove="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '$current - $desired | .[]')"
+  to_add="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '$desired - $current | .[]')"
+  for role in ${to_remove}; do
+    role_json="$(curl -sf "${API}/roles/${role}" -H "Authorization: Bearer ${TOKEN}")"
+    curl -sf -X DELETE "${API}/users/${user_id}/role-mappings/realm" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d "[${role_json}]" >/dev/null
+  done
+  for role in ${to_add}; do
+    role_json="$(curl -sf "${API}/roles/${role}" -H "Authorization: Bearer ${TOKEN}")"
+    curl -sf -X POST "${API}/users/${user_id}/role-mappings/realm" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d "[${role_json}]" >/dev/null
+  done
+}
+
+repair_demo_user_tenant_persona() {
+  username="$1"
+  active_tenant="$2"
+  tenant_roles_json="$3"
+  realm_roles_json="$4"
+  user_json="$(
+    curl -sf "${API}/users?username=${username}&exact=true" \
+      -H "Authorization: Bearer ${TOKEN}"
+  )"
+  user_id="$(echo "${user_json}" | jq -r '.[0].id // empty')"
+  if [ -z "${user_id}" ]; then
+    return
+  fi
+  body="$(echo "${user_json}" | jq -c --arg tenant "${active_tenant}" --arg roles "${tenant_roles_json}" \
+    '.[0] | {
+      email,
+      firstName,
+      lastName,
+      enabled,
+      attributes: ((.attributes // {}) + {
+        tenant_id: [$tenant],
+        tenant_roles: [$roles]
+      })
+    }')"
+  curl -sf -X PUT "${API}/users/${user_id}" \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "${body}" >/dev/null
+  echo "Reset tenant persona for ${username} (active=${active_tenant})"
+  repair_demo_user_realm_roles "${username}" "${realm_roles_json}"
+}
+
+echo "Ensuring demo persona realm roles..."
+repair_demo_user_tenant_persona \
+  "bob@tenant-b.local" \
+  "tenant-b" \
+  '{"tenant-b":["read"]}' \
+  '["read"]'
 
 echo "Multitenancy bootstrap complete."

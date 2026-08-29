@@ -42,6 +42,7 @@ from keycloak_admin_client.models.user_representation import UserRepresentation
 from keycloak_admin_client.models.user_representation_attributes import UserRepresentationAttributes
 from keycloak_admin_client.types import UNSET
 
+from agentic_shared.core.auth.tenant_roles import TenantRolesMap, serialize_tenant_roles_json
 from agentic_shared.integrations.keycloak_admin.client import KeycloakAdminClientFactory
 from agentic_shared.integrations.keycloak_admin.errors import (
     KeycloakAdminError,
@@ -142,28 +143,11 @@ def _parse_tenant_roles(
     values = _attr_map(attributes).get(_TENANT_ROLES_ATTR)
     if not values:
         return {}
-    raw = values[0]
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(data, dict):
-        return {}
-    parsed: dict[str, list[str]] = {}
-    for alias, roles in data.items():
-        if not isinstance(alias, str) or not isinstance(roles, list):
-            continue
-        normalized = _normalize_roles([str(role) for role in roles])
-        if normalized:
-            parsed[alias] = normalized
-        else:
-            parsed[alias] = []
-    return parsed
+    return TenantRolesMap.parse_raw_value(values).to_role_strings()
 
 
 def _serialize_tenant_roles(tenant_roles: dict[str, list[str]]) -> list[str]:
-    cleaned = {alias: _normalize_roles(roles) for alias, roles in sorted(tenant_roles.items())}
-    return [json.dumps(cleaned, sort_keys=True, separators=(",", ":"))]
+    return serialize_tenant_roles_json(tenant_roles)
 
 
 def _roles_for_tenant(tenant_roles: dict[str, list[str]], alias: str) -> list[str]:
@@ -616,6 +600,18 @@ class UserGateway:
                 )
             _check_response(response.status_code, response.content)
 
+    async def _sync_active_tenant_realm_roles(
+        self,
+        user_id: str,
+        *,
+        tenant_id: str | None,
+        tenant_roles: dict[str, list[str]],
+    ) -> None:
+        if tenant_id:
+            await self._sync_realm_roles(user_id, tenant_roles.get(tenant_id, []))
+        else:
+            await self._sync_realm_roles(user_id, [])
+
     async def _get_user_representation(self, user_id: str) -> UserRepresentation:
         client = await self._client()
         async with client:
@@ -721,8 +717,11 @@ class UserGateway:
         active = tenant_alias if should_set_active else user.tenant_id
         await self._put_user_attributes(user, tenant_id=active, tenant_roles=tenant_roles)
 
-        if should_set_active:
-            await self._sync_realm_roles(user.id, tenant_roles.get(tenant_alias, []))
+        await self._sync_active_tenant_realm_roles(
+            user.id,
+            tenant_id=active,
+            tenant_roles=tenant_roles,
+        )
 
         refreshed = await self.get_by_username(username)
         if not refreshed:
@@ -745,8 +744,11 @@ class UserGateway:
             tenant_id=user.tenant_id,
             tenant_roles=tenant_roles,
         )
-        if user.tenant_id == tenant_alias:
-            await self._sync_realm_roles(user.id, tenant_roles[tenant_alias])
+        await self._sync_active_tenant_realm_roles(
+            user.id,
+            tenant_id=user.tenant_id,
+            tenant_roles=tenant_roles,
+        )
 
         refreshed = await self.get_by_username(username)
         if not refreshed:
@@ -764,7 +766,11 @@ class UserGateway:
             tenant_id=tenant_alias,
             tenant_roles=dict(user.tenant_roles),
         )
-        await self._sync_realm_roles(user.id, user.tenant_roles.get(tenant_alias, []))
+        await self._sync_active_tenant_realm_roles(
+            user.id,
+            tenant_id=tenant_alias,
+            tenant_roles=user.tenant_roles,
+        )
         refreshed = await self.get_by_username(username)
         if not refreshed:
             raise KeycloakAdminError("Active tenant update failed")
@@ -811,9 +817,10 @@ class UserGateway:
         else:
             new_active = user.tenant_id
         await self._put_user_attributes(user, tenant_id=new_active, tenant_roles=tenant_roles)
-        await self._sync_realm_roles(
+        await self._sync_active_tenant_realm_roles(
             user.id,
-            tenant_roles.get(new_active, []) if new_active else [],
+            tenant_id=new_active,
+            tenant_roles=tenant_roles,
         )
 
         refreshed = await self.get_by_username(username)

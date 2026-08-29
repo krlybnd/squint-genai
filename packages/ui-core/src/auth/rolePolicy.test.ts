@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseKeycloakRoles, rolePolicyHasAny } from "./rolePolicy";
+import {
+  parseKeycloakRoles,
+  parseTenantIdFromClaims,
+  parseTenantRolesClaim,
+  resolveKeycloakRoles,
+  rolePolicyHasAny,
+} from "./rolePolicy";
 
 describe("rolePolicyHasAny", () => {
   it("grants admin every requested role", () => {
@@ -21,36 +27,59 @@ describe("rolePolicyHasAny", () => {
   });
 });
 
-describe("parseKeycloakRoles", () => {
-  it("returns empty for missing token", () => {
-    // Arrange / Act
-    const roles = parseKeycloakRoles(undefined);
+describe("parseTenantRolesClaim", () => {
+  it("parses JSON map from multivalued attribute", () => {
+    expect(parseTenantRolesClaim(['{"tenant-b":["read"],"e2e":["read","write"]}'])).toEqual({
+      "tenant-b": ["read"],
+      e2e: ["read", "write"],
+    });
+  });
+});
 
-    // Assert
-    expect(roles).toEqual([]);
+describe("resolveKeycloakRoles", () => {
+  it("returns empty for missing token", () => {
+    expect(resolveKeycloakRoles(undefined)).toEqual([]);
   });
 
-  it("prefers top-level roles array", () => {
-    // Arrange / Act
-    const roles = parseKeycloakRoles({ roles: ["read", "write"] });
+  it("prefers roles for active tenant over flat realm roles", () => {
+    expect(
+      resolveKeycloakRoles({
+        tenant_id: "tenant-b",
+        roles: ["read", "write"],
+        tenant_roles: ['{"tenant-b":["read"],"e2e-1":["read","write"]}'],
+      }),
+    ).toEqual(["read"]);
+  });
 
-    // Assert
-    expect(roles).toEqual(["read", "write"]);
+  it("falls back to top-level roles when tenant_roles is absent", () => {
+    expect(resolveKeycloakRoles({ roles: ["read", "write"] })).toEqual(["read", "write"]);
   });
 
   it("falls back to realm_access.roles", () => {
-    // Arrange / Act
-    const roles = parseKeycloakRoles({ realm_access: { roles: ["admin"] } });
+    expect(resolveKeycloakRoles({ realm_access: { roles: ["admin"] } })).toEqual(["admin"]);
+  });
+});
 
-    // Assert
-    expect(roles).toEqual(["admin"]);
+describe("parseKeycloakRoles", () => {
+  it("returns empty for missing token", () => {
+    expect(parseKeycloakRoles(undefined)).toEqual([]);
+  });
+
+  it("prefers top-level roles array", () => {
+    expect(parseKeycloakRoles({ roles: ["read", "write"] })).toEqual(["read", "write"]);
+  });
+
+  it("falls back to realm_access.roles", () => {
+    expect(parseKeycloakRoles({ realm_access: { roles: ["admin"] } })).toEqual(["admin"]);
   });
 
   it("returns empty when neither claim is present", () => {
-    // Arrange / Act
-    const roles = parseKeycloakRoles({ sub: "u1" });
+    expect(parseKeycloakRoles({ sub: "u1" })).toEqual([]);
+  });
+});
 
-    // Assert
-    expect(roles).toEqual([]);
+describe("parseTenantIdFromClaims", () => {
+  it("reads string tenant_id", () => {
+    expect(parseTenantIdFromClaims({ tenant_id: "tenant-b" })).toBe("tenant-b");
   });
 });

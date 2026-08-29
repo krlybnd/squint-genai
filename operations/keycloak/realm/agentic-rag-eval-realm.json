@@ -50,6 +50,22 @@
             "multivalued": "false",
             "aggregate.attrs": "false"
           }
+        },
+        {
+          "name": "tenant-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_roles",
+            "claim.name": "tenant_roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "multivalued": "true",
+            "aggregate.attrs": "false"
+          }
         }
       ]
     },
@@ -296,6 +312,9 @@
       "attributes": {
         "tenant_id": [
           "tenant-b"
+        ],
+        "tenant_roles": [
+          "{\"tenant-b\":[\"read\"]}"
         ]
       },
       "realmRoles": [
