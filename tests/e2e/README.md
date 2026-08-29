@@ -35,6 +35,7 @@ npm run test:ui         # Playwright UI mode
 | `04_chat_sessions.feature` | New chat, send message, session drawer delete |
 | `05_admin_panel.feature` | `/admin` for admin vs redirect for non-admin |
 | `06_app_shell.feature` | Layout: sidebar + chat + drawer toggle |
+| `07_admin_tenant_membership.feature` | Create tenant, assign alice with read/write, verify on tenant members |
 
 Tags: `@e2e`, `@ui`, `@smoke` (subset), `@slow` (indexing timeouts).
 

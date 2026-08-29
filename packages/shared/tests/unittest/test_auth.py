@@ -1,6 +1,7 @@
 from agentic_shared.core.auth.context import AuthContext
 from agentic_shared.core.auth.roles import AppRole
-from agentic_shared.core.auth.service import AuthService, _extract_keycloak_roles
+from agentic_shared.core.auth.roles_claim import parse_access_token_claims
+from agentic_shared.core.auth.service import AuthService
 from agentic_shared.core.auth.settings import AuthSettings, RoleSettings
 
 
@@ -33,9 +34,27 @@ def test_auth_service_maps_keycloak_roles() -> None:
     ctx = service.resolve(authorization="Bearer test-token")
 
     # Assert
+    assert ctx.user_id == "user-1"
+    assert ctx.tenant_id == "tenant-a"
     assert ctx.has_role(AppRole.READ)
     assert ctx.has_role(AppRole.WRITE)
     assert not ctx.has_role(AppRole.ADMIN)
+
+
+def test_auth_service_uses_active_tenant_roles() -> None:
+    # Arrange
+    service = AuthService(
+        AuthSettings(auth_mode="jwt"),
+        RoleSettings(),
+        jwt_validator=_FakeTenantJwt(),  # type: ignore[arg-type]
+    )
+
+    # Act
+    ctx = service.resolve(authorization="Bearer test-token")
+
+    # Assert
+    assert ctx.tenant_id == "tenant-b"
+    assert ctx.roles == frozenset({AppRole.READ})
 
 
 def test_admin_implies_all_roles() -> None:
@@ -47,14 +66,22 @@ def test_admin_implies_all_roles() -> None:
     assert ctx.has_role(AppRole.WRITE)
 
 
-def test_extract_keycloak_roles_from_top_level_claim() -> None:
-    # Arrange / Act
-    roles = _extract_keycloak_roles({"roles": ["admin", "read"]})
-
-    # Assert
-    assert roles == {"admin", "read"}
+def test_parse_access_token_claims_flat_roles() -> None:
+    assert parse_access_token_claims({"roles": ["admin", "read"]}).app_roles() == frozenset(
+        {AppRole.ADMIN, AppRole.READ}
+    )
 
 
 class _FakeJwt:
     def decode(self, _token: str) -> dict[str, object]:
         return {"sub": "user-1", "tenant_id": "tenant-a", "roles": ["read", "write"]}
+
+
+class _FakeTenantJwt:
+    def decode(self, _token: str) -> dict[str, object]:
+        return {
+            "sub": "bob",
+            "tenant_id": "tenant-b",
+            "roles": ["read", "write"],
+            "tenant_roles": ['{"tenant-b":["read"],"e2e-1":["read","write"]}'],
+        }

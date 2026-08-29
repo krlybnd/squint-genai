@@ -17,16 +17,22 @@ from keycloak_admin_client.api.organizations import (
 )
 from keycloak_admin_client.api.role_mapper import (
     delete_admin_realms_realm_users_user_id_role_mappings_realm,
+    get_admin_realms_realm_users_user_id_role_mappings_realm,
     post_admin_realms_realm_users_user_id_role_mappings_realm,
 )
+from keycloak_admin_client.api.roles import get_admin_realms_realm_roles_role_name
 from keycloak_admin_client.api.users import (
     get_admin_realms_realm_users,
+    get_admin_realms_realm_users_user_id,
     post_admin_realms_realm_users,
     put_admin_realms_realm_users_user_id,
     put_admin_realms_realm_users_user_id_reset_password,
 )
 from keycloak_admin_client.models.credential_representation import CredentialRepresentation
 from keycloak_admin_client.models.member_representation import MemberRepresentation
+from keycloak_admin_client.models.member_representation_attributes import (
+    MemberRepresentationAttributes,
+)
 from keycloak_admin_client.models.organization_domain_representation import (
     OrganizationDomainRepresentation,
 )
@@ -36,6 +42,7 @@ from keycloak_admin_client.models.user_representation import UserRepresentation
 from keycloak_admin_client.models.user_representation_attributes import UserRepresentationAttributes
 from keycloak_admin_client.types import UNSET
 
+from agentic_shared.core.auth.tenant_roles import TenantRolesMap, serialize_tenant_roles_json
 from agentic_shared.integrations.keycloak_admin.client import KeycloakAdminClientFactory
 from agentic_shared.integrations.keycloak_admin.errors import (
     KeycloakAdminError,
@@ -45,12 +52,16 @@ from agentic_shared.integrations.keycloak_admin.errors import (
 )
 from agentic_shared.integrations.keycloak_admin.settings import KeycloakAdminSettings
 
+_APP_REALM_ROLES = frozenset({"read", "write", "admin"})
+_TENANT_ROLES_ATTR = "tenant_roles"
+
 
 @dataclass(frozen=True, slots=True)
 class TenantMemberRecord:
     id: str
     username: str
     email: str | None
+    roles: list[str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +81,7 @@ class UserRecord:
     tenant_id: str | None
     tenant_ids: list[str]
     realm_roles: list[str]
+    tenant_roles: dict[str, list[str]]
 
 
 def _location_resource_id(headers: dict[str, str]) -> str | None:
@@ -105,6 +117,41 @@ def _check_response(status: HTTPStatus, content: bytes) -> None:
     if status == HTTPStatus.FORBIDDEN:
         raise KeycloakForbiddenError(message)
     raise KeycloakAdminError(f"{status.value}: {message}")
+
+
+def _normalize_roles(roles: list[str] | None) -> list[str]:
+    if not roles:
+        return []
+    return sorted({role for role in roles if role in _APP_REALM_ROLES})
+
+
+def _attr_map(
+    attributes: UserRepresentationAttributes | MemberRepresentationAttributes | None,
+) -> dict[str, list[str]]:
+    if attributes is None:
+        return {}
+    out: dict[str, list[str]] = {}
+    for key, value in attributes.additional_properties.items():
+        if isinstance(value, list):
+            out[str(key)] = [str(item) for item in value]
+    return out
+
+
+def _parse_tenant_roles(
+    attributes: UserRepresentationAttributes | MemberRepresentationAttributes | None,
+) -> dict[str, list[str]]:
+    values = _attr_map(attributes).get(_TENANT_ROLES_ATTR)
+    if not values:
+        return {}
+    return TenantRolesMap.parse_raw_value(values).to_role_strings()
+
+
+def _serialize_tenant_roles(tenant_roles: dict[str, list[str]]) -> list[str]:
+    return serialize_tenant_roles_json(tenant_roles)
+
+
+def _roles_for_tenant(tenant_roles: dict[str, list[str]], alias: str) -> list[str]:
+    return list(tenant_roles.get(alias, []))
 
 
 class TenantGateway:
@@ -225,6 +272,23 @@ class TenantGateway:
             raise KeycloakAdminError("Tenant updated but could not be resolved")
         return updated
 
+    async def _fetch_user_tenant_roles(self, user_id: str) -> dict[str, list[str]]:
+        """Load per-tenant roles from the user record (SSOT), not org member attrs."""
+        client = await self._client()
+        async with client:
+            response = await get_admin_realms_realm_users_user_id.asyncio_detailed(
+                self._realm,
+                user_id,
+                client=client,
+            )
+        _check_response(response.status_code, response.content)
+        parsed = response.parsed
+        if not isinstance(parsed, UserRepresentation):
+            return {}
+        user_attrs = parsed.attributes if parsed.attributes is not UNSET else None
+        parsed_attrs = user_attrs if isinstance(user_attrs, UserRepresentationAttributes) else None
+        return _parse_tenant_roles(parsed_attrs)
+
     async def list_members(
         self,
         alias: str,
@@ -259,11 +323,13 @@ class TenantGateway:
             if not user_id or not username or str(username).startswith("service-account-"):
                 continue
             email = item.email if item.email is not UNSET and item.email else None
+            tenant_roles = await self._fetch_user_tenant_roles(str(user_id))
             members.append(
                 TenantMemberRecord(
                     id=str(user_id),
                     username=str(username),
                     email=str(email) if email else None,
+                    roles=_roles_for_tenant(tenant_roles, alias),
                 )
             )
         has_more = len(parsed) >= page_size
@@ -294,18 +360,13 @@ class UserGateway:
         return await self._factory.authenticated_client()
 
     def _tenant_attr(self, user: UserRepresentation) -> str | None:
-        attrs = user.attributes
-        if attrs is UNSET or not isinstance(attrs, UserRepresentationAttributes):
+        attrs = user.attributes if user.attributes is not UNSET else None
+        if not isinstance(attrs, UserRepresentationAttributes):
             return None
-        values = attrs.additional_properties.get("tenant_id")
-        if isinstance(values, list) and values:
+        values = _attr_map(attrs).get("tenant_id")
+        if values:
             return str(values[0])
         return None
-
-    def _roles(self, user: UserRepresentation) -> list[str]:
-        if user.realm_roles is UNSET or not user.realm_roles:
-            return []
-        return [str(r) for r in user.realm_roles]
 
     def _to_record(self, user: UserRepresentation) -> UserRecord | None:
         user_id = user.id if user.id is not UNSET and user.id else None
@@ -314,14 +375,25 @@ class UserGateway:
             return None
         email = user.email if user.email is not UNSET else None
         enabled = bool(user.enabled) if user.enabled is not UNSET else True
+        tenant_id = self._tenant_attr(user)
+        user_attrs = user.attributes if user.attributes is not UNSET else None
+        parsed_attrs = user_attrs if isinstance(user_attrs, UserRepresentationAttributes) else None
+        tenant_roles = _parse_tenant_roles(parsed_attrs)
+        if user.realm_roles is not UNSET and user.realm_roles:
+            realm_roles = _normalize_roles([str(r) for r in user.realm_roles])
+        elif tenant_id:
+            realm_roles = _roles_for_tenant(tenant_roles, tenant_id)
+        else:
+            realm_roles = []
         return UserRecord(
             id=str(user_id),
             username=str(username),
             email=str(email) if email else None,
             enabled=enabled,
-            tenant_id=self._tenant_attr(user),
+            tenant_id=tenant_id,
             tenant_ids=[],
-            realm_roles=self._roles(user),
+            realm_roles=realm_roles,
+            tenant_roles=tenant_roles,
         )
 
     async def _with_tenant_memberships(self, user: UserRecord) -> UserRecord:
@@ -331,6 +403,8 @@ class UserGateway:
             active = tenant_ids[0] if tenant_ids else None
         elif not active and tenant_ids:
             active = tenant_ids[0]
+        tenant_roles = {alias: list(user.tenant_roles.get(alias, [])) for alias in tenant_ids}
+        realm_roles = _roles_for_tenant(tenant_roles, active) if active else list(user.realm_roles)
         return UserRecord(
             id=user.id,
             username=user.username,
@@ -338,7 +412,8 @@ class UserGateway:
             enabled=user.enabled,
             tenant_id=active,
             tenant_ids=tenant_ids,
-            realm_roles=user.realm_roles,
+            realm_roles=realm_roles,
+            tenant_roles=tenant_roles,
         )
 
     async def list_users(
@@ -357,6 +432,7 @@ class UserGateway:
                 search=search if search else UNSET,
                 first=max(0, first),
                 max_=page_size,
+                brief_representation=False,
             )
         _check_response(response.status_code, response.content)
         parsed = response.parsed
@@ -379,6 +455,7 @@ class UserGateway:
                 username=username,
                 exact=True,
                 max_=5,
+                brief_representation=False,
             )
         _check_response(response.status_code, response.content)
         parsed = response.parsed
@@ -435,52 +512,174 @@ class UserGateway:
                 tenant_id=user.tenant_id,
                 tenant_ids=user.tenant_ids,
                 realm_roles=user.realm_roles,
+                tenant_roles=dict(user.tenant_roles),
             )
 
         if realm_roles:
-            await self._assign_realm_roles(user.id, realm_roles)
+            await self._sync_realm_roles(user.id, realm_roles)
             refreshed = await self.get_by_username(username)
             if refreshed:
                 user = refreshed
         return user
 
-    async def _assign_realm_roles(self, user_id: str, roles: list[str]) -> None:
-        if not roles:
-            return
-        body = [RoleRepresentation(name=role) for role in roles]
+    async def _resolve_realm_roles(self, role_names: list[str]) -> list[RoleRepresentation]:
+        resolved: list[RoleRepresentation] = []
+        client = await self._client()
+        async with client:
+            for name in role_names:
+                response = await get_admin_realms_realm_roles_role_name.asyncio_detailed(
+                    self._realm,
+                    name,
+                    client=client,
+                )
+                _check_response(response.status_code, response.content)
+                role = response.parsed
+                if not isinstance(role, RoleRepresentation):
+                    raise KeycloakAdminError(f"Realm role not found: {name}")
+                role_id = role.id if role.id is not UNSET and role.id else None
+                role_name = role.name if role.name is not UNSET and role.name else name
+                if not role_id:
+                    raise KeycloakAdminError(f"Realm role missing id: {name}")
+                resolved.append(RoleRepresentation(id=str(role_id), name=str(role_name)))
+        return resolved
+
+    async def _list_user_realm_role_names(self, user_id: str) -> set[str]:
         client = await self._client()
         async with client:
             response = (
-                await post_admin_realms_realm_users_user_id_role_mappings_realm.asyncio_detailed(
+                await get_admin_realms_realm_users_user_id_role_mappings_realm.asyncio_detailed(
+                    self._realm,
+                    user_id,
+                    client=client,
+                )
+            )
+        _check_response(response.status_code, response.content)
+        parsed = response.parsed
+        if not isinstance(parsed, list):
+            return set()
+        names: set[str] = set()
+        for role in parsed:
+            if not isinstance(role, RoleRepresentation):
+                continue
+            name = role.name if role.name is not UNSET and role.name else None
+            if name and str(name) in _APP_REALM_ROLES:
+                names.add(str(name))
+        return names
+
+    async def _sync_realm_roles(self, user_id: str, desired_roles: list[str]) -> None:
+        desired = set(_normalize_roles(desired_roles))
+        current = await self._list_user_realm_role_names(user_id)
+        to_remove = current - desired
+        to_add = desired - current
+        if to_remove:
+            body = await self._resolve_realm_roles(sorted(to_remove))
+            client = await self._client()
+            async with client:
+                delete_roles = (
+                    delete_admin_realms_realm_users_user_id_role_mappings_realm.asyncio_detailed
+                )
+                response = await delete_roles(
                     self._realm,
                     user_id,
                     client=client,
                     body=body,
                 )
+            _check_response(response.status_code, response.content)
+        if to_add:
+            body = await self._resolve_realm_roles(sorted(to_add))
+            client = await self._client()
+            async with client:
+                add_roles = (
+                    post_admin_realms_realm_users_user_id_role_mappings_realm.asyncio_detailed
+                )
+                response = await add_roles(
+                    self._realm,
+                    user_id,
+                    client=client,
+                    body=body,
+                )
+            _check_response(response.status_code, response.content)
+
+    async def _sync_active_tenant_realm_roles(
+        self,
+        user_id: str,
+        *,
+        tenant_id: str | None,
+        tenant_roles: dict[str, list[str]],
+    ) -> None:
+        if tenant_id:
+            await self._sync_realm_roles(user_id, tenant_roles.get(tenant_id, []))
+        else:
+            await self._sync_realm_roles(user_id, [])
+
+    async def _get_user_representation(self, user_id: str) -> UserRepresentation:
+        client = await self._client()
+        async with client:
+            response = await get_admin_realms_realm_users_user_id.asyncio_detailed(
+                self._realm,
+                user_id,
+                client=client,
             )
         _check_response(response.status_code, response.content)
+        parsed = response.parsed
+        if not isinstance(parsed, UserRepresentation):
+            raise KeycloakAdminError(f"User not found: {user_id}")
+        return parsed
 
-    async def _set_tenant_attribute(self, user: UserRecord, tenant_alias: str | None) -> None:
-        attrs = UserRepresentationAttributes()
-        if tenant_alias:
-            attrs["tenant_id"] = [tenant_alias]
-        else:
-            attrs["tenant_id"] = []
-
-        body = UserRepresentation(
-            id=user.id,
-            username=user.username,
-            attributes=attrs,
-        )
+    async def _put_user_representation(self, body: UserRepresentation) -> None:
+        user_id = body.id if body.id is not UNSET and body.id else None
+        if not user_id:
+            raise KeycloakAdminError("User id is required for update")
         client = await self._client()
         async with client:
             response = await put_admin_realms_realm_users_user_id.asyncio_detailed(
                 self._realm,
-                user.id,
+                str(user_id),
                 client=client,
                 body=body,
             )
         _check_response(response.status_code, response.content)
+
+    def _merged_tenant_attributes(
+        self,
+        existing: UserRepresentationAttributes | None,
+        *,
+        tenant_id: str | None,
+        tenant_roles: dict[str, list[str]],
+    ) -> UserRepresentationAttributes:
+        attrs = UserRepresentationAttributes()
+        for key, values in _attr_map(existing).items():
+            if key not in (_TENANT_ROLES_ATTR, "tenant_id"):
+                attrs[key] = list(values)
+        attrs["tenant_id"] = [tenant_id] if tenant_id else []
+        attrs[_TENANT_ROLES_ATTR] = _serialize_tenant_roles(tenant_roles)
+        return attrs
+
+    async def _put_user_attributes(
+        self,
+        user: UserRecord,
+        *,
+        tenant_id: str | None,
+        tenant_roles: dict[str, list[str]],
+    ) -> None:
+        rep = await self._get_user_representation(user.id)
+        existing_attrs = rep.attributes if rep.attributes is not UNSET else None
+        parsed_attrs = (
+            existing_attrs if isinstance(existing_attrs, UserRepresentationAttributes) else None
+        )
+        rep.attributes = self._merged_tenant_attributes(
+            parsed_attrs,
+            tenant_id=tenant_id,
+            tenant_roles=tenant_roles,
+        )
+        await self._put_user_representation(rep)
+
+    async def _set_tenant_attribute(self, user: UserRecord, tenant_alias: str | None) -> None:
+        await self._put_user_attributes(
+            user,
+            tenant_id=tenant_alias,
+            tenant_roles=dict(user.tenant_roles),
+        )
 
     async def assign_tenant(
         self,
@@ -488,6 +687,7 @@ class UserGateway:
         tenant_alias: str,
         *,
         set_active: bool | None = None,
+        roles: list[str] | None = None,
     ) -> UserRecord:
         user = await self.get_by_username(username)
         if not user:
@@ -507,13 +707,52 @@ class UserGateway:
         if response.status_code not in (HTTPStatus.CREATED, HTTPStatus.CONFLICT):
             _check_response(response.status_code, response.content)
 
+        tenant_roles = dict(user.tenant_roles)
+        if roles is not None:
+            tenant_roles[tenant_alias] = _normalize_roles(roles)
+        elif tenant_alias not in tenant_roles:
+            tenant_roles[tenant_alias] = []
+
         should_set_active = set_active if set_active is not None else user.tenant_id is None
-        if should_set_active:
-            await self._set_tenant_attribute(user, tenant_alias)
+        active = tenant_alias if should_set_active else user.tenant_id
+        await self._put_user_attributes(user, tenant_id=active, tenant_roles=tenant_roles)
+
+        await self._sync_active_tenant_realm_roles(
+            user.id,
+            tenant_id=active,
+            tenant_roles=tenant_roles,
+        )
 
         refreshed = await self.get_by_username(username)
         if not refreshed:
             raise KeycloakAdminError("User tenant assignment failed")
+        return refreshed
+
+    async def set_tenant_roles(
+        self, username: str, tenant_alias: str, roles: list[str]
+    ) -> UserRecord:
+        user = await self.get_by_username(username)
+        if not user:
+            raise KeycloakNotFoundError(f"User not found: {username}")
+        if tenant_alias not in user.tenant_ids:
+            raise KeycloakNotFoundError(f"User is not a member of tenant: {tenant_alias}")
+
+        tenant_roles = dict(user.tenant_roles)
+        tenant_roles[tenant_alias] = _normalize_roles(roles)
+        await self._put_user_attributes(
+            user,
+            tenant_id=user.tenant_id,
+            tenant_roles=tenant_roles,
+        )
+        await self._sync_active_tenant_realm_roles(
+            user.id,
+            tenant_id=user.tenant_id,
+            tenant_roles=tenant_roles,
+        )
+
+        refreshed = await self.get_by_username(username)
+        if not refreshed:
+            raise KeycloakAdminError("Tenant role update failed")
         return refreshed
 
     async def set_active_tenant(self, username: str, tenant_alias: str) -> UserRecord:
@@ -522,7 +761,16 @@ class UserGateway:
             raise KeycloakNotFoundError(f"User not found: {username}")
         if tenant_alias not in user.tenant_ids:
             raise KeycloakNotFoundError(f"User is not a member of tenant: {tenant_alias}")
-        await self._set_tenant_attribute(user, tenant_alias)
+        await self._put_user_attributes(
+            user,
+            tenant_id=tenant_alias,
+            tenant_roles=dict(user.tenant_roles),
+        )
+        await self._sync_active_tenant_realm_roles(
+            user.id,
+            tenant_id=tenant_alias,
+            tenant_roles=user.tenant_roles,
+        )
         refreshed = await self.get_by_username(username)
         if not refreshed:
             raise KeycloakAdminError("Active tenant update failed")
@@ -560,48 +808,25 @@ class UserGateway:
             _check_response(response.status_code, response.content)
 
         remaining = [a for a in user.tenant_ids if a != tenant_alias]
+        tenant_roles = {
+            alias: roles for alias, roles in user.tenant_roles.items() if alias != tenant_alias
+        }
+        new_active: str | None
         if user.tenant_id == tenant_alias:
             new_active = remaining[0] if remaining else None
-            await self._set_tenant_attribute(user, new_active)
+        else:
+            new_active = user.tenant_id
+        await self._put_user_attributes(user, tenant_id=new_active, tenant_roles=tenant_roles)
+        await self._sync_active_tenant_realm_roles(
+            user.id,
+            tenant_id=new_active,
+            tenant_roles=tenant_roles,
+        )
 
         refreshed = await self.get_by_username(username)
         if not refreshed:
             raise KeycloakAdminError("User tenant removal failed")
         return refreshed
-
-    _APP_REALM_ROLES = frozenset({"read", "write", "admin"})
-
-    async def _sync_realm_roles(self, user: UserRecord, desired_roles: list[str]) -> None:
-        desired = {r for r in desired_roles if r in self._APP_REALM_ROLES}
-        current = {r for r in user.realm_roles if r in self._APP_REALM_ROLES}
-        to_remove = current - desired
-        to_add = desired - current
-        client = await self._client()
-        async with client:
-            if to_remove:
-                body = [RoleRepresentation(name=role) for role in sorted(to_remove)]
-                delete_roles = (
-                    delete_admin_realms_realm_users_user_id_role_mappings_realm.asyncio_detailed
-                )
-                response = await delete_roles(
-                    self._realm,
-                    user.id,
-                    client=client,
-                    body=body,
-                )
-                _check_response(response.status_code, response.content)
-            if to_add:
-                body = [RoleRepresentation(name=role) for role in sorted(to_add)]
-                add_roles = (
-                    post_admin_realms_realm_users_user_id_role_mappings_realm.asyncio_detailed
-                )
-                response = await add_roles(
-                    self._realm,
-                    user.id,
-                    client=client,
-                    body=body,
-                )
-                _check_response(response.status_code, response.content)
 
     async def update_user(
         self,
@@ -618,21 +843,15 @@ class UserGateway:
         if not user:
             raise KeycloakNotFoundError(f"User not found: {username}")
 
-        body = UserRepresentation(
-            id=user.id,
-            username=user.username,
-            email=email if email is not None else (user.email or UNSET),
-            enabled=enabled if enabled is not None else user.enabled,
-        )
+        rep = await self._get_user_representation(user.id)
+        if email is not None:
+            rep.email = email if email else UNSET
+        if enabled is not None:
+            rep.enabled = enabled
+        await self._put_user_representation(rep)
+
         client = await self._client()
         async with client:
-            response = await put_admin_realms_realm_users_user_id.asyncio_detailed(
-                self._realm,
-                user.id,
-                client=client,
-                body=body,
-            )
-            _check_response(response.status_code, response.content)
             if password:
                 cred = CredentialRepresentation(type_="password", value=password, temporary=False)
                 pw_response = (
@@ -646,10 +865,10 @@ class UserGateway:
                 _check_response(pw_response.status_code, pw_response.content)
 
         if realm_roles is not None:
-            refreshed = await self.get_by_username(username)
-            if not refreshed:
-                raise KeycloakAdminError("User update failed")
-            await self._sync_realm_roles(refreshed, realm_roles)
+            if user.tenant_id:
+                await self.set_tenant_roles(username, user.tenant_id, realm_roles)
+            else:
+                await self._sync_realm_roles(user.id, realm_roles)
 
         if clear_tenant:
             await self.remove_tenant(username)

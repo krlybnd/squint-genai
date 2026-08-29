@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from agentic_shared.domains.retrieval.factory import create_async_retrieval_service
 from agentic_shared.domains.retrieval.protocols import AsyncRetrievalReader
+from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import QdrantChunkReadRepository
+from agentic_shared.infrastructure.vector.client import QdrantClient
 from agentic_shared.integrations.llm import OpenAIChatClient
 from agentic_shared.integrations.llm.protocols import ChatClient
 
@@ -20,10 +22,11 @@ def agent_graph_deps_from_settings() -> AgentGraphDeps:
     """Composition helper for tests and graph bootstrap without Dishka."""
     root = load_settings()
     chat_module = get_chat_module_settings()
+    qdrant = QdrantClient(root.qdrant)
     return AgentGraphDeps(
         chat_client=OpenAIChatClient(root.llm),
         retrieval=create_async_retrieval_service(
-            qdrant=root.qdrant,
+            chunk_read=QdrantChunkReadRepository(qdrant),
             llm=root.llm,
             embedding=root.embedding,
             rerank=root.rerank,

@@ -49,18 +49,18 @@ export function AdminPage() {
     const [tList, uList] = await Promise.all([fetchTenants(), fetchUsers()]);
     const mergedUsers = userPatch ? mergeUserIntoList(uList, userPatch) : uList;
 
-      setTenants(tList);
-      setUsers(mergedUsers);
-      setUserModal((prev) => {
-        if (prev?.kind !== "edit") return prev;
-        const fresh = mergedUsers.find((u) => u.username === prev.user.username);
-        return fresh ? { kind: "edit", user: fresh } : prev;
-      });
-      setTenantModal((prev) => {
-        if (prev?.kind !== "edit") return prev;
-        const fresh = tList.find((tenant) => tenant.alias === prev.tenant.alias);
-        return fresh ? { kind: "edit", tenant: fresh } : prev;
-      });
+    setTenants(tList);
+    setUsers(mergedUsers);
+    setUserModal((prev) => {
+      if (prev?.kind !== "edit") return prev;
+      const fresh = mergedUsers.find((u) => u.username === prev.user.username);
+      return fresh ? { kind: "edit", user: fresh } : prev;
+    });
+    setTenantModal((prev) => {
+      if (prev?.kind !== "edit") return prev;
+      const fresh = tList.find((tenant) => tenant.alias === prev.tenant.alias);
+      return fresh ? { kind: "edit", tenant: fresh } : prev;
+    });
   }, []);
 
   const handleUserSaved = useCallback(
@@ -172,7 +172,10 @@ export function AdminPage() {
                         .map((id) => (id === item.tenant_id ? `${id} (${t("admin.activeTenant")})` : id))
                         .join(", ")
                     : "—"}{" "}
-                  · {t("admin.rolesLabel")}: {item.realm_roles.join(", ") || "—"}
+                  · {t("admin.rolesLabel")}: {(item.tenant_id
+                    ? item.tenant_roles?.[item.tenant_id]
+                    : item.realm_roles
+                  )?.join(", ") || "—"}
                 </>
               )}
             />

@@ -18,6 +18,27 @@ Official **Admin REST OpenAPI** (vendor copy): `openapi/admin-rest.openapi.yaml`
 
 Organizations (`tenant-a`, `tenant-b`) are created by `keycloak-init` after import (orgs cannot be defined in realm.json).
 
+`keycloak-init` also applies the declarative **user profile** from `realm/user-profile.json` so `tenant_id` and `tenant_roles` user attributes persist (Keycloak 26 drops undeclared attributes). It idempotently repairs demo users whose email/name were wiped by partial Admin API updates before that profile existed.
+
+## User profile (multitenancy attributes)
+
+Keycloak 26+ uses a declarative user profile. Custom attributes must be declared or they are silently dropped on write.
+
+| Attribute | Purpose |
+|-----------|---------|
+| `tenant_id` | Active tenant alias (JWT `tenant_id` claim via protocol mapper) |
+| `tenant_roles` | JSON map of tenant alias → role list (`read` / `write` / `admin`) |
+
+Configuration lives in `realm/user-profile.json` and is applied on every `keycloak-init` run via `PUT /admin/realms/{realm}/users/profile`. Fresh imports also get it from the realm `components` block.
+
+To re-apply profile + repair demo users without resetting the DB:
+
+```bash
+docker compose --profile auth run --rm keycloak-init
+```
+
+If demo user email/names are still empty after a bad partial update, reset the Keycloak DB (below) or run `keycloak-init` after pulling the profile fix.
+
 ## Token claims
 
 Access token includes:

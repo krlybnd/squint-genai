@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import cast
 
 from agentic_shared.core.domain_errors import BadRequestError, NotFoundError
 from agentic_shared.core.i18n import DEFAULT_LOCALE, t
-from agentic_shared.infrastructure.vector.comments import normalize_comments
+from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
 from agentic_shared.infrastructure.vector.enums import QdrantPointType
-from agentic_shared.infrastructure.vector.protocols import QdrantReader
-from agentic_shared.infrastructure.vector.types import ChunkPointPayload
 
 from agentic_api.modules.annotations.schemas import ChunkCommentOut, CreateChunkCommentRequest
 from agentic_api.modules.annotations.state import (
@@ -26,10 +24,6 @@ class CommentRejectedError(Exception):
         super().__init__(reason)
 
 
-def _as_chunk_payload(raw: dict[str, Any]) -> ChunkPointPayload:
-    return cast(ChunkPointPayload, raw)
-
-
 def _rejection_reason(state: CommentState, locale: str) -> str:
     reason = state.get("rejection_reason")
     if reason:
@@ -42,12 +36,12 @@ class AnnotationService:
         self,
         *,
         tenant_id: str,
-        qdrant_read: QdrantReader,
+        chunk_read: ChunkReadRepository,
         graph: CommentCompiledGraph,
     ) -> None:
         self._graph = graph
         self._tenant_id = tenant_id
-        self._qdrant_read = qdrant_read
+        self._chunk_read = chunk_read
 
     async def create_chunk_comment(
         self,
@@ -57,11 +51,10 @@ class AnnotationService:
         user_id: str | None,
         locale: str = DEFAULT_LOCALE,
     ) -> ChunkCommentOut:
-        raw_payload = self._qdrant_read.retrieve_point(chunk_id, tenant_id=self._tenant_id)
-        if raw_payload is None:
+        chunk_payload = self._chunk_read.get_by_id(chunk_id, tenant_id=self._tenant_id)
+        if chunk_payload is None:
             raise NotFoundError("Chunk not found")
-        chunk_payload = _as_chunk_payload(raw_payload)
-        if chunk_payload.get("point_type") == QdrantPointType.COMMENT:
+        if chunk_payload.point_type == QdrantPointType.COMMENT:
             raise BadRequestError("Cannot comment on a comment point")
 
         graph_input = CommentGraphInput(
@@ -87,9 +80,8 @@ class AnnotationService:
             )
             raise CommentRejectedError(reason)
 
-        comments = normalize_comments(
-            self._qdrant_read.retrieve_point(chunk_id, tenant_id=self._tenant_id)
-        )
+        saved_payload = self._chunk_read.get_by_id(chunk_id, tenant_id=self._tenant_id)
+        comments = [] if saved_payload is None else saved_payload.comments
         comment_id = state.get("comment_id") or ""
         logger.info(
             "comment created chunk_id=%s comment_id=%s tenant_id=%s",
@@ -97,7 +89,7 @@ class AnnotationService:
             comment_id,
             self._tenant_id,
         )
-        saved = next((c for c in comments if c.comment_id == comment_id), None)
+        saved = next((comment for comment in comments if comment.comment_id == comment_id), None)
         if saved:
             return ChunkCommentOut.from_stored(chunk_id, saved)
 
@@ -111,10 +103,7 @@ class AnnotationService:
         )
 
     def list_chunk_comments(self, chunk_id: str) -> list[ChunkCommentOut]:
-        payload = self._qdrant_read.retrieve_point(chunk_id, tenant_id=self._tenant_id)
+        payload = self._chunk_read.get_by_id(chunk_id, tenant_id=self._tenant_id)
         if payload is None:
             raise NotFoundError("Chunk not found")
-        return [
-            ChunkCommentOut.from_stored(chunk_id, comment)
-            for comment in normalize_comments(payload)
-        ]
+        return [ChunkCommentOut.from_stored(chunk_id, comment) for comment in payload.comments]

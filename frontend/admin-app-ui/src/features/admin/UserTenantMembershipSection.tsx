@@ -4,6 +4,7 @@ import {
   assignUserTenant,
   removeUserFromTenant,
   setActiveUserTenant,
+  setUserTenantRoles,
   type Tenant,
   type User,
 } from "../../api/admin";
@@ -13,6 +14,7 @@ type UserTenantMembershipSectionProps = {
   username: string;
   tenantId: string | null;
   tenantIds: string[];
+  tenantRoles: Record<string, string[]>;
   tenants: Tenant[];
   disabled?: boolean;
   onUpdated: (user: User) => void | Promise<void>;
@@ -23,6 +25,7 @@ export function UserTenantMembershipSection({
   username,
   tenantId,
   tenantIds,
+  tenantRoles,
   tenants,
   disabled = false,
   onUpdated,
@@ -31,6 +34,16 @@ export function UserTenantMembershipSection({
   const { t } = useTranslation();
   const [pickTenant, setPickTenant] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Optimistic overrides while a role PUT is in flight. */
+  const [roleOverrides, setRoleOverrides] = useState<Record<string, string[]>>({});
+
+  const displayRoles = useMemo(() => {
+    const merged: Record<string, string[]> = { ...tenantRoles };
+    for (const [alias, roles] of Object.entries(roleOverrides)) {
+      merged[alias] = roles;
+    }
+    return merged;
+  }, [tenantRoles, roleOverrides]);
 
   const tenantOptions = useMemo(
     () =>
@@ -57,6 +70,7 @@ export function UserTenantMembershipSection({
     try {
       const updated = await action();
       setPickTenant("");
+      setRoleOverrides({});
       await onUpdated(updated);
     } catch (err) {
       onError(err instanceof Error ? err.message : String(err));
@@ -71,6 +85,7 @@ export function UserTenantMembershipSection({
     void runTenantAction(() =>
       assignUserTenant(username, alias, {
         setActive: tenantIds.length === 0,
+        roles: ["read"],
       }),
     );
   }
@@ -84,11 +99,32 @@ export function UserTenantMembershipSection({
     void runTenantAction(() => setActiveUserTenant(username, alias));
   }
 
+  async function handleRolesChange(alias: string, roles: string[]) {
+    const previous = displayRoles[alias] ?? [];
+    setRoleOverrides((prev) => ({ ...prev, [alias]: roles }));
+    onError(null);
+    try {
+      const updated = await setUserTenantRoles(username, alias, roles);
+      setRoleOverrides((prev) => {
+        const next = { ...prev };
+        delete next[alias];
+        return next;
+      });
+      await onUpdated(updated);
+    } catch (err) {
+      setRoleOverrides((prev) => ({ ...prev, [alias]: previous }));
+      onError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   const items: MembershipRow[] = tenantIds.map((alias) => ({
     id: alias,
     primary: alias,
     secondary: tenantNameByAlias.get(alias),
     badge: tenantId === alias ? t("admin.activeTenant") : undefined,
+    roles: displayRoles[alias] ?? [],
+    rolesDisabled: disabled || busy,
+    onRolesChange: (roles) => void handleRolesChange(alias, roles),
     actions: [
       ...(tenantId !== alias
         ? [

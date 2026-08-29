@@ -5,6 +5,7 @@ import {
   fetchTenantMembersPage,
   fetchUsersPage,
   removeTenantMember,
+  updateTenantMemberRoles,
   type TenantMember,
   type User,
 } from "../../api/admin";
@@ -108,7 +109,7 @@ export function TenantMembersSection({ tenantAlias, onMembershipChanged }: Tenan
     setBusy(true);
     setError(null);
     try {
-      await addTenantMember(tenantAlias, username);
+      await addTenantMember(tenantAlias, username, ["read"]);
       setPickUsername("");
       await loadMembersPage(0, false);
       onMembershipChanged?.(username);
@@ -116,6 +117,30 @@ export function TenantMembersSection({ tenantAlias, onMembershipChanged }: Tenan
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleRolesChange(username: string, roles: string[]) {
+    const previous = members.find((m) => m.username === username)?.roles ?? [];
+    setMembers((prev) =>
+      prev.map((member) => (member.username === username ? { ...member, roles } : member)),
+    );
+    setError(null);
+    try {
+      const updated = await updateTenantMemberRoles(tenantAlias, username, roles);
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.username === username ? { ...member, roles: updated.roles } : member,
+        ),
+      );
+      onMembershipChanged?.(username);
+    } catch (err) {
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.username === username ? { ...member, roles: previous } : member,
+        ),
+      );
+      setError(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -138,6 +163,9 @@ export function TenantMembersSection({ tenantAlias, onMembershipChanged }: Tenan
     id: member.id,
     primary: member.username,
     secondary: member.email ?? undefined,
+    roles: member.roles ?? [],
+    rolesDisabled: busy,
+    onRolesChange: (roles) => void handleRolesChange(member.username, roles),
     actions: [
       {
         key: "remove",

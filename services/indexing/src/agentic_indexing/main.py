@@ -8,11 +8,12 @@ from agentic_shared.domains.persistence.repositories.sync_.documents import (
     SqlAlchemyDocumentWriteRepositorySync,
     SqlAlchemyIndexJobWriteRepositorySync,
 )
+from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import QdrantChunkWriteRepository
 from agentic_shared.infrastructure.object_storage.client import (
     MinioClient,
     MinioObjectStorageReader,
 )
-from agentic_shared.infrastructure.vector.client import QdrantClient, QdrantVectorWriter
+from agentic_shared.infrastructure.vector.client import QdrantClient
 from celery import Celery
 from celery.signals import after_setup_logger, worker_ready
 from sqlalchemy import create_engine
@@ -64,7 +65,7 @@ def _build_use_case(
         jobs=SqlAlchemyIndexJobWriteRepositorySync(session, tenant_id),
         documents=SqlAlchemyDocumentWriteRepositorySync(session, tenant_id),
         storage_read=MinioObjectStorageReader(minio),
-        qdrant_write=QdrantVectorWriter(qdrant),
+        chunk_write=QdrantChunkWriteRepository(qdrant),
         llm=settings.llm,
         embedding=settings.embedding,
     )

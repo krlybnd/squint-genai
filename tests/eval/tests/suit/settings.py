@@ -7,6 +7,8 @@ from pathlib import Path
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_shared.core.settings.base import EnvSettings
 from agentic_shared.domains.retrieval.factory import create_async_retrieval_service
+from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import QdrantChunkReadRepository
+from agentic_shared.infrastructure.vector.client import QdrantClient
 from agentic_shared.infrastructure.vector.settings import QdrantSettings
 from agentic_shared.integrations.embedding.settings import EmbeddingSettings
 from agentic_shared.integrations.llm import OpenAIChatClient
@@ -59,14 +61,16 @@ class SutSettings(EnvSettings):
             litellm_base_url=self.litellm_base_url,
             openai_api_key=self.litellm_api_key,
         )
+        qdrant_settings = QdrantSettings(
+            _env_file=None,
+            qdrant_url=self.qdrant_url,
+            qdrant_collection=self.qdrant_collection,
+        )
+        qdrant = QdrantClient(qdrant_settings)
         return AgentGraphDeps(
             chat_client=OpenAIChatClient(llm),
             retrieval=create_async_retrieval_service(
-                qdrant=QdrantSettings(
-                    _env_file=None,
-                    qdrant_url=self.qdrant_url,
-                    qdrant_collection=self.qdrant_collection,
-                ),
+                chunk_read=QdrantChunkReadRepository(qdrant),
                 llm=llm,
                 embedding=EmbeddingSettings(
                     _env_file=None,

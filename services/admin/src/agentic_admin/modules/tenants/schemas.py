@@ -22,6 +22,7 @@ class TenantMemberOut(BaseModel):
     id: str
     username: str
     email: str | None
+    roles: list[str] = Field(default_factory=list)
 
 
 class TenantMemberListResponse(BaseModel):
@@ -33,6 +34,11 @@ class TenantMemberListResponse(BaseModel):
 
 class AddTenantMemberRequest(BaseModel):
     username: str = Field(min_length=1, max_length=255)
+    roles: list[str] = Field(default_factory=list)
+
+
+class UpdateTenantMemberRequest(BaseModel):
+    roles: list[str] = Field(default_factory=list)
 
 
 class TenantListResponse(BaseModel):

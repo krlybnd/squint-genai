@@ -17,23 +17,23 @@ class TestIndexDocumentUseCase(unittest.TestCase):
         jobs = MagicMock()
         documents = MagicMock()
         storage_read = MagicMock()
-        qdrant_write = MagicMock()
+        chunk_write = MagicMock()
         use_case = IndexDocumentUseCase(
             jobs=jobs,
             documents=documents,
             storage_read=storage_read,
-            qdrant_write=qdrant_write,
+            chunk_write=chunk_write,
             llm=LLMSettings(),
             embedding=EmbeddingSettings(),
         )
-        return use_case, jobs, documents, storage_read, qdrant_write
+        return use_case, jobs, documents, storage_read, chunk_write
 
     @patch("agentic_indexing.core.indexing_document.index_pdf_bytes", return_value=3)
     def test_run_marks_running_updates_document_and_completes(
         self, mock_index_pdf_bytes: MagicMock
     ) -> None:
         # Arrange
-        use_case, jobs, documents, storage_read, qdrant_write = self._make_use_case()
+        use_case, jobs, documents, storage_read, chunk_write = self._make_use_case()
         job_id = uuid.uuid4()
         document_id = uuid.uuid4()
         storage_read.download.return_value = b"pdf-bytes"
@@ -54,7 +54,7 @@ class TestIndexDocumentUseCase(unittest.TestCase):
         jobs.update_status.assert_any_call(job_id, JobStatus.RUNNING)
         jobs.update_status.assert_any_call(job_id, JobStatus.COMPLETED)
         storage_read.download.assert_called_once_with("docs/key.pdf")
-        qdrant_write.delete_document_vectors.assert_called_once_with(
+        chunk_write.delete_by_doc_id.assert_called_once_with(
             str(document_id),
             tenant_id="acme",
         )
@@ -63,7 +63,7 @@ class TestIndexDocumentUseCase(unittest.TestCase):
             doc_id=str(document_id),
             source_file="key.pdf",
             tenant_id="acme",
-            qdrant_write=qdrant_write,
+            chunk_write=chunk_write,
             llm=use_case._llm,
             embedding=use_case._embedding,
         )
@@ -79,7 +79,7 @@ class TestIndexDocumentUseCase(unittest.TestCase):
         self, _mock_index_pdf_bytes: MagicMock
     ) -> None:
         # Arrange
-        use_case, jobs, documents, storage_read, _qdrant_write = self._make_use_case()
+        use_case, jobs, documents, storage_read, _chunk_write = self._make_use_case()
         job_id = uuid.uuid4()
         document_id = uuid.uuid4()
         storage_read.download.return_value = b"pdf-bytes"

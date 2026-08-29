@@ -22,6 +22,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
                     tenant_id=None,
                     tenant_ids=[],
                     realm_roles=[],
+                    tenant_roles={},
                 ),
                 UserRecord(
                     id="2",
@@ -31,6 +32,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
                     tenant_id="acme",
                     tenant_ids=["acme"],
                     realm_roles=["write"],
+                    tenant_roles={},
                 ),
             ],
             False,
@@ -67,6 +69,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
                     tenant_id="acme",
                     tenant_ids=["acme"],
                     realm_roles=["write"],
+                    tenant_roles={},
                 ),
             ],
             True,
@@ -93,6 +96,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
             tenant_id=None,
             tenant_ids=[],
             realm_roles=["read"],
+            tenant_roles={},
         )
         service = UserAdminService(gateway)
 
@@ -125,15 +129,41 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
             tenant_id="acme",
             tenant_ids=["acme"],
             realm_roles=["write"],
+            tenant_roles={"acme": ["write"]},
         )
         service = UserAdminService(gateway)
 
         # Act
-        out = await service.assign_tenant("alice", "acme", set_active=True)
+        out = await service.assign_tenant("alice", "acme", set_active=True, roles=["write"])
 
         # Assert
-        gateway.assign_tenant.assert_awaited_once_with("alice", "acme", set_active=True)
+        gateway.assign_tenant.assert_awaited_once_with(
+            "alice", "acme", set_active=True, roles=["write"]
+        )
         self.assertEqual(out.tenant_id, "acme")
+        self.assertEqual(out.tenant_roles["acme"], ["write"])
+
+    async def test_set_tenant_roles(self) -> None:
+        # Arrange
+        gateway = AsyncMock()
+        gateway.set_tenant_roles.return_value = UserRecord(
+            id="1",
+            username="alice",
+            email="alice@example.com",
+            enabled=True,
+            tenant_id="acme",
+            tenant_ids=["acme"],
+            realm_roles=["admin"],
+            tenant_roles={"acme": ["admin"]},
+        )
+        service = UserAdminService(gateway)
+
+        # Act
+        out = await service.set_tenant_roles("alice", "acme", ["admin"])
+
+        # Assert
+        gateway.set_tenant_roles.assert_awaited_once_with("alice", "acme", ["admin"])
+        self.assertEqual(out.tenant_roles["acme"], ["admin"])
 
     async def test_set_active_tenant(self) -> None:
         # Arrange
@@ -146,6 +176,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
             tenant_id="beta",
             tenant_ids=["acme", "beta"],
             realm_roles=["write"],
+            tenant_roles={},
         )
         service = UserAdminService(gateway)
 
@@ -167,6 +198,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
             tenant_id=None,
             tenant_ids=["acme"],
             realm_roles=["write"],
+            tenant_roles={},
         )
         service = UserAdminService(gateway)
 
@@ -188,6 +220,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
             tenant_id="acme",
             tenant_ids=["acme"],
             realm_roles=["write"],
+            tenant_roles={},
         )
         service = UserAdminService(gateway)
 
@@ -209,6 +242,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
             tenant_id="acme",
             tenant_ids=["acme"],
             realm_roles=["write"],
+            tenant_roles={},
         )
         service = UserAdminService(gateway)
 
@@ -236,6 +270,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
             tenant_id=None,
             tenant_ids=[],
             realm_roles=["write"],
+            tenant_roles={},
         )
         service = UserAdminService(gateway)
 

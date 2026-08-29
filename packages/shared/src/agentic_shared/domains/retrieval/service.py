@@ -10,9 +10,9 @@ from agentic_shared.domains.retrieval.models import (
     SearchMeta,
     SourceCitation,
 )
+from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
 from agentic_shared.infrastructure.vector.dense import embed_dense_text
 from agentic_shared.infrastructure.vector.payload import payload_page, payload_text
-from agentic_shared.infrastructure.vector.protocols import QdrantReader
 from agentic_shared.infrastructure.vector.sparse import embed_sparse_text
 from agentic_shared.integrations.embedding.settings import EmbeddingSettings
 from agentic_shared.integrations.llm.settings import LLMSettings
@@ -27,14 +27,14 @@ class RetrievalService:
 
     def __init__(
         self,
-        qdrant_read: QdrantReader,
+        chunk_read: ChunkReadRepository,
         llm: LLMSettings,
         embedding: EmbeddingSettings,
         rerank: RerankSettings,
         *,
         rerank_client: RerankClient | None = None,
     ) -> None:
-        self._qdrant_read = qdrant_read
+        self._chunk_read = chunk_read
         self._llm = llm
         self._embedding = embedding
         self._rerank_settings = rerank
@@ -79,12 +79,12 @@ class RetrievalService:
 
     def _search_meta(self, query: str, top_k: int | None) -> tuple[str, int, int, SearchMeta]:
         cleaned = query.strip()
-        final_k = top_k if top_k is not None else self._qdrant_read.default_top_k
-        candidate_k = max(final_k, self._qdrant_read.candidate_top_k)
+        final_k = top_k if top_k is not None else self._chunk_read.default_top_k
+        candidate_k = max(final_k, self._chunk_read.candidate_top_k)
         meta = SearchMeta.hybrid_start(
             query=cleaned,
             dense_model=self._embedding.embedding_model,
-            sparse_model=self._qdrant_read.sparse_model,
+            sparse_model=self._chunk_read.sparse_model,
             candidate_top_k=candidate_k,
             final_top_k=final_k,
             rerank_enabled=self._rerank_settings.rerank_enabled,
@@ -103,13 +103,13 @@ class RetrievalService:
             dense_vector = embed_dense_text(cleaned, llm=self._llm, embedding=self._embedding)
             sparse_vector = embed_sparse_text(
                 cleaned,
-                model_name=self._qdrant_read.sparse_model,
+                model_name=self._chunk_read.sparse_model,
             )
         except Exception as exc:
             logger.warning("retrieval embedding failed", exc_info=True)
             return SearchDocumentsResult(chunks=[], meta=meta.with_error(str(exc)))
 
-        raw_candidates = self._qdrant_read.hybrid_search(
+        raw_candidates = self._chunk_read.hybrid_search(
             tenant_id=tenant_id,
             dense_vector=dense_vector,
             sparse_vector=sparse_vector,
@@ -149,7 +149,7 @@ class RetrievalService:
                 asyncio.to_thread(
                     embed_sparse_text,
                     cleaned,
-                    model_name=self._qdrant_read.sparse_model,
+                    model_name=self._chunk_read.sparse_model,
                 ),
             )
         except Exception as exc:
@@ -157,7 +157,7 @@ class RetrievalService:
             return SearchDocumentsResult(chunks=[], meta=meta.with_error(str(exc)))
 
         raw_candidates = await asyncio.to_thread(
-            self._qdrant_read.hybrid_search,
+            self._chunk_read.hybrid_search,
             tenant_id=tenant_id,
             dense_vector=dense_vector,
             sparse_vector=sparse_vector,
@@ -255,16 +255,16 @@ class RetrievalService:
 
     def get_source_citation(self, chunk_id: str, *, tenant_id: str) -> SourceCitation:
         try:
-            payload = self._qdrant_read.retrieve_point(chunk_id, tenant_id=tenant_id)
+            payload = self._chunk_read.get_by_id(chunk_id, tenant_id=tenant_id)
             if payload is None:
                 return SourceCitation(chunk_id=chunk_id, error="not found")
             text = payload_text(payload)
             return SourceCitation(
                 chunk_id=chunk_id,
                 page=payload_page(payload),
-                section=payload.get("section"),
-                source_file=payload.get("source_file"),
-                doc_id=payload.get("doc_id"),
+                section=payload.section,
+                source_file=payload.source_file,
+                doc_id=payload.doc_id,
                 text=text,
                 excerpt=text[:300],
             )
@@ -279,7 +279,7 @@ class RetrievalService:
         self, doc_id: str, *, tenant_id: str, limit: int = 500
     ) -> list[RetrievedChunk]:
         return self._scroll_all_chunks(
-            lambda batch, offset: self._qdrant_read.scroll_document_chunks(
+            lambda batch, offset: self._chunk_read.scroll_document_chunks(
                 doc_id, tenant_id=tenant_id, limit=batch, offset=offset
             ),
             limit=limit,
@@ -296,7 +296,7 @@ class RetrievalService:
         self, source_file: str, *, tenant_id: str, limit: int = 500
     ) -> list[RetrievedChunk]:
         return self._scroll_all_chunks(
-            lambda batch, offset: self._qdrant_read.scroll_source_file_chunks(
+            lambda batch, offset: self._chunk_read.scroll_source_file_chunks(
                 source_file, tenant_id=tenant_id, limit=batch, offset=offset
             ),
             limit=limit,
@@ -351,7 +351,7 @@ class RetrievalService:
         return sorted(all_chunks, key=_page_key)
 
     def list_indexed_documents(self, *, tenant_id: str) -> list[IndexedDocumentEntry]:
-        return self._qdrant_read.scroll_document_catalog(tenant_id=tenant_id)
+        return self._chunk_read.scroll_document_catalog(tenant_id=tenant_id)
 
     async def list_indexed_documents_async(self, *, tenant_id: str) -> list[IndexedDocumentEntry]:
         return await asyncio.to_thread(self.list_indexed_documents, tenant_id=tenant_id)

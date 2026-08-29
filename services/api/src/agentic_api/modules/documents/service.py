@@ -11,11 +11,11 @@ from agentic_shared.domains.persistence.protocols.index_jobs import (
     IndexJobReadRepository,
     IndexJobWriteRepository,
 )
+from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
 from agentic_shared.infrastructure.object_storage.protocols import (
     ObjectStorageReader,
     ObjectStorageWriter,
 )
-from agentic_shared.infrastructure.vector.protocols import QdrantWriter
 
 from agentic_api.modules.documents.schemas import DocumentOut, IndexStatus
 from agentic_api.modules.jobs.service import JobService
@@ -33,7 +33,7 @@ class DocumentService:
         jobs_write: IndexJobWriteRepository,
         storage_read: ObjectStorageReader,
         storage_write: ObjectStorageWriter,
-        qdrant_write: QdrantWriter,
+        chunk_write: ChunkWriteRepository,
         job_service: JobService,
     ) -> None:
         self._tenant_id = tenant_id
@@ -43,7 +43,7 @@ class DocumentService:
         self._jobs_write = jobs_write
         self._storage_read = storage_read
         self._storage_write = storage_write
-        self._qdrant_write = qdrant_write
+        self._chunk_write = chunk_write
         self._job_service = job_service
 
     async def create_upload_presign(
@@ -114,7 +114,7 @@ class DocumentService:
             raise BadRequestError("Object not found in MinIO — upload the file first")
 
         await self._job_service.cancel_indexing_for_document(document_id)
-        self._qdrant_write.delete_document_vectors(
+        self._chunk_write.delete_by_doc_id(
             str(document_id),
             tenant_id=self._tenant_id,
         )
@@ -142,7 +142,7 @@ class DocumentService:
         if not document:
             raise NotFoundError("Document not found")
         await self._job_service.cancel_indexing_for_document(document_id)
-        self._qdrant_write.delete_document_vectors(
+        self._chunk_write.delete_by_doc_id(
             str(document_id),
             tenant_id=self._tenant_id,
         )

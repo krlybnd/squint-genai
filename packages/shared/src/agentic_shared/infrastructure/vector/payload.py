@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
-from typing import Any
+
+from agentic_shared.infrastructure.vector.types import VectorPayload
 
 
-def payload_text(payload: Mapping[str, Any]) -> str:
+def payload_text(payload: VectorPayload) -> str:
     """Extract human-readable chunk text from a Qdrant/LlamaIndex payload."""
-    if text := payload.get("text"):
-        return str(text).strip()
+    if payload.text:
+        return payload.text.strip()
 
-    raw = payload.get("_node_content") or ""
-    if not isinstance(raw, str) or not raw.strip():
+    raw = payload.node_content or ""
+    if not raw.strip():
         return ""
 
     if raw.lstrip().startswith("{"):
@@ -26,11 +26,7 @@ def payload_text(payload: Mapping[str, Any]) -> str:
     return raw.strip()
 
 
-def payload_page(payload: Mapping[str, Any]) -> str | int | None:
-    page = payload.get("page")
-    if isinstance(page, (str, int)):
-        return page
-    label = payload.get("page_label")
-    if isinstance(label, (str, int)):
-        return label
-    return None
+def payload_page(payload: VectorPayload) -> str | int | None:
+    if payload.page is not None:
+        return payload.page
+    return payload.page_label

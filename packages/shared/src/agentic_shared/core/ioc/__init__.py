@@ -11,7 +11,7 @@ from agentic_shared.infrastructure.postgres.client import DatabaseClient
 from agentic_shared.infrastructure.postgres.providers import DatabaseProvider
 from agentic_shared.infrastructure.redis.protocols import RedisReader
 from agentic_shared.infrastructure.redis.providers import RedisProvider
-from agentic_shared.infrastructure.vector.protocols import QdrantReader
+from agentic_shared.infrastructure.vector.client import QdrantClient
 from agentic_shared.infrastructure.vector.providers import QdrantProvider
 from agentic_shared.integrations.embedding.protocols import EmbeddingClient
 from agentic_shared.integrations.embedding.providers import EmbeddingProvider
@@ -35,7 +35,7 @@ __all__ = [
 def resource_health_provider() -> Provider:
     return make_resource_health_provider(
         DatabaseClient,
-        QdrantReader,
+        QdrantClient,
         RedisReader,
         ObjectStorageReader,
         ChatClient,

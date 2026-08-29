@@ -143,7 +143,7 @@ class TestPdfIndexingPipeline(unittest.TestCase):
         empty_node = MagicMock()
         empty_node.get_content.return_value = ""
         mock_splitter_cls.return_value.get_nodes_from_documents.return_value = [empty_node]
-        qdrant_write = MagicMock()
+        chunk_write = MagicMock()
 
         # Act
         count = index_pdf_bytes(
@@ -151,14 +151,14 @@ class TestPdfIndexingPipeline(unittest.TestCase):
             doc_id="doc-1",
             source_file="file.pdf",
             tenant_id="acme",
-            qdrant_write=qdrant_write,
+            chunk_write=chunk_write,
             llm=MagicMock(litellm_base_url="http://llm", proxy_api_key="key"),
             embedding=MagicMock(embedding_model="embed"),
         )
 
         # Assert
         self.assertEqual(count, 0)
-        qdrant_write.index_nodes.assert_not_called()
+        chunk_write.index_nodes.assert_not_called()
         mock_unlink.assert_called_once_with(missing_ok=True)
 
     @patch("agentic_indexing.modules.pdf_indexing.pipeline.Path.unlink")
@@ -191,8 +191,8 @@ class TestPdfIndexingPipeline(unittest.TestCase):
         node.get_content.return_value = "chunk"
         node.metadata = {}
         mock_splitter_cls.return_value.get_nodes_from_documents.return_value = [node]
-        qdrant_write = MagicMock()
-        qdrant_write.index_nodes.return_value = 1
+        chunk_write = MagicMock()
+        chunk_write.index_nodes.return_value = 1
 
         # Act
         count = index_pdf_bytes(
@@ -200,14 +200,14 @@ class TestPdfIndexingPipeline(unittest.TestCase):
             doc_id="doc-1",
             source_file="file.pdf",
             tenant_id="acme",
-            qdrant_write=qdrant_write,
+            chunk_write=chunk_write,
             llm=MagicMock(litellm_base_url="http://llm", proxy_api_key="key"),
             embedding=MagicMock(embedding_model="embed"),
         )
 
         # Assert
         self.assertEqual(count, 1)
-        qdrant_write.index_nodes.assert_called_once()
+        chunk_write.index_nodes.assert_called_once()
         mock_unlink.assert_called_once_with(missing_ok=True)
 
 

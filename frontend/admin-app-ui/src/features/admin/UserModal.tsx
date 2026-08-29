@@ -12,8 +12,6 @@ import { AdminFormField, AdminFormGrid, AdminFormSection } from "./AdminFormLayo
 import { UserTenantMembershipSection } from "./UserTenantMembershipSection";
 import "./AdminForm.css";
 
-const REALM_ROLES = ["read", "write", "admin"] as const;
-
 export type UserModalMode = { kind: "create" } | { kind: "edit"; user: User };
 
 type UserModalProps = {
@@ -27,17 +25,19 @@ type UserModalProps = {
 export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalProps) {
   const { t } = useTranslation();
   const isEdit = mode?.kind === "edit";
+  const editUsername = mode?.kind === "edit" ? mode.user.username : null;
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [tenantIds, setTenantIds] = useState<string[]>([]);
-  const [roles, setRoles] = useState<string[]>(["read"]);
+  const [tenantRoles, setTenantRoles] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [createTenantId, setCreateTenantId] = useState("");
 
+  // Reset form when opening or switching user — not on every parent list refresh.
   useEffect(() => {
     if (!open || !mode) return;
     if (mode.kind === "edit") {
@@ -48,7 +48,7 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
       setEnabled(u.enabled);
       setTenantId(u.tenant_id);
       setTenantIds(u.tenant_ids ?? []);
-      setRoles(u.realm_roles.length ? [...u.realm_roles] : []);
+      setTenantRoles(u.tenant_roles ?? {});
     } else {
       setUsername("");
       setEmail("");
@@ -56,11 +56,11 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
       setEnabled(true);
       setTenantId(null);
       setTenantIds([]);
+      setTenantRoles({});
       setCreateTenantId("");
-      setRoles(["read"]);
     }
     setError(null);
-  }, [open, mode]);
+  }, [open, editUsername, mode?.kind]);
 
   const tenantOptions = useMemo(
     () =>
@@ -83,10 +83,7 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
   function syncFromUser(user: User) {
     setTenantId(user.tenant_id);
     setTenantIds(user.tenant_ids ?? []);
-  }
-
-  function toggleRole(role: string) {
-    setRoles((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]));
+    setTenantRoles(user.tenant_roles ?? {});
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -99,7 +96,6 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
         savedUser = await updateUser(mode.user.username, {
           email: email.trim() || null,
           enabled,
-          realm_roles: roles,
           password: password.trim() || undefined,
         });
       } else {
@@ -107,11 +103,12 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
           username: username.trim(),
           email: email.trim() || undefined,
           password,
-          realm_roles: roles,
+          realm_roles: [],
         });
         if (createTenantId.trim()) {
           savedUser = await assignUserTenant(username.trim(), createTenantId.trim(), {
             setActive: true,
+            roles: ["read"],
           });
         }
       }
@@ -198,6 +195,7 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
               username={mode.user.username}
               tenantId={tenantId}
               tenantIds={tenantIds}
+              tenantRoles={tenantRoles}
               tenants={tenants}
               disabled={saving}
               onUpdated={async (user) => {
@@ -217,17 +215,6 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
               />
             </AdminFormField>
           )}
-        </AdminFormSection>
-
-        <AdminFormSection title={t("admin.sectionRoles")} description={t("admin.sectionRolesDesc")}>
-          <div className="admin-form-roles">
-            {REALM_ROLES.map((role) => (
-              <label key={role} className="ui-checkbox">
-                <input type="checkbox" checked={roles.includes(role)} onChange={() => toggleRole(role)} />
-                {role}
-              </label>
-            ))}
-          </div>
         </AdminFormSection>
       </form>
     </Modal>

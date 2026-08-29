@@ -200,6 +200,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
   /v1/tenants/{alias}/members/{username}:
+    patch:
+      tags:
+      - tenants
+      summary: Update Tenant Member
+      operationId: update_tenant_member_v1_tenants__alias__members__username__patch
+      parameters:
+      - name: alias
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Alias
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTenantMemberRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantMemberOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
     delete:
       tags:
       - tenants
@@ -410,6 +447,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/users/{username}/tenants/{alias}/roles:
+    put:
+      tags:
+      - users
+      summary: Set User Tenant Roles
+      operationId: set_user_tenant_roles_v1_users__username__tenants__alias__roles_put
+      parameters:
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Username
+      - name: alias
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Alias
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTenantRolesRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/users/{username}/active-tenant:
     put:
       tags:
@@ -483,6 +558,11 @@ components:
           maxLength: 255
           minLength: 1
           title: Username
+        roles:
+          items:
+            type: string
+          type: array
+          title: Roles
       type: object
       required:
       - username
@@ -501,6 +581,14 @@ components:
           title: Set Active
           description: Set JWT active tenant_id; default true only when user has no
             active tenant
+        roles:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Roles
+          description: App roles for this tenant membership (read/write/admin)
       type: object
       required:
       - alias
@@ -580,6 +668,15 @@ components:
       required:
       - alias
       title: SetActiveTenantRequest
+    SetTenantRolesRequest:
+      properties:
+        roles:
+          items:
+            type: string
+          type: array
+          title: Roles
+      type: object
+      title: SetTenantRolesRequest
     TenantListResponse:
       properties:
         items:
@@ -627,6 +724,11 @@ components:
           - type: string
           - type: 'null'
           title: Email
+        roles:
+          items:
+            type: string
+          type: array
+          title: Roles
       type: object
       required:
       - id
@@ -654,6 +756,15 @@ components:
       - name
       - enabled
       title: TenantOut
+    UpdateTenantMemberRequest:
+      properties:
+        roles:
+          items:
+            type: string
+          type: array
+          title: Roles
+      type: object
+      title: UpdateTenantMemberRequest
     UpdateTenantRequest:
       properties:
         name:
@@ -759,6 +870,13 @@ components:
             type: string
           type: array
           title: Realm Roles
+        tenant_roles:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+          title: Tenant Roles
       type: object
       required:
       - id

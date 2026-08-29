@@ -9,7 +9,6 @@ from agentic_api.settings import ApiSettings
 class RetrievalProvider(AsyncRetrievalProvider):
     def __init__(self, settings: ApiSettings) -> None:
         super().__init__(
-            settings.qdrant,
             settings.llm,
             settings.embedding,
             settings.rerank,

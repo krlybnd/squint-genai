@@ -8,11 +8,11 @@ from agentic_shared.domains.persistence.protocols.index_jobs import (
     IndexJobReadRepository,
     IndexJobWriteRepository,
 )
+from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
 from agentic_shared.infrastructure.object_storage.protocols import (
     ObjectStorageReader,
     ObjectStorageWriter,
 )
-from agentic_shared.infrastructure.vector.protocols import QdrantWriter
 from dishka import Provider, Scope, provide
 
 from agentic_api.modules.documents.service import DocumentService
@@ -30,7 +30,7 @@ class DocumentsProvider(Provider):
         jobs_write: IndexJobWriteRepository,
         storage_read: ObjectStorageReader,
         storage_write: ObjectStorageWriter,
-        qdrant_write: QdrantWriter,
+        chunk_write: ChunkWriteRepository,
         job_service: JobService,
     ) -> DocumentService:
         return DocumentService(
@@ -41,6 +41,6 @@ class DocumentsProvider(Provider):
             jobs_write,
             storage_read,
             storage_write,
-            qdrant_write,
+            chunk_write,
             job_service,
         )

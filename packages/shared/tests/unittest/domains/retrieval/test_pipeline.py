@@ -10,10 +10,14 @@ from agentic_shared.integrations.llm.settings import LLMSettings
 from agentic_shared.integrations.rerank.settings import RerankSettings
 
 
-class _StubQdrantReader:
+class _StubChunkReadRepository:
     default_top_k = 5
     candidate_top_k = 30
     sparse_model = "Qdrant/bm25"
+
+    def get_by_id(self, point_id: str, *, tenant_id: str):
+        _ = (point_id, tenant_id)
+        return None
 
     def hybrid_search(self, *, tenant_id: str, dense_vector, sparse_vector, limit):
         _ = tenant_id
@@ -27,10 +31,6 @@ class _StubQdrantReader:
         _ = tenant_id
         return []
 
-    def retrieve_point(self, point_id, *, tenant_id: str):
-        _ = (point_id, tenant_id)
-        return None
-
     def scroll_document_chunks(self, doc_id, *, tenant_id: str, limit=100, offset=None):
         _ = (doc_id, tenant_id)
         return [], None
@@ -38,9 +38,6 @@ class _StubQdrantReader:
     def scroll_source_file_chunks(self, source_file, *, tenant_id: str, limit=100, offset=None):
         _ = (source_file, tenant_id)
         return [], None
-
-    def is_available(self):
-        return True
 
 
 class TestRetrievalPipeline(unittest.TestCase):
@@ -62,7 +59,7 @@ class TestRetrievalPipeline(unittest.TestCase):
             rerank_model="rerank-multilingual-v3.0",
         )
         service = RetrievalService(
-            _StubQdrantReader(),
+            _StubChunkReadRepository(),
             LLMSettings(),
             EmbeddingSettings(),
             rerank_settings,
@@ -87,7 +84,7 @@ class TestRetrievalPipeline(unittest.TestCase):
         mock_dense.return_value = [0.1, 0.2]
         mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
         service = RetrievalService(
-            _StubQdrantReader(),
+            _StubChunkReadRepository(),
             LLMSettings(),
             EmbeddingSettings(),
             RerankSettings(rerank_enabled=False),
@@ -108,7 +105,7 @@ class TestRetrievalPipeline(unittest.TestCase):
     ) -> None:
         # Arrange
         service = RetrievalService(
-            _StubQdrantReader(),
+            _StubChunkReadRepository(),
             LLMSettings(),
             EmbeddingSettings(),
             RerankSettings(rerank_enabled=True, cohere_api_key="test-key"),
@@ -141,7 +138,7 @@ class TestRetrievalPipeline(unittest.TestCase):
             cohere_api_key="test-key",
         )
         service = RetrievalService(
-            _StubQdrantReader(),
+            _StubChunkReadRepository(),
             LLMSettings(),
             EmbeddingSettings(),
             rerank_settings,
@@ -166,7 +163,7 @@ class TestRetrievalPipeline(unittest.TestCase):
         mock_dense.return_value = [0.1]
         mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
 
-        class _SingleHitReader(_StubQdrantReader):
+        class _SingleHitReader(_StubChunkReadRepository):
             def hybrid_search(self, *, tenant_id: str, dense_vector, sparse_vector, limit):
                 _ = (tenant_id, dense_vector, sparse_vector, limit)
                 return [RetrievedChunk(chunk_id="only", text="solo", score=0.99)]
@@ -214,7 +211,7 @@ class TestRetrievalPipelineAsync(unittest.IsolatedAsyncioTestCase):
         )
         service = AsyncRetrievalService(
             RetrievalService(
-                _StubQdrantReader(),
+                _StubChunkReadRepository(),
                 LLMSettings(),
                 EmbeddingSettings(),
                 rerank_settings,

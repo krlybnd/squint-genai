@@ -3,7 +3,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from agentic_shared.infrastructure.vector.protocols import QdrantWriter
+from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
 from agentic_shared.integrations.embedding.settings import EmbeddingSettings
 from agentic_shared.integrations.llm.settings import LLMSettings
 from llama_index.core import Settings as LISettings
@@ -107,7 +107,7 @@ def index_pdf_bytes(
     doc_id: str,
     source_file: str,
     tenant_id: str,
-    qdrant_write: QdrantWriter,
+    chunk_write: ChunkWriteRepository,
     llm: LLMSettings,
     embedding: EmbeddingSettings,
 ) -> int:
@@ -153,7 +153,7 @@ def index_pdf_bytes(
             node.metadata.setdefault("source_file", source_file)
             node.metadata.setdefault("tenant_id", tenant_id)
 
-        count = qdrant_write.index_nodes(nodes, llm=llm, embedding=embedding)
+        count = chunk_write.index_nodes(nodes, llm=llm, embedding=embedding)
         logger.info(
             "pdf indexed doc_id=%s source_file=%s chunks=%d tenant_id=%s",
             doc_id,
