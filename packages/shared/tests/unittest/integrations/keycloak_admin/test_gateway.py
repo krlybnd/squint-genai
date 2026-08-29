@@ -289,6 +289,42 @@ class TestTenantGateway(unittest.IsolatedAsyncioTestCase):
         # Assert
         delete.assert_awaited_once()
 
+    async def test_list_members_reads_roles_from_user_attributes(self) -> None:
+        # Arrange
+        from agentic_shared.integrations.keycloak_admin import gateway as gw
+        from agentic_shared.integrations.keycloak_admin.gateway import TenantRecord
+
+        member_type = type("MemberRepresentation", (), {})
+        member = member_type()
+        member.id = "u1"
+        member.username = "bob@tenant-b.local"
+        member.email = "bob@tenant-b.local"
+
+        self.gateway.get_by_alias = AsyncMock(  # type: ignore[method-assign]
+            return_value=TenantRecord(id="org-1", alias="acme", name="Acme", enabled=True),
+        )
+        self.gateway._fetch_user_tenant_roles = AsyncMock(  # type: ignore[method-assign]
+            return_value={"acme": ["read", "write"]},
+        )
+
+        # Act
+        with (
+            patch.object(gw, "MemberRepresentation", member_type),
+            patch.object(
+                gw.get_admin_realms_realm_organizations_org_id_members,
+                "asyncio_detailed",
+                new=AsyncMock(return_value=_http(parsed=[member])),
+            ),
+        ):
+            members, has_more = await self.gateway.list_members("acme")
+
+        # Assert
+        self.assertFalse(has_more)
+        self.assertEqual(len(members), 1)
+        self.assertEqual(members[0].username, "bob@tenant-b.local")
+        self.assertEqual(members[0].roles, ["read", "write"])
+        self.gateway._fetch_user_tenant_roles.assert_awaited_once_with("u1")
+
 
 class TestUserGateway(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:

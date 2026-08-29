@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TypedDict, cast
 
 from agentic_shared.core.i18n import DEFAULT_LOCALE
-from agentic_shared.infrastructure.vector.types import ChunkPointPayload
+from agentic_shared.domains.retrieval.models import ChunkPointPayload
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, ConfigDict, Field
 

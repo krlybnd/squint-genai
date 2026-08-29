@@ -6,8 +6,8 @@ from agentic_shared.domains.indexing.models import IndexDocumentTaskResult
 from agentic_shared.domains.persistence.entities import JobStatus
 from agentic_shared.domains.persistence.protocols.documents import DocumentWriteRepositorySync
 from agentic_shared.domains.persistence.protocols.index_jobs import IndexJobWriteRepositorySync
+from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
 from agentic_shared.infrastructure.object_storage.protocols import ObjectStorageReader
-from agentic_shared.infrastructure.vector.protocols import QdrantWriter
 from agentic_shared.integrations.embedding.settings import EmbeddingSettings
 from agentic_shared.integrations.llm.settings import LLMSettings
 
@@ -23,14 +23,14 @@ class IndexDocumentUseCase:
         jobs: IndexJobWriteRepositorySync,
         documents: DocumentWriteRepositorySync,
         storage_read: ObjectStorageReader,
-        qdrant_write: QdrantWriter,
+        chunk_write: ChunkWriteRepository,
         llm: LLMSettings,
         embedding: EmbeddingSettings,
     ) -> None:
         self._jobs = jobs
         self._documents = documents
         self._storage_read = storage_read
-        self._qdrant_write = qdrant_write
+        self._chunk_write = chunk_write
         self._llm = llm
         self._embedding = embedding
 
@@ -50,13 +50,13 @@ class IndexDocumentUseCase:
         logger.debug("downloading document minio_key=%s job_id=%s", minio_key, job_id)
         pdf_bytes = self._storage_read.download(minio_key)
         logger.debug("downloaded document bytes=%d job_id=%s", len(pdf_bytes), job_id)
-        self._qdrant_write.delete_document_vectors(str(document_id), tenant_id=tenant_id)
+        self._chunk_write.delete_by_doc_id(str(document_id), tenant_id=tenant_id)
         chunk_count = index_pdf_bytes(
             pdf_bytes,
             doc_id=str(document_id),
             source_file=filename,
             tenant_id=tenant_id,
-            qdrant_write=self._qdrant_write,
+            chunk_write=self._chunk_write,
             llm=self._llm,
             embedding=self._embedding,
         )

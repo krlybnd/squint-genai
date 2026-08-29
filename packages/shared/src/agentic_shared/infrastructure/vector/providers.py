@@ -2,13 +2,20 @@ from collections.abc import AsyncIterator
 
 from dishka import Provider, Scope, provide
 
-from agentic_shared.infrastructure.core.client import open_client
-from agentic_shared.infrastructure.vector.client import (
-    QdrantClient,
-    QdrantVectorReader,
-    QdrantVectorWriter,
+from agentic_shared.domains.annotations.protocols.comments import CommentWriteRepository
+from agentic_shared.domains.annotations.repositories.qdrant_.comments import (
+    QdrantCommentWriteRepository,
 )
-from agentic_shared.infrastructure.vector.protocols import QdrantReader, QdrantWriter
+from agentic_shared.domains.retrieval.protocols.chunks import (
+    ChunkReadRepository,
+    ChunkWriteRepository,
+)
+from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import (
+    QdrantChunkReadRepository,
+    QdrantChunkWriteRepository,
+)
+from agentic_shared.infrastructure.core.client import open_client
+from agentic_shared.infrastructure.vector.client import QdrantClient
 from agentic_shared.infrastructure.vector.settings import QdrantSettings
 
 
@@ -23,9 +30,13 @@ class QdrantProvider(Provider):
             yield client
 
     @provide(scope=Scope.APP)
-    def qdrant_reader(self, qdrant_client: QdrantClient) -> QdrantReader:
-        return QdrantVectorReader(qdrant_client)
+    def chunk_read_repository(self, qdrant_client: QdrantClient) -> ChunkReadRepository:
+        return QdrantChunkReadRepository(qdrant_client)
 
     @provide(scope=Scope.APP)
-    def qdrant_writer(self, qdrant_client: QdrantClient) -> QdrantWriter:
-        return QdrantVectorWriter(qdrant_client)
+    def chunk_write_repository(self, qdrant_client: QdrantClient) -> ChunkWriteRepository:
+        return QdrantChunkWriteRepository(qdrant_client)
+
+    @provide(scope=Scope.APP)
+    def comment_write_repository(self, qdrant_client: QdrantClient) -> CommentWriteRepository:
+        return QdrantCommentWriteRepository(qdrant_client)

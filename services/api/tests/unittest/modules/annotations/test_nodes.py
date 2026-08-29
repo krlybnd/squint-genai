@@ -21,17 +21,14 @@ class TestModerationNodes(unittest.IsolatedAsyncioTestCase):
         return CommentGraphDeps(
             chat_client=AsyncMock(),
             embedding_client=AsyncMock(),
-            qdrant_read=Mock(),
-            qdrant_write=Mock(),
+            comment_write=Mock(),
         )
 
     @patch("agentic_api.modules.annotations.nodes.looks_like_prompt_injection", return_value=False)
-    @patch("agentic_api.modules.annotations.nodes.contains_obscene_language", return_value=False)
     @patch("agentic_api.modules.annotations.nodes.get_module_settings")
     async def test_moderate_node_handles_json_parse_failure(
         self,
         mock_get_module_settings: Mock,
-        _mock_obscene: Mock,
         _mock_injection: Mock,
     ) -> None:
         # Arrange

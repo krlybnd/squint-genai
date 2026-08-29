@@ -4,6 +4,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agentic_shared.domains.annotations.models import ChunkComment
 from agentic_shared.domains.retrieval.enums import FusionStrategy, SearchType
+from agentic_shared.infrastructure.vector.types import VectorPayload
+
+
+class ChunkPointPayload(VectorPayload):
+    """Indexed chunk point stored in Qdrant."""
+
+    comments: list[ChunkComment] = Field(default_factory=list)
 
 
 class RetrievedChunk(BaseModel):

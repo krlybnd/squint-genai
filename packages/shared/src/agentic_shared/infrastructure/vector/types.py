@@ -1,28 +1,19 @@
-from __future__ import annotations
+from abc import ABC
 
-from typing import TypedDict
-
-
-class ChunkPointPayload(TypedDict, total=False):
-    point_type: str
-    tenant_id: str
-    doc_id: str
-    source_file: str
-    page: str | int
-    page_label: str | int
-    text: str
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class CommentPointPayload(TypedDict, total=False):
-    point_type: str
-    comment_id: str
-    parent_chunk_id: str
-    tenant_id: str
-    selected_text: str
-    comment_text: str
-    text: str
-    user_id: str | None
-    created_at: str
-    doc_id: str | None
-    source_file: str | None
-    page: str | int | None
+class VectorPayload(BaseModel, ABC):
+    """Abstract Qdrant point payload. Domain models inherit this; the client is generic over it."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    point_type: str | None = None
+    tenant_id: str | None = None
+    text: str | None = None
+    doc_id: str | None = None
+    source_file: str | None = None
+    page: str | int | None = None
+    page_label: str | int | None = None
+    section: str | None = None
+    node_content: str | None = Field(default=None, alias="_node_content")

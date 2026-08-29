@@ -288,6 +288,23 @@ class TenantGateway:
             raise KeycloakAdminError("Tenant updated but could not be resolved")
         return updated
 
+    async def _fetch_user_tenant_roles(self, user_id: str) -> dict[str, list[str]]:
+        """Load per-tenant roles from the user record (SSOT), not org member attrs."""
+        client = await self._client()
+        async with client:
+            response = await get_admin_realms_realm_users_user_id.asyncio_detailed(
+                self._realm,
+                user_id,
+                client=client,
+            )
+        _check_response(response.status_code, response.content)
+        parsed = response.parsed
+        if not isinstance(parsed, UserRepresentation):
+            return {}
+        user_attrs = parsed.attributes if parsed.attributes is not UNSET else None
+        parsed_attrs = user_attrs if isinstance(user_attrs, UserRepresentationAttributes) else None
+        return _parse_tenant_roles(parsed_attrs)
+
     async def list_members(
         self,
         alias: str,
@@ -322,11 +339,7 @@ class TenantGateway:
             if not user_id or not username or str(username).startswith("service-account-"):
                 continue
             email = item.email if item.email is not UNSET and item.email else None
-            member_attrs = item.attributes if item.attributes is not UNSET else None
-            parsed_attrs = (
-                member_attrs if isinstance(member_attrs, MemberRepresentationAttributes) else None
-            )
-            tenant_roles = _parse_tenant_roles(parsed_attrs)
+            tenant_roles = await self._fetch_user_tenant_roles(str(user_id))
             members.append(
                 TenantMemberRecord(
                     id=str(user_id),

@@ -6,14 +6,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from agentic_shared.core.i18n import DEFAULT_LOCALE, LOCALE_LANGUAGE, t
-from agentic_shared.domains.annotations.models import ChunkComment
-from agentic_shared.infrastructure.vector.comments import (
-    contains_obscene_language,
-    looks_like_prompt_injection,
-)
+from agentic_shared.core.security.guard import looks_like_prompt_injection
+from agentic_shared.domains.annotations.models import ChunkComment, CommentPointPayload
+from agentic_shared.domains.retrieval.models import ChunkPointPayload
 from agentic_shared.infrastructure.vector.enums import QdrantPointType
 from agentic_shared.infrastructure.vector.payload import payload_page
-from agentic_shared.infrastructure.vector.types import CommentPointPayload
 from agentic_shared.integrations.llm.content import extract_chat_completion_content
 from agentic_shared.integrations.llm.messages import llm_system_user
 from agentic_shared.integrations.llm.settings import LLMSettings
@@ -56,7 +53,6 @@ async def moderate_node(state: CommentState, deps: CommentGraphDeps) -> CommentS
     module = get_module_settings()
     selected = state["selected_text"].strip()
     comment = state["comment_text"].strip()
-    combined = f"{selected}\n{comment}"
 
     if not comment or len(comment) < module.comment_min_length:
         logger.debug("comment rejected too_short chunk_id=%s", state["chunk_id"])
@@ -74,13 +70,6 @@ async def moderate_node(state: CommentState, deps: CommentGraphDeps) -> CommentS
                 locale,
                 max=module.comment_max_length,
             ),
-        }
-
-    if contains_obscene_language(combined):
-        logger.info("comment rejected obscene chunk_id=%s", state["chunk_id"])
-        return {
-            "approved": False,
-            "rejection_reason": t("annotations.rejection.obscene", locale),
         }
 
     if looks_like_prompt_injection(comment):
@@ -125,7 +114,7 @@ async def persist_node(state: CommentState, deps: CommentGraphDeps) -> CommentSt
     """Embed comment and attach to chunk metadata + indexed comment vector."""
     chunk_id = state["chunk_id"]
     tenant_id = state["tenant_id"]
-    chunk_payload = state["chunk_payload"]
+    chunk_payload = ChunkPointPayload.model_validate(state["chunk_payload"])
 
     comment_id = str(uuid.uuid4())
     selected = state["selected_text"].strip()
@@ -145,23 +134,23 @@ async def persist_node(state: CommentState, deps: CommentGraphDeps) -> CommentSt
         created_at=created_at,
     )
 
-    comment_point_payload: CommentPointPayload = {
-        "point_type": QdrantPointType.COMMENT,
-        "comment_id": comment_id,
-        "parent_chunk_id": chunk_id,
-        "tenant_id": chunk_payload.get("tenant_id") or tenant_id,
-        "selected_text": selected,
-        "comment_text": comment_text,
-        "text": embed_text,
-        "user_id": user_id,
-        "created_at": created_at,
-        "doc_id": chunk_payload.get("doc_id"),
-        "source_file": chunk_payload.get("source_file"),
-        "page": payload_page(chunk_payload),
-    }
+    comment_point_payload = CommentPointPayload(
+        point_type=QdrantPointType.COMMENT,
+        comment_id=comment_id,
+        parent_chunk_id=chunk_id,
+        tenant_id=chunk_payload.tenant_id or tenant_id,
+        selected_text=selected,
+        comment_text=comment_text,
+        text=embed_text,
+        user_id=user_id,
+        created_at=created_at,
+        doc_id=chunk_payload.doc_id,
+        source_file=chunk_payload.source_file,
+        page=payload_page(chunk_payload),
+    )
 
-    deps.qdrant_write.upsert_comment_vector(comment_id, vector, comment_point_payload)
-    deps.qdrant_write.append_chunk_comment(chunk_id, comment)
+    deps.comment_write.upsert(comment_id, comment_point_payload, vector=vector)
+    deps.comment_write.append_to_chunk(chunk_id, comment, tenant_id=tenant_id)
     logger.info("comment persisted chunk_id=%s comment_id=%s", chunk_id, comment_id)
 
     return {"comment_id": comment_id, "approved": True}

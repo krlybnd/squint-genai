@@ -30,7 +30,7 @@ def _service(**overrides: object) -> DocumentService:
         "jobs_write": AsyncMock(),
         "storage_read": Mock(),
         "storage_write": Mock(),
-        "qdrant_write": Mock(),
+        "chunk_write": Mock(),
         "job_service": AsyncMock(),
     }
     defaults.update(overrides)
@@ -120,7 +120,7 @@ class TestDocumentService(unittest.IsolatedAsyncioTestCase):
 
         # Assert
         service._job_service.cancel_indexing_for_document.assert_awaited_once_with(document.id)
-        service._qdrant_write.delete_document_vectors.assert_called_once_with(
+        service._chunk_write.delete_by_doc_id.assert_called_once_with(
             str(document.id),
             tenant_id="tenant-1",
         )
@@ -147,7 +147,7 @@ class TestDocumentService(unittest.IsolatedAsyncioTestCase):
         await service.delete_document(document.id)
 
         # Assert
-        service._qdrant_write.delete_document_vectors.assert_called_once_with(
+        service._chunk_write.delete_by_doc_id.assert_called_once_with(
             str(document.id),
             tenant_id="tenant-1",
         )

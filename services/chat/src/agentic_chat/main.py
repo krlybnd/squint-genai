@@ -13,6 +13,7 @@ from agentic_shared.frameworks.fastapi.bootstrap import (
 from agentic_shared.frameworks.fastapi.domain_errors import register_domain_error_handlers
 from agentic_shared.frameworks.fastapi.health import router as health_router
 from agentic_shared.infrastructure.postgres.client import DatabaseClient
+from agentic_shared.infrastructure.vector.providers import QdrantProvider
 from agentic_shared.integrations.langsmith.configure import configure_langsmith
 from agentic_shared.integrations.llm.protocols import ChatClient
 from dishka import AsyncContainer
@@ -41,9 +42,9 @@ def create_app() -> FastAPI:
         DatabaseProvider(settings.database),
         LLMProvider(settings.llm),
         make_resource_health_provider(DatabaseClient, ChatClient),
+        QdrantProvider(settings.qdrant),
         AsyncDbProvider(settings.database),
         AsyncRetrievalProvider(
-            settings.qdrant,
             settings.llm,
             settings.embedding,
             settings.rerank,

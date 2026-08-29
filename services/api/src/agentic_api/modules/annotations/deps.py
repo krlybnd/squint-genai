@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from agentic_shared.infrastructure.vector.protocols import QdrantReader, QdrantWriter
+from agentic_shared.domains.annotations.protocols.comments import CommentWriteRepository
 from agentic_shared.integrations.embedding.protocols import EmbeddingClient
 from agentic_shared.integrations.llm.protocols import ChatClient
 
@@ -9,5 +9,4 @@ from agentic_shared.integrations.llm.protocols import ChatClient
 class CommentGraphDeps:
     chat_client: ChatClient
     embedding_client: EmbeddingClient
-    qdrant_read: QdrantReader
-    qdrant_write: QdrantWriter
+    comment_write: CommentWriteRepository

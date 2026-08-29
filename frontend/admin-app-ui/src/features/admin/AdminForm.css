@@ -175,8 +175,8 @@
 .admin-form-roles .ui-checkbox {
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--overlay);
+  border: 1px solid transparent;
+  background: transparent;
 }
 
 .admin-form-footer-actions {

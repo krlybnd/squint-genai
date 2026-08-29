@@ -1,6 +1,7 @@
 from agentic_shared.core.auth.context import AuthContext
 from agentic_shared.core.auth.tenant import resolve_tenant_id
-from agentic_shared.infrastructure.vector.protocols import QdrantReader, QdrantWriter
+from agentic_shared.domains.annotations.protocols.comments import CommentWriteRepository
+from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
 from agentic_shared.integrations.embedding.protocols import EmbeddingClient
 from agentic_shared.integrations.llm.protocols import ChatClient
 from dishka import Provider, Scope, provide
@@ -17,14 +18,12 @@ class AnnotationsProvider(Provider):
         self,
         chat_client: ChatClient,
         embedding_client: EmbeddingClient,
-        qdrant_read: QdrantReader,
-        qdrant_writer: QdrantWriter,
+        comment_write: CommentWriteRepository,
     ) -> CommentGraphDeps:
         return CommentGraphDeps(
             chat_client=chat_client,
             embedding_client=embedding_client,
-            qdrant_read=qdrant_read,
-            qdrant_write=qdrant_writer,
+            comment_write=comment_write,
         )
 
     @provide(scope=Scope.APP)
@@ -35,11 +34,11 @@ class AnnotationsProvider(Provider):
     def annotation_service(
         self,
         auth: AuthContext,
-        qdrant_read: QdrantReader,
+        chunk_read: ChunkReadRepository,
         comment_graph: CommentCompiledGraph,
     ) -> AnnotationService:
         return AnnotationService(
             tenant_id=resolve_tenant_id(auth),
-            qdrant_read=qdrant_read,
+            chunk_read=chunk_read,
             graph=comment_graph,
         )
