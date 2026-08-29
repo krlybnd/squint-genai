@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal, Select } from "@are/ui-core";
 import {
-  APP_ROLES,
   assignUserTenant,
   createUser,
   updateUser,
@@ -26,6 +25,7 @@ type UserModalProps = {
 export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalProps) {
   const { t } = useTranslation();
   const isEdit = mode?.kind === "edit";
+  const editUsername = mode?.kind === "edit" ? mode.user.username : null;
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,11 +33,11 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [tenantIds, setTenantIds] = useState<string[]>([]);
   const [tenantRoles, setTenantRoles] = useState<Record<string, string[]>>({});
-  const [createRoles, setCreateRoles] = useState<string[]>(["read"]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [createTenantId, setCreateTenantId] = useState("");
 
+  // Reset form when opening or switching user — not on every parent list refresh.
   useEffect(() => {
     if (!open || !mode) return;
     if (mode.kind === "edit") {
@@ -58,10 +58,9 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
       setTenantIds([]);
       setTenantRoles({});
       setCreateTenantId("");
-      setCreateRoles(["read"]);
     }
     setError(null);
-  }, [open, mode]);
+  }, [open, editUsername, mode?.kind]);
 
   const tenantOptions = useMemo(
     () =>
@@ -87,12 +86,6 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
     setTenantRoles(user.tenant_roles ?? {});
   }
 
-  function toggleCreateRole(role: string) {
-    setCreateRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
-    );
-  }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -110,12 +103,12 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
           username: username.trim(),
           email: email.trim() || undefined,
           password,
-          realm_roles: createTenantId.trim() ? [] : createRoles,
+          realm_roles: [],
         });
         if (createTenantId.trim()) {
           savedUser = await assignUserTenant(username.trim(), createTenantId.trim(), {
             setActive: true,
-            roles: createRoles,
+            roles: ["read"],
           });
         }
       }
@@ -212,32 +205,15 @@ export function UserModal({ open, mode, tenants, onClose, onSaved }: UserModalPr
               onError={setError}
             />
           ) : (
-            <>
-              <AdminFormField id="user-create-tenant" label={t("admin.assignTenant")} span={2}>
-                <Select
-                  value={createTenantId}
-                  options={createTenantOptions}
-                  onChange={setCreateTenantId}
-                  ariaLabel={t("admin.tenantLabel")}
-                  placeholder={t("admin.noTenant")}
-                />
-              </AdminFormField>
-              <div className="admin-membership-roles">
-                <span className="admin-membership-roles-label">{t("admin.tenantRolesLabel")}</span>
-                <div className="admin-form-roles">
-                  {APP_ROLES.map((role) => (
-                    <label key={role} className="ui-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={createRoles.includes(role)}
-                        onChange={() => toggleCreateRole(role)}
-                      />
-                      {role}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </>
+            <AdminFormField id="user-create-tenant" label={t("admin.assignTenant")} span={2}>
+              <Select
+                value={createTenantId}
+                options={createTenantOptions}
+                onChange={setCreateTenantId}
+                ariaLabel={t("admin.tenantLabel")}
+                placeholder={t("admin.noTenant")}
+              />
+            </AdminFormField>
           )}
         </AdminFormSection>
       </form>

@@ -39,9 +39,6 @@ export type MembershipPanelAdd = {
   buttonLabel: string;
   onAdd: () => void;
   addDisabled?: boolean;
-  roles?: string[];
-  onRolesChange?: (roles: string[]) => void;
-  rolesLabel?: string;
 };
 
 export type MembershipPanelLoadMore = {
@@ -76,16 +73,13 @@ function RoleCheckboxes({
   roles,
   onChange,
   disabled,
-  label,
 }: {
   roles: string[];
   onChange: (roles: string[]) => void;
   disabled?: boolean;
-  label?: string;
 }) {
   return (
     <div className="admin-membership-roles">
-      {label ? <span className="admin-membership-roles-label">{label}</span> : null}
       <div className="admin-form-roles">
         {APP_ROLES.map((role) => (
           <label key={role} className="ui-checkbox">
@@ -93,7 +87,10 @@ function RoleCheckboxes({
               type="checkbox"
               checked={roles.includes(role)}
               disabled={disabled}
-              onChange={() => onChange(toggleRole(roles, role))}
+              onChange={(e) => {
+                e.stopPropagation();
+                onChange(toggleRole(roles, role));
+              }}
             />
             {role}
           </label>
@@ -171,15 +168,6 @@ export function MembershipPanel({
           {add.buttonLabel}
         </button>
       </div>
-
-      {add.onRolesChange ? (
-        <RoleCheckboxes
-          roles={add.roles ?? []}
-          onChange={add.onRolesChange}
-          disabled={add.disabled}
-          label={add.rolesLabel}
-        />
-      ) : null}
 
       {loadMoreBefore.map((entry) => (
         <LoadMoreButton key={entry.key} entry={entry} />

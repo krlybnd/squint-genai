@@ -35,7 +35,6 @@ export function TenantMembersSection({ tenantAlias, onMembershipChanged }: Tenan
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pickUsername, setPickUsername] = useState("");
-  const [addRoles, setAddRoles] = useState<string[]>(["read"]);
 
   const loadMembersPage = useCallback(
     async (first: number, append: boolean) => {
@@ -110,9 +109,8 @@ export function TenantMembersSection({ tenantAlias, onMembershipChanged }: Tenan
     setBusy(true);
     setError(null);
     try {
-      await addTenantMember(tenantAlias, username, addRoles);
+      await addTenantMember(tenantAlias, username, ["read"]);
       setPickUsername("");
-      setAddRoles(["read"]);
       await loadMembersPage(0, false);
       onMembershipChanged?.(username);
     } catch (err) {
@@ -123,18 +121,26 @@ export function TenantMembersSection({ tenantAlias, onMembershipChanged }: Tenan
   }
 
   async function handleRolesChange(username: string, roles: string[]) {
-    setBusy(true);
+    const previous = members.find((m) => m.username === username)?.roles ?? [];
+    setMembers((prev) =>
+      prev.map((member) => (member.username === username ? { ...member, roles } : member)),
+    );
     setError(null);
     try {
       const updated = await updateTenantMemberRoles(tenantAlias, username, roles);
       setMembers((prev) =>
-        prev.map((member) => (member.username === username ? { ...member, roles: updated.roles } : member)),
+        prev.map((member) =>
+          member.username === username ? { ...member, roles: updated.roles } : member,
+        ),
       );
       onMembershipChanged?.(username);
     } catch (err) {
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.username === username ? { ...member, roles: previous } : member,
+        ),
+      );
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -195,9 +201,6 @@ export function TenantMembersSection({ tenantAlias, onMembershipChanged }: Tenan
         buttonLabel: t("admin.addMember"),
         onAdd: () => void handleAdd(),
         addDisabled: busy || !pickUsername.trim(),
-        roles: addRoles,
-        onRolesChange: setAddRoles,
-        rolesLabel: t("admin.tenantRolesLabel"),
       }}
       loadMore={[
         ...(usersHasMore

@@ -12,8 +12,13 @@ import "./AdminPage.css";
 function mergeUserIntoList(list: User[], patch: User): User[] {
   const idx = list.findIndex((u) => u.username === patch.username);
   if (idx < 0) return [...list, patch];
+  const existing = list[idx];
   const next = [...list];
-  next[idx] = patch;
+  const tenantRoles =
+    Object.keys(patch.tenant_roles ?? {}).length > 0
+      ? patch.tenant_roles
+      : (existing.tenant_roles ?? {});
+  next[idx] = { ...existing, ...patch, tenant_roles: tenantRoles };
   return next;
 }
 
@@ -47,20 +52,39 @@ export function AdminPage() {
 
   const refreshLists = useCallback(async (userPatch?: User) => {
     const [tList, uList] = await Promise.all([fetchTenants(), fetchUsers()]);
-    const mergedUsers = userPatch ? mergeUserIntoList(uList, userPatch) : uList;
-
-      setTenants(tList);
-      setUsers(mergedUsers);
-      setUserModal((prev) => {
-        if (prev?.kind !== "edit") return prev;
-        const fresh = mergedUsers.find((u) => u.username === prev.user.username);
-        return fresh ? { kind: "edit", user: fresh } : prev;
+    setTenants(tList);
+    setUsers((prev) => {
+      const merged = uList.map((fresh) => {
+        const existing = prev.find((u) => u.username === fresh.username);
+        if (!existing) return fresh;
+        if (Object.keys(fresh.tenant_roles ?? {}).length > 0) return fresh;
+        return { ...fresh, tenant_roles: existing.tenant_roles ?? {} };
       });
-      setTenantModal((prev) => {
-        if (prev?.kind !== "edit") return prev;
-        const fresh = tList.find((tenant) => tenant.alias === prev.tenant.alias);
-        return fresh ? { kind: "edit", tenant: fresh } : prev;
-      });
+      return userPatch ? mergeUserIntoList(merged, userPatch) : merged;
+    });
+    setUserModal((prev) => {
+      if (prev?.kind !== "edit") return prev;
+      // Prefer the just-saved patch so list lag cannot wipe tenant_roles in the open modal.
+      if (userPatch && userPatch.username === prev.user.username) {
+        return {
+          kind: "edit",
+          user: {
+            ...prev.user,
+            ...userPatch,
+            tenant_roles:
+              Object.keys(userPatch.tenant_roles ?? {}).length > 0
+                ? userPatch.tenant_roles
+                : prev.user.tenant_roles,
+          },
+        };
+      }
+      return prev;
+    });
+    setTenantModal((prev) => {
+      if (prev?.kind !== "edit") return prev;
+      const fresh = tList.find((tenant) => tenant.alias === prev.tenant.alias);
+      return fresh ? { kind: "edit", tenant: fresh } : prev;
+    });
   }, []);
 
   const handleUserSaved = useCallback(
