@@ -16,6 +16,14 @@ class PdfIndexingModuleSettings(ModuleSettings):
         default=95,
         description="Percentile threshold for semantic breakpoints (higher → fewer chunks).",
     )
+    pii_tokenization_enabled: bool = Field(
+        default=False,
+        description="Tokenize PII before chunking/embed (requires Presidio analyzer).",
+    )
+    pii_language: str = Field(
+        default="en",
+        description="Presidio analyzer language for index-time PII detection.",
+    )
 
 
 get_module_settings = module_settings_loader(PdfIndexingModuleSettings)

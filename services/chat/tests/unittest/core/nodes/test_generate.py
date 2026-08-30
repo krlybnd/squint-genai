@@ -3,6 +3,7 @@ import unittest
 from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, MagicMock
 
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
@@ -30,6 +31,8 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
 
         analyzer = AsyncMock()
         analyzer.analyze.side_effect = _analyze
+        query_pii = AsyncMock()
+        query_pii.enabled = False
         deps = AgentGraphDeps(
             chat_client=chat_client,
             retrieval=MagicMock(),
@@ -37,6 +40,8 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
             guard=AsyncMock(),
             analyzer=analyzer,
             anonymizer=AsyncMock(),
+            query_pii=query_pii,
+            pii_vault=PiiVaultSettings(_env_file=None),
         )
         return GenerateNode(deps), chat_client
 

@@ -14,6 +14,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "asyncpg" },
+    { name = "cryptography" },
     { name = "dishka" },
     { name = "fastembed" },
     { name = "httpx" },
@@ -47,6 +48,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asyncpg", specifier = ">=0.30" },
+    { name = "cryptography", specifier = ">=44.0" },
     { name = "dishka", specifier = ">=1.4" },
     { name = "fastembed", specifier = ">=0.6" },
     { name = "httpx", specifier = ">=0.28" },

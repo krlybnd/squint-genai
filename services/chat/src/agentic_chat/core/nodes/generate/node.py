@@ -61,12 +61,15 @@ class GenerateNode(LlmCallNode[_GenerateContext]):
         chunks = _chunks_from_state(state)
         lines: list[str] = []
         for chunk in chunks:
-            masked = await mask_text(
-                chunk.text,
-                analyzer=self._deps.analyzer,
-                anonymizer=self._deps.anonymizer,
-            )
-            lines.append(_format_chunk_line(chunk, masked.text))
+            chunk_text = chunk.text
+            if not self._deps.pii_vault.enabled:
+                masked = await mask_text(
+                    chunk.text,
+                    analyzer=self._deps.analyzer,
+                    anonymizer=self._deps.anonymizer,
+                )
+                chunk_text = masked.text
+            lines.append(_format_chunk_line(chunk, chunk_text))
         context = "\n\n".join(lines)
         citations = [ChunkCitation.from_chunk(c) for c in chunks] if context.strip() else []
         return None, _GenerateContext(
