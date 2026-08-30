@@ -23,6 +23,7 @@ metrics:
   exporter: prometheus
 
 input_scanners:
+  # Demo/e2e fixtures only; not the author's views. Please don't infer otherwise.
   - type: BanSubstrings
     params:
       substrings:
