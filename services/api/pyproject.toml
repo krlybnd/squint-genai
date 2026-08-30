@@ -1,6 +1,7 @@
 [project]
 name = "agentic-api"
 version = "0.1.0"
+description = "Documents, indexing jobs, retrieval, and annotations REST API"
 requires-python = ">=3.12"
 dependencies = [
     "agentic-shared",

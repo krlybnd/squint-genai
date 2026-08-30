@@ -1,11 +1,10 @@
 # LiteLLM
 
-OpenAI-compatible LLM, embedding, and rerank proxy.
+OpenAI-compatible LLM and embedding proxy (rerank alias kept for legacy `.env` only — apps no longer call it).
 
 - Port: `:4000`
 - Config: `litellm.config.yaml`
-- Apps call **role aliases** (`generate`, `router`, `judge`, `embed`, `rerank`), not provider model ids.
-- Rerank (optional): `POST /rerank` — Cohere via the `rerank` alias (`COHERE_API_KEY`). OpenAI has no rerank API; keep `RERANK_ENABLED=false` unless Cohere is configured.
+- Apps call **role aliases** (`generate`, `router`, `judge`, `embed`), not provider model ids.
 
 | Alias | Backend (default) | Used by |
 |-------|-------------------|---------|

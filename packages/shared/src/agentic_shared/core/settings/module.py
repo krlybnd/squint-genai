@@ -5,7 +5,10 @@ from agentic_shared.core.settings.base import EnvSettings
 
 
 class ModuleSettings(EnvSettings):
-    """Base for vertical-slice module tunables (prompts, limits, env_prefix)."""
+    """Base for vertical-slice module tunables (prompts, limits, env_prefix).
+
+    Prefer ``Field(..., description=...)`` on every knob so env/docs stay self-explanatory.
+    """
 
 
 def module_settings_loader[T: ModuleSettings](cls: type[T]) -> Callable[[], T]:

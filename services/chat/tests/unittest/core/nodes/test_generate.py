@@ -3,7 +3,7 @@ import unittest
 from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, MagicMock
 
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
@@ -94,7 +94,7 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(update["citations"][0]["chunk_id"], "c1")
         chat_client.chat_completion.assert_not_called()
         kwargs = chat_client.stream_chat_completion.call_args.kwargs
-        self.assertEqual(kwargs["model"], LLMSettings().litellm_model)
+        self.assertEqual(kwargs["model"], LiteLLMChatSettings().litellm_model)
 
     async def test_success_no_citations_without_chunks(self) -> None:
         # Arrange

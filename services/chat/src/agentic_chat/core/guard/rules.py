@@ -1,7 +1,7 @@
 import logging
 
-from agentic_shared.core.i18n import t
-from agentic_shared.core.security.guard import looks_like_prompt_injection, redact_for_provider
+from agentic_shared.core.security.guard import looks_like_prompt_injection, redact_pii
+from agentic_shared.crosscut.i18n import t
 
 from agentic_chat.core.guard.protocols import GuardRule
 from agentic_chat.core.state import AgentStateUpdate, PiiDetail, PiiDetailState
@@ -42,7 +42,7 @@ class PiiRedactionRule(GuardRule):
     """Terminal rule: always applies redaction (never returns ``None``)."""
 
     def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None:
-        redacted = redact_for_provider(query)
+        redacted = redact_pii(query)
         if redacted.count:
             logger.debug("pii redacted count=%d", redacted.count)
             reason = t("guard.pii_masked", locale, count=redacted.count)

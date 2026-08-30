@@ -1,15 +1,13 @@
 import logging
 
-from agentic_shared.integrations.keycloak_admin.errors import (
-    KeycloakAdminError,
-    KeycloakConflictError,
-    KeycloakNotFoundError,
-)
-from agentic_shared.integrations.keycloak_admin.gateway import (
-    TenantGateway,
+from agentic_shared.integrations.idp.core import (
+    IdpConflictError,
+    IdpError,
+    IdpNotFoundError,
+    TenantAdmin,
     TenantMemberRecord,
     TenantRecord,
-    UserGateway,
+    UserAdmin,
 )
 
 from agentic_admin.modules.tenants.schemas import TenantMemberOut, TenantOut
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class TenantAdminService:
-    def __init__(self, tenant_gateway: TenantGateway, user_gateway: UserGateway) -> None:
+    def __init__(self, tenant_gateway: TenantAdmin, user_gateway: UserAdmin) -> None:
         self._tenants = tenant_gateway
         self._users = user_gateway
 
@@ -76,7 +74,7 @@ class TenantAdminService:
         if not match:
             user = await self._users.get_by_username(username)
             if not user:
-                raise KeycloakNotFoundError(f"User not found: {username}")
+                raise IdpNotFoundError(f"User not found: {username}")
             return TenantMemberOut(
                 id=user.id,
                 username=user.username,
@@ -108,8 +106,8 @@ class TenantAdminService:
 
 
 __all__ = [
-    "KeycloakAdminError",
-    "KeycloakConflictError",
-    "KeycloakNotFoundError",
+    "IdpConflictError",
+    "IdpError",
+    "IdpNotFoundError",
     "TenantAdminService",
 ]

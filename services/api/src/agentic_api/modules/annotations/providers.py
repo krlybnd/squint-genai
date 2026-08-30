@@ -1,9 +1,9 @@
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.tenant import resolve_tenant_id
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
 from agentic_shared.domains.annotations.protocols.comments import CommentWriteRepository
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
-from agentic_shared.integrations.embedding.protocols import EmbeddingClient
-from agentic_shared.integrations.llm.protocols import ChatClient
+from agentic_shared.integrations.litellm.embedding.protocols import EmbeddingClient
+from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 from dishka import Provider, Scope, provide
 
 from agentic_api.modules.annotations.deps import CommentGraphDeps

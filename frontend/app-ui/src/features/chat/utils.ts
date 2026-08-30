@@ -33,14 +33,6 @@ export function renderSearchMetaRows(
     { label: t("reasoning.candidatesTopK"), value: String(meta.candidate_top_k ?? "—") },
     { label: t("reasoning.finalTopK"), value: String(meta.final_top_k ?? "—") },
     { label: t("reasoning.rrfCandidates"), value: String(meta.candidates_found ?? "—") },
-    {
-      label: t("reasoning.rerank"),
-      value: meta.rerank_applied
-        ? t("reasoning.rerankOn", { model: meta.rerank_model || "?" })
-        : meta.rerank_enabled
-          ? t("reasoning.rerankError", { error: meta.rerank_error || "?" })
-          : t("reasoning.rerankOff"),
-    },
     { label: t("reasoning.results"), value: String(meta.results_count ?? "—") },
   ];
   if (meta.search_query) {

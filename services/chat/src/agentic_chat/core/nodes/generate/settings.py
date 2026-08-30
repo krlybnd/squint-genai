@@ -46,9 +46,18 @@ _DEFAULT_RAG_SYSTEM = (
 class GenerateNodeSettings(ModuleSettings):
     model_config = SettingsConfigDict(env_prefix="CHAT_GENERATE_")
 
-    llm_temperature: float = 0.0
-    no_context_system_prompt: str = Field(default=_DEFAULT_NO_CONTEXT_SYSTEM)
-    rag_system_prompt: str = Field(default=_DEFAULT_RAG_SYSTEM)
+    llm_temperature: float = Field(
+        default=0.0,
+        description="LLM temperature for final answer generation (usually 0 for fidelity).",
+    )
+    no_context_system_prompt: str = Field(
+        default=_DEFAULT_NO_CONTEXT_SYSTEM,
+        description="System prompt when retrieval returned no usable chunks.",
+    )
+    rag_system_prompt: str = Field(
+        default=_DEFAULT_RAG_SYSTEM,
+        description="System prompt when answering from retrieved context chunks.",
+    )
 
 
 get_module_settings = module_settings_loader(GenerateNodeSettings)

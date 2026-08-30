@@ -3,8 +3,8 @@ from collections.abc import AsyncIterator
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.tenant import resolve_tenant_id
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
 from agentic_shared.domains.persistence.binder import RepositoryBinder
 from agentic_shared.domains.persistence.protocols.chat import (
     ChatMessageReadRepository,
@@ -34,8 +34,8 @@ from agentic_shared.domains.persistence.repositories.async_.index_jobs import (
     SqlAlchemyIndexJobReadRepository,
     SqlAlchemyIndexJobWriteRepository,
 )
-from agentic_shared.infrastructure.postgres.session import create_session_factory
-from agentic_shared.infrastructure.postgres.settings import DatabaseSettings
+from agentic_shared.infrastructure.sql.core.session import create_session_factory
+from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
 
 
 class AsyncDbProvider(Provider):
@@ -47,7 +47,7 @@ class AsyncDbProvider(Provider):
 
     @provide(scope=Scope.APP)
     def session_factory(self) -> async_sessionmaker[AsyncSession]:
-        return create_session_factory(self._settings)
+        return create_session_factory(self._settings.database_url)
 
     @provide(scope=Scope.REQUEST)
     async def session(

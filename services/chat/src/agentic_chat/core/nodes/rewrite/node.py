@@ -3,10 +3,10 @@ import logging
 import re
 from dataclasses import dataclass
 
-from agentic_shared.core.i18n import t
+from agentic_shared.crosscut.i18n import t
 from agentic_shared.domains.retrieval.models import IndexedDocumentEntry
-from agentic_shared.integrations.llm.messages import llm_system_user
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.llm.messages import llm_system_user
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
@@ -99,4 +99,4 @@ class RewriteQueryNode(LlmCallNode[_RewriteContext]):
         return get_module_settings().llm_temperature
 
     def llm_model(self) -> str | None:
-        return LLMSettings().litellm_router_model
+        return LiteLLMChatSettings().litellm_router_model

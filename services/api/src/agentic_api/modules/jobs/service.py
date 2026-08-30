@@ -11,7 +11,7 @@ from agentic_shared.domains.persistence.protocols.index_jobs import (
     IndexJobReadRepository,
     IndexJobWriteRepository,
 )
-from agentic_shared.infrastructure.redis.settings import RedisSettings
+from agentic_shared.infrastructure.cache.redis.settings import RedisSettings
 from celery import Celery
 
 from agentic_api.modules.jobs.settings import get_module_settings as get_jobs_module_settings

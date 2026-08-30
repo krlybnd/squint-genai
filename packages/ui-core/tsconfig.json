@@ -1,5 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@locales/*": ["../../locales/*"]
+    }
+  },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

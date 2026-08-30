@@ -1,5 +1,5 @@
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.tenant import resolve_tenant_id
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
 from agentic_shared.domains.persistence.protocols.chat import (
     ChatMessageReadRepository,
     ChatMessageWriteRepository,
@@ -7,7 +7,7 @@ from agentic_shared.domains.persistence.protocols.chat import (
     ChatSessionWriteRepository,
 )
 from agentic_shared.domains.retrieval.protocols import AsyncRetrievalReader
-from agentic_shared.integrations.llm.protocols import ChatClient
+from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 from dishka import Provider, Scope, provide
 
 from agentic_chat.core.deps import AgentGraphDeps

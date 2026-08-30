@@ -1,5 +1,5 @@
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.tenant import resolve_tenant_id
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
 from agentic_shared.domains.persistence.protocols.documents import (
     DocumentReadRepository,
     DocumentWriteRepository,
@@ -8,7 +8,7 @@ from agentic_shared.domains.persistence.protocols.index_jobs import (
     IndexJobReadRepository,
     IndexJobWriteRepository,
 )
-from agentic_shared.infrastructure.redis.settings import RedisSettings
+from agentic_shared.infrastructure.cache.redis.settings import RedisSettings
 from dishka import Provider, Scope, provide
 
 from agentic_api.modules.jobs.service import JobService

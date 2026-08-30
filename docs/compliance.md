@@ -171,7 +171,7 @@ Replace NoOp adapters in Dishka providers per service — same pattern as `Datab
 |------|------|
 | `core/security/guard/pii.py` | GDPR — personal data redaction before LLM |
 | `core/security/guard/injection.py` | Security — prompt injection detection |
-| `core/auth/` | Access control, tenant resolution |
+| `crosscut/auth/` | Access control, tenant resolution |
 | `domains/persistence/entities/base.py` | `AuditMixin`, `TenantMixin` |
 | `services/chat/core/guard/` | Agent guard node (PII + injection rules) |
 | `tests/eval/` | DeepEval generation gate + Pydantic Evals retrieval IR + golden dataset (AI quality evidence) |

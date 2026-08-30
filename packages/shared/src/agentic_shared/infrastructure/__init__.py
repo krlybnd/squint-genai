@@ -1,1 +1,1 @@
-"""External system clients (postgres, redis, object storage, vector, health)."""
+"""External system clients (sql/postgres, cache/redis, storage/minio, vector/qdrant)."""

@@ -1,12 +1,12 @@
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.roles import AppRole
-from agentic_shared.core.auth.settings import AuthSettings
-from agentic_shared.frameworks.fastapi.auth.dependencies import require_roles
-from agentic_shared.integrations.keycloak_admin.errors import (
-    KeycloakAdminError,
-    KeycloakConflictError,
-    KeycloakForbiddenError,
-    KeycloakNotFoundError,
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.roles import AppRole
+from agentic_shared.crosscut.auth.settings import AuthSettings
+from agentic_shared.frameworks.fastapi.dependencies.auth.dependency import require_roles
+from agentic_shared.integrations.idp.core.errors import (
+    IdpConflictError,
+    IdpError,
+    IdpForbiddenError,
+    IdpNotFoundError,
 )
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, HTTPException, Query, status
@@ -41,7 +41,7 @@ async def list_users(
             search=search, first=first, max_results=max_results
         )
         return UserListResponse(items=items, first=first, max=max_results, has_more=has_more)
-    except KeycloakForbiddenError as exc:
+    except IdpForbiddenError as exc:
         raise HTTPException(
             status_code=502,
             detail=(
@@ -50,7 +50,7 @@ async def list_users(
                 "operations/keycloak/README.md."
             ),
         ) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -70,9 +70,9 @@ async def create_user(
             password=body.password,
             realm_roles=body.realm_roles,
         )
-    except KeycloakConflictError as exc:
+    except IdpConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -87,9 +87,9 @@ async def get_user(
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
         return await service.get_user(username)
-    except KeycloakNotFoundError as exc:
+    except IdpNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -105,9 +105,9 @@ async def update_user(
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
         return await service.update_user(username, body)
-    except KeycloakNotFoundError as exc:
+    except IdpNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -125,9 +125,9 @@ async def assign_user_tenant(
         return await service.assign_tenant(
             username, body.alias, set_active=body.set_active, roles=body.roles
         )
-    except KeycloakNotFoundError as exc:
+    except IdpNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -144,9 +144,9 @@ async def set_user_tenant_roles(
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
         return await service.set_tenant_roles(username, alias, body.roles)
-    except KeycloakNotFoundError as exc:
+    except IdpNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -162,9 +162,9 @@ async def set_active_user_tenant(
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
         return await service.set_active_tenant(username, body.alias)
-    except KeycloakNotFoundError as exc:
+    except IdpNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -180,9 +180,9 @@ async def remove_user_from_tenant(
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
         return await service.remove_from_tenant(username, alias)
-    except KeycloakNotFoundError as exc:
+    except IdpNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
@@ -197,7 +197,7 @@ async def remove_user_tenant(
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
         return await service.remove_tenant(username)
-    except KeycloakNotFoundError as exc:
+    except IdpNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except KeycloakAdminError as exc:
+    except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
-from agentic_shared.core.i18n import DEFAULT_LOCALE, t
+from agentic_shared.crosscut.i18n import DEFAULT_LOCALE, t
 
 from agentic_api.modules.annotations.deps import CommentGraphDeps
 from agentic_api.modules.annotations.nodes import moderate_node

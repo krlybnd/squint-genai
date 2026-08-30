@@ -13,6 +13,7 @@ export type ViteAppOptions = {
 
 export function viteAppConfig({ appDir, port, base, proxy, test }: ViteAppOptions): UserConfig {
   const uiCore = path.resolve(appDir, "../../packages/ui-core/src");
+  const locales = path.resolve(appDir, "../../locales");
 
   return defineConfig({
     base,
@@ -20,6 +21,7 @@ export function viteAppConfig({ appDir, port, base, proxy, test }: ViteAppOption
     resolve: {
       alias: {
         "@are/ui-core": uiCore,
+        "@locales": locales,
       },
       // Single copy so lazy-loaded app chunks share I18nextProvider context.
       dedupe: ["react", "react-dom", "i18next", "react-i18next"],

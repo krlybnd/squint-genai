@@ -1,13 +1,12 @@
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 from qdrant_client.http.models import SparseVector
 
 from agentic_shared.domains.retrieval.models import RetrievedChunk
 from agentic_shared.domains.retrieval.service import AsyncRetrievalService, RetrievalService
-from agentic_shared.integrations.embedding.settings import EmbeddingSettings
-from agentic_shared.integrations.llm.settings import LLMSettings
-from agentic_shared.integrations.rerank.settings import RerankSettings
+from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 
 class _StubChunkReadRepository:
@@ -43,39 +42,7 @@ class _StubChunkReadRepository:
 class TestRetrievalPipeline(unittest.TestCase):
     @patch("agentic_shared.domains.retrieval.service.embed_sparse_text")
     @patch("agentic_shared.domains.retrieval.service.embed_dense_text")
-    def test_search_documents_reranks_hybrid_candidates(
-        self,
-        mock_dense,
-        mock_sparse,
-    ) -> None:
-        # Arrange
-        mock_dense.return_value = [0.1, 0.2]
-        mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
-        rerank_client = MagicMock()
-        rerank_client.rerank.return_value = [2, 0]
-        rerank_settings = RerankSettings.model_construct(
-            title="rerank",
-            rerank_enabled=True,
-            rerank_model="rerank-multilingual-v3.0",
-        )
-        service = RetrievalService(
-            _StubChunkReadRepository(),
-            LLMSettings(),
-            EmbeddingSettings(),
-            rerank_settings,
-            rerank_client=rerank_client,
-        )
-
-        # Act
-        results = service.search_documents("query", top_k=2, tenant_id="default")
-
-        # Assert
-        rerank_client.rerank.assert_called_once()
-        self.assertEqual([item.chunk_id for item in results], ["c", "a"])
-
-    @patch("agentic_shared.domains.retrieval.service.embed_sparse_text")
-    @patch("agentic_shared.domains.retrieval.service.embed_dense_text")
-    def test_search_documents_skips_rerank_when_disabled(
+    def test_search_documents_returns_rrf_order(
         self,
         mock_dense,
         mock_sparse,
@@ -85,9 +52,8 @@ class TestRetrievalPipeline(unittest.TestCase):
         mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
         service = RetrievalService(
             _StubChunkReadRepository(),
-            LLMSettings(),
-            EmbeddingSettings(),
-            RerankSettings(rerank_enabled=False),
+            LiteLLMChatSettings(),
+            LiteLLMEmbeddingSettings(),
         )
 
         # Act
@@ -106,9 +72,8 @@ class TestRetrievalPipeline(unittest.TestCase):
         # Arrange
         service = RetrievalService(
             _StubChunkReadRepository(),
-            LLMSettings(),
-            EmbeddingSettings(),
-            RerankSettings(rerank_enabled=True, cohere_api_key="test-key"),
+            LiteLLMChatSettings(),
+            LiteLLMEmbeddingSettings(),
         )
 
         # Act
@@ -121,40 +86,7 @@ class TestRetrievalPipeline(unittest.TestCase):
 
     @patch("agentic_shared.domains.retrieval.service.embed_sparse_text")
     @patch("agentic_shared.domains.retrieval.service.embed_dense_text")
-    def test_search_documents_falls_back_when_rerank_fails(
-        self,
-        mock_dense,
-        mock_sparse,
-    ) -> None:
-        # Arrange
-        mock_dense.return_value = [0.1]
-        mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
-        rerank_client = MagicMock()
-        rerank_client.rerank.side_effect = RuntimeError("rerank down")
-        rerank_settings = RerankSettings.model_construct(
-            title="rerank",
-            rerank_enabled=True,
-            rerank_model="rerank-multilingual-v3.0",
-            cohere_api_key="test-key",
-        )
-        service = RetrievalService(
-            _StubChunkReadRepository(),
-            LLMSettings(),
-            EmbeddingSettings(),
-            rerank_settings,
-            rerank_client=rerank_client,
-        )
-
-        # Act
-        result = service.search_documents_with_meta("query", top_k=2, tenant_id="default")
-
-        # Assert
-        self.assertEqual([item.chunk_id for item in result.chunks], ["a", "b"])
-        self.assertIn("rerank down", result.meta.rerank_error or "")
-
-    @patch("agentic_shared.domains.retrieval.service.embed_sparse_text")
-    @patch("agentic_shared.domains.retrieval.service.embed_dense_text")
-    def test_search_documents_skips_rerank_for_single_candidate(
+    def test_search_documents_single_candidate(
         self,
         mock_dense,
         mock_sparse,
@@ -168,33 +100,23 @@ class TestRetrievalPipeline(unittest.TestCase):
                 _ = (tenant_id, dense_vector, sparse_vector, limit)
                 return [RetrievedChunk(chunk_id="only", text="solo", score=0.99)]
 
-        rerank_client = MagicMock()
-        rerank_settings = RerankSettings.model_construct(
-            title="rerank",
-            rerank_enabled=True,
-            rerank_model="rerank-multilingual-v3.0",
-            cohere_api_key="test-key",
-        )
         service = RetrievalService(
             _SingleHitReader(),
-            LLMSettings(),
-            EmbeddingSettings(),
-            rerank_settings,
-            rerank_client=rerank_client,
+            LiteLLMChatSettings(),
+            LiteLLMEmbeddingSettings(),
         )
 
         # Act
         result = service.search_documents_with_meta("query", top_k=1, tenant_id="default")
 
         # Assert
-        rerank_client.rerank.assert_not_called()
         self.assertEqual([item.chunk_id for item in result.chunks], ["only"])
 
 
 class TestRetrievalPipelineAsync(unittest.IsolatedAsyncioTestCase):
     @patch("agentic_shared.domains.retrieval.service.embed_sparse_text")
     @patch("agentic_shared.domains.retrieval.service.embed_dense_text")
-    async def test_search_documents_async_reranks_hybrid_candidates(
+    async def test_search_documents_async_returns_rrf_order(
         self,
         mock_dense,
         mock_sparse,
@@ -202,20 +124,11 @@ class TestRetrievalPipelineAsync(unittest.IsolatedAsyncioTestCase):
         # Arrange
         mock_dense.return_value = [0.1, 0.2]
         mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
-        rerank_client = MagicMock()
-        rerank_client.rerank_async = AsyncMock(return_value=[2, 0])
-        rerank_settings = RerankSettings.model_construct(
-            title="rerank",
-            rerank_enabled=True,
-            rerank_model="rerank-multilingual-v3.0",
-        )
         service = AsyncRetrievalService(
             RetrievalService(
                 _StubChunkReadRepository(),
-                LLMSettings(),
-                EmbeddingSettings(),
-                rerank_settings,
-                rerank_client=rerank_client,
+                LiteLLMChatSettings(),
+                LiteLLMEmbeddingSettings(),
             )
         )
 
@@ -223,8 +136,7 @@ class TestRetrievalPipelineAsync(unittest.IsolatedAsyncioTestCase):
         results = await service.search_documents("query", top_k=2, tenant_id="default")
 
         # Assert
-        rerank_client.rerank_async.assert_awaited_once()
-        self.assertEqual([item.chunk_id for item in results], ["c", "a"])
+        self.assertEqual([item.chunk_id for item in results], ["a", "b"])
 
 
 if __name__ == "__main__":

@@ -11,7 +11,6 @@ class RetrievalProvider(AsyncRetrievalProvider):
         super().__init__(
             settings.llm,
             settings.embedding,
-            settings.rerank,
         )
         self._settings = settings
 

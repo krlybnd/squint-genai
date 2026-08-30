@@ -1,7 +1,7 @@
 from typing import Protocol, runtime_checkable
 
 from agentic_shared.domains.persistence.entities import Document
-from agentic_shared.infrastructure.postgres.protocols import (
+from agentic_shared.infrastructure.sql.core.protocols import (
     ReadRepository,
     SyncWriteRepository,
     WriteRepository,

@@ -3,8 +3,8 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
-from agentic_shared.core.domain_errors import BadRequestError, ConflictError, NotFoundError
 from agentic_shared.domains.documents.enums import IndexStatus
+from agentic_shared.domains.domain_errors import BadRequestError, ConflictError, NotFoundError
 from agentic_shared.domains.persistence.entities import Document, IndexJob, JobStatus
 
 from agentic_api.modules.documents.service import DocumentService

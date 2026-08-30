@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from agentic_shared.core.domain_errors import BadRequestError, ConflictError, NotFoundError
+from agentic_shared.domains.domain_errors import BadRequestError, ConflictError, NotFoundError
 from agentic_shared.domains.persistence.entities import Document, IndexJob, JobStatus
 from agentic_shared.domains.persistence.protocols.documents import (
     DocumentReadRepository,
@@ -12,9 +12,9 @@ from agentic_shared.domains.persistence.protocols.index_jobs import (
     IndexJobWriteRepository,
 )
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
-from agentic_shared.infrastructure.object_storage.protocols import (
-    ObjectStorageReader,
-    ObjectStorageWriter,
+from agentic_shared.infrastructure.storage.core.protocols import (
+    StorageReader,
+    StorageWriter,
 )
 
 from agentic_api.modules.documents.schemas import DocumentOut, IndexStatus
@@ -31,8 +31,8 @@ class DocumentService:
         documents_write: DocumentWriteRepository,
         jobs_read: IndexJobReadRepository,
         jobs_write: IndexJobWriteRepository,
-        storage_read: ObjectStorageReader,
-        storage_write: ObjectStorageWriter,
+        storage_read: StorageReader,
+        storage_write: StorageWriter,
         chunk_write: ChunkWriteRepository,
         job_service: JobService,
     ) -> None:

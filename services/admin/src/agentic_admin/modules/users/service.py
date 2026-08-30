@@ -1,7 +1,6 @@
 import logging
 
-from agentic_shared.integrations.keycloak_admin.errors import KeycloakNotFoundError
-from agentic_shared.integrations.keycloak_admin.gateway import UserGateway, UserRecord
+from agentic_shared.integrations.idp.core import IdpNotFoundError, UserAdmin, UserRecord
 
 from agentic_admin.modules.users.schemas import UpdateUserRequest, UserOut
 
@@ -9,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class UserAdminService:
-    def __init__(self, gateway: UserGateway) -> None:
+    def __init__(self, gateway: UserAdmin) -> None:
         self._gateway = gateway
 
     @staticmethod
@@ -41,7 +40,7 @@ class UserAdminService:
     async def get_user(self, username: str) -> UserOut:
         record = await self._gateway.get_by_username(username)
         if not record:
-            raise KeycloakNotFoundError(f"User not found: {username}")
+            raise IdpNotFoundError(f"User not found: {username}")
         return self._out(record)
 
     async def create_user(

@@ -1,6 +1,6 @@
 """Next-step ACTIVE SSE events derived from graph output (UX flow, not raw LangGraph edges)."""
 
-from agentic_shared.core.i18n import t
+from agentic_shared.crosscut.i18n import t
 
 from agentic_chat.core.graph.enums import AgentGraphNode
 from agentic_chat.core.state import AgentStateUpdate

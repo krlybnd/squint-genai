@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import AsyncMock, Mock
 
-from agentic_shared.core.domain_errors import BadRequestError
+from agentic_shared.domains.domain_errors import BadRequestError
 from agentic_shared.domains.retrieval.models import ChunkPointPayload
-from agentic_shared.infrastructure.vector.enums import QdrantPointType
+from agentic_shared.infrastructure.vector.qdrant.enums import QdrantPointType
 
 from agentic_api.modules.annotations.schemas import CreateChunkCommentRequest
 from agentic_api.modules.annotations.service import AnnotationService, CommentRejectedError

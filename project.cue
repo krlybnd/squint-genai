@@ -69,16 +69,16 @@ folders: {
 		path:    "packages/shared"
 		stack:   "python"
 		phase:   1
-		adr:     ["001", "004", "006"]
+		adr:     ["001", "004", "006", "009"]
+		contains: ["src/agentic_shared/domains/", "src/agentic_shared/core/", "src/agentic_shared/crosscut/", "src/agentic_shared/infrastructure/", "templates/", "locales/", "tests/unittest/", "alembic/"]
+		mustNot:  ["product REST routers", "Celery task entrypoints", "LangGraph chat graph"]
+		related:  ["services/api", "services/chat", "services/admin", "services/indexing", "locales"]
 		purpose: """
 			Shared Python library: domain logic (retrieval, persistence entities/repos),
-			auth/RBAC, backend i18n catalogs, compliance hooks, infra clients (Postgres,
-			Redis, MinIO, Qdrant), LLM/embedding integrations, FastAPI bootstrap helpers.
-			Consumed by all Python services — not a deployable HTTP service.
+			core abstractions (settings, resources), cross-cutting auth/i18n, compliance hooks,
+			infra clients (Postgres, Redis, MinIO, Qdrant), LLM/embedding integrations,
+			FastAPI bootstrap helpers. Consumed by all Python services — not a deployable HTTP service.
 			"""
-		contains: ["src/agentic_shared/domains/", "src/agentic_shared/core/", "src/agentic_shared/infrastructure/", "tests/unittest/", "alembic/"]
-		mustNot:  ["product REST routers", "Celery task entrypoints", "LangGraph chat graph"]
-		related:  ["services/api", "services/chat", "services/admin", "services/indexing"]
 	}
 
 	"packages/ui-core": #Folder & {
@@ -222,6 +222,21 @@ folders: {
 			"""
 		mustNot: ["duplicate JSON specs (api.json / chat.json / admin.json)"]
 		related: ["make generate-openapi", "tests/api"]
+	}
+
+	"locales": #Folder & {
+		path:    "locales"
+		stack:   "meta"
+		phase:   1
+		adr:     ["006"]
+		purpose: """
+			Repo-level i18n catalogs (SSOT): messages/ (Python server-emitted + UI merge),
+			core/ (shared UI chrome), app/, admin/. Consumed by agentic_shared.core.i18n
+			and @are/ui-core via @locales Vite alias — do not nest copies under packages/.
+			"""
+		contains: ["messages/", "core/", "app/", "admin/"]
+		mustNot:  ["per-service duplicate catalogs under packages/ or frontend/*/src/locales"]
+		related:  ["packages/shared", "packages/ui-core", "frontend/app-ui", "frontend/admin-app-ui"]
 	}
 
 	"operations": #Folder & {

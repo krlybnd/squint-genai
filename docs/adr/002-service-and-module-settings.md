@@ -27,13 +27,15 @@ class ApiSettings(AppSettings):
     ...
 ```
 
-**DI wiring:** `main.py` loads settings once, passes slices to provider constructors:
+**DI wiring:** `main.py` loads settings once, passes slices to provider constructors
+(`make_service_container` lives under `frameworks/fastapi` — it injects Dishka’s
+`FastapiProvider`):
 
 ```python
 settings = load_settings()
 make_service_container(
     DatabaseProvider(settings.database),
-    AuthProvider(settings.auth, settings.role),
+    AuthProvider(settings.auth, settings.role),  # frameworks.fastapi.providers.auth
     ...
 )
 ```

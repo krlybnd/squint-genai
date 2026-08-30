@@ -11,34 +11,27 @@ from agentic_shared.domains.retrieval.models import (
     SourceCitation,
 )
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
-from agentic_shared.infrastructure.vector.dense import embed_dense_text
-from agentic_shared.infrastructure.vector.payload import payload_page, payload_text
-from agentic_shared.infrastructure.vector.sparse import embed_sparse_text
-from agentic_shared.integrations.embedding.settings import EmbeddingSettings
-from agentic_shared.integrations.llm.settings import LLMSettings
-from agentic_shared.integrations.rerank.client import RerankClient
-from agentic_shared.integrations.rerank.settings import RerankSettings
+from agentic_shared.infrastructure.vector.core.payload import payload_page, payload_text
+from agentic_shared.infrastructure.vector.qdrant.dense import embed_dense_text
+from agentic_shared.infrastructure.vector.qdrant.sparse import embed_sparse_text
+from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 logger = logging.getLogger(__name__)
 
 
 class RetrievalService:
-    """Hybrid retrieval (dense + sparse RRF) with optional LiteLLM rerank."""
+    """Hybrid retrieval (dense + sparse RRF)."""
 
     def __init__(
         self,
         chunk_read: ChunkReadRepository,
-        llm: LLMSettings,
-        embedding: EmbeddingSettings,
-        rerank: RerankSettings,
-        *,
-        rerank_client: RerankClient | None = None,
+        llm: LiteLLMChatSettings,
+        embedding: LiteLLMEmbeddingSettings,
     ) -> None:
         self._chunk_read = chunk_read
         self._llm = llm
         self._embedding = embedding
-        self._rerank_settings = rerank
-        self._rerank = rerank_client or RerankClient(llm, rerank)
 
     def search_documents(
         self, query: str, top_k: int | None = None, *, tenant_id: str
@@ -87,8 +80,6 @@ class RetrievalService:
             sparse_model=self._chunk_read.sparse_model,
             candidate_top_k=candidate_k,
             final_top_k=final_k,
-            rerank_enabled=self._rerank_settings.rerank_enabled,
-            rerank_model=self._rerank_settings.rerank_model,
         )
         return cleaned, final_k, candidate_k, meta
 
@@ -115,19 +106,12 @@ class RetrievalService:
             sparse_vector=sparse_vector,
             limit=candidate_k,
         )
-        result = self._rank_candidates(
-            cleaned,
-            list(raw_candidates),
-            meta=meta,
-            final_k=final_k,
-            rerank=self._rerank.rerank,
-        )
+        result = self._rank_candidates(list(raw_candidates), meta=meta, final_k=final_k)
         logger.debug(
-            "retrieval search tenant_id=%s candidates=%d results=%d rerank=%s",
+            "retrieval search tenant_id=%s candidates=%d results=%d",
             tenant_id,
             result.meta.candidates_found,
             len(result.chunks),
-            result.meta.rerank_applied,
         )
         return result
 
@@ -163,62 +147,17 @@ class RetrievalService:
             sparse_vector=sparse_vector,
             limit=candidate_k,
         )
-        result = await self._rank_candidates_async(
-            cleaned,
-            list(raw_candidates),
-            meta=meta,
-            final_k=final_k,
-        )
+        result = self._rank_candidates(list(raw_candidates), meta=meta, final_k=final_k)
         logger.debug(
-            "retrieval search tenant_id=%s candidates=%d results=%d rerank=%s",
+            "retrieval search tenant_id=%s candidates=%d results=%d",
             tenant_id,
             result.meta.candidates_found,
             len(result.chunks),
-            result.meta.rerank_applied,
         )
         return result
 
+    @staticmethod
     def _rank_candidates(
-        self,
-        cleaned: str,
-        candidates: list[RetrievedChunk],
-        *,
-        meta: SearchMeta,
-        final_k: int,
-        rerank: Callable[..., list[int]],
-    ) -> SearchDocumentsResult:
-        meta = meta.with_candidate_count(len(candidates))
-        if not candidates:
-            return SearchDocumentsResult(chunks=[], meta=meta)
-
-        if self._rerank_settings.rerank_enabled and len(candidates) > 1:
-            try:
-                documents = [chunk.text for chunk in candidates]
-                ranked_indices = rerank(cleaned, documents, top_n=final_k)
-                chunks = [candidates[index] for index in ranked_indices]
-                meta = self._attach_chunk_lists(
-                    meta.model_copy(update={"rerank_applied": True}),
-                    candidates,
-                    chunks,
-                )
-                return SearchDocumentsResult(chunks=chunks, meta=meta)
-            except Exception as exc:
-                logger.warning("rerank failed, using rrf order", exc_info=True)
-                final_chunks = candidates[:final_k]
-                meta = self._attach_chunk_lists(
-                    meta.model_copy(update={"rerank_error": str(exc)}),
-                    candidates,
-                    final_chunks,
-                )
-                return SearchDocumentsResult(chunks=final_chunks, meta=meta)
-
-        final_chunks = candidates[:final_k]
-        meta = self._attach_chunk_lists(meta, candidates, final_chunks)
-        return SearchDocumentsResult(chunks=final_chunks, meta=meta)
-
-    async def _rank_candidates_async(
-        self,
-        cleaned: str,
         candidates: list[RetrievedChunk],
         *,
         meta: SearchMeta,
@@ -228,29 +167,8 @@ class RetrievalService:
         if not candidates:
             return SearchDocumentsResult(chunks=[], meta=meta)
 
-        if self._rerank_settings.rerank_enabled and len(candidates) > 1:
-            try:
-                documents = [chunk.text for chunk in candidates]
-                ranked_indices = await self._rerank.rerank_async(cleaned, documents, top_n=final_k)
-                chunks = [candidates[index] for index in ranked_indices]
-                meta = self._attach_chunk_lists(
-                    meta.model_copy(update={"rerank_applied": True}),
-                    candidates,
-                    chunks,
-                )
-                return SearchDocumentsResult(chunks=chunks, meta=meta)
-            except Exception as exc:
-                logger.warning("rerank failed, using rrf order", exc_info=True)
-                final_chunks = candidates[:final_k]
-                meta = self._attach_chunk_lists(
-                    meta.model_copy(update={"rerank_error": str(exc)}),
-                    candidates,
-                    final_chunks,
-                )
-                return SearchDocumentsResult(chunks=final_chunks, meta=meta)
-
         final_chunks = candidates[:final_k]
-        meta = self._attach_chunk_lists(meta, candidates, final_chunks)
+        meta = RetrievalService._attach_chunk_lists(meta, candidates, final_chunks)
         return SearchDocumentsResult(chunks=final_chunks, meta=meta)
 
     def get_source_citation(self, chunk_id: str, *, tenant_id: str) -> SourceCitation:

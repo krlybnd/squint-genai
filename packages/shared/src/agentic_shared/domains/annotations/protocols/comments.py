@@ -1,7 +1,7 @@
 from typing import Protocol, runtime_checkable
 
 from agentic_shared.domains.annotations.models import ChunkComment, CommentPointPayload
-from agentic_shared.infrastructure.vector.protocols import VectorWriteRepository
+from agentic_shared.infrastructure.vector.core.protocols import VectorWriter
 
 
 @runtime_checkable
@@ -10,5 +10,5 @@ class CommentReadRepository(Protocol):
 
 
 @runtime_checkable
-class CommentWriteRepository(VectorWriteRepository[CommentPointPayload], Protocol):
+class CommentWriteRepository(VectorWriter[CommentPointPayload], Protocol):
     def append_to_chunk(self, chunk_id: str, comment: ChunkComment, *, tenant_id: str) -> None: ...

@@ -1,6 +1,6 @@
 from pydantic import ConfigDict, Field
 
-from agentic_shared.infrastructure.vector.types import VectorPayload
+from agentic_shared.infrastructure.vector.core.types import VectorPayload
 
 
 class ChunkComment(VectorPayload):

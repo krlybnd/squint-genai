@@ -2,7 +2,7 @@ from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 from agentic_shared.domains.persistence.entities import ChatMessage, ChatSession
-from agentic_shared.infrastructure.postgres.protocols import ReadRepository, WriteRepository
+from agentic_shared.infrastructure.sql.core.protocols import ReadRepository, WriteRepository
 
 
 @runtime_checkable

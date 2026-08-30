@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentic_shared.domains.persistence.entities import ChatMessage, ChatSession
 from agentic_shared.domains.persistence.limits import DEFAULT_LIST_LIMIT
-from agentic_shared.infrastructure.postgres.repository import (
+from agentic_shared.infrastructure.sql.core.repository import (
     SqlAlchemyReadRepository,
     SqlAlchemyWriteRepository,
 )

@@ -14,6 +14,7 @@ RUN npm ci --ignore-scripts --workspace=@are/admin-app-ui
 COPY packages packages
 COPY frontend frontend
 COPY openapi openapi
+COPY locales locales
 
 ARG VITE_AUTH_ENABLED=false
 ARG VITE_KEYCLOAK_URL=

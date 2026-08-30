@@ -1,6 +1,6 @@
 from contextlib import AbstractAsyncContextManager
 
-from agentic_shared.infrastructure.postgres.settings import DatabaseSettings
+from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 

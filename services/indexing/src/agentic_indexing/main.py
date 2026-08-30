@@ -9,11 +9,9 @@ from agentic_shared.domains.persistence.repositories.sync_.documents import (
     SqlAlchemyIndexJobWriteRepositorySync,
 )
 from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import QdrantChunkWriteRepository
-from agentic_shared.infrastructure.object_storage.client import (
-    MinioClient,
-    MinioObjectStorageReader,
-)
-from agentic_shared.infrastructure.vector.client import QdrantClient
+from agentic_shared.infrastructure.storage.minio.client import MinioClient
+from agentic_shared.infrastructure.storage.minio.reader import MinioStorageReader
+from agentic_shared.infrastructure.vector.qdrant.client import QdrantClient
 from celery import Celery
 from celery.signals import after_setup_logger, worker_ready
 from sqlalchemy import create_engine
@@ -46,7 +44,7 @@ def _on_celery_logger_setup(**_kwargs: object) -> None:
 @worker_ready.connect
 def _on_worker_ready(**_kwargs: object) -> None:
     setup_logging(_settings.log_level)
-    print_startup_banner("Squint Indexing Worker")
+    print_startup_banner("agentic-indexing")
 
 
 engine = create_engine(_settings.database.sqlalchemy_psycopg2_url())
@@ -64,7 +62,7 @@ def _build_use_case(
     return IndexDocumentUseCase(
         jobs=SqlAlchemyIndexJobWriteRepositorySync(session, tenant_id),
         documents=SqlAlchemyDocumentWriteRepositorySync(session, tenant_id),
-        storage_read=MinioObjectStorageReader(minio),
+        storage_read=MinioStorageReader(minio),
         chunk_write=QdrantChunkWriteRepository(qdrant),
         llm=settings.llm,
         embedding=settings.embedding,

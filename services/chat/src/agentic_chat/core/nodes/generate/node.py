@@ -1,11 +1,11 @@
 import logging
 from dataclasses import dataclass
 
-from agentic_shared.core.i18n import t
-from agentic_shared.core.security.guard import redact_for_provider
+from agentic_shared.core.security.guard import redact_pii
+from agentic_shared.crosscut.i18n import t
 from agentic_shared.domains.retrieval.models import ChunkCitation, RetrievedChunk
-from agentic_shared.integrations.llm.messages import llm_system_user
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.llm.messages import llm_system_user
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def _chunk_line(chunk: RetrievedChunk) -> str:
-    text = redact_for_provider(chunk.text).text
+    text = redact_pii(chunk.text).text
     page = chunk.page if chunk.page is not None else "?"
     return f"[{chunk.source_file or 'doc'} p.{page}] {text}"
 
@@ -93,4 +93,4 @@ class GenerateNode(LlmCallNode[_GenerateContext]):
         return get_module_settings().llm_temperature
 
     def llm_model(self) -> str | None:
-        return LLMSettings().litellm_model
+        return LiteLLMChatSettings().litellm_model

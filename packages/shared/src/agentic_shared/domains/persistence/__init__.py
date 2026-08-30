@@ -7,7 +7,7 @@ from agentic_shared.domains.persistence.entities import (
     IndexJob,
     JobStatus,
 )
-from agentic_shared.infrastructure.postgres.session import create_session_factory, get_session
+from agentic_shared.infrastructure.sql.core.session import create_session_factory, get_session
 
 __all__ = [
     "Base",

@@ -1,1 +1,1 @@
-"""Core settings, auth, security, and compliance — no framework bindings."""
+"""Core abstractions: settings bases and resource client lifecycle."""

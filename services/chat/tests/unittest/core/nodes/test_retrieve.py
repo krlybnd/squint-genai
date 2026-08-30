@@ -76,8 +76,6 @@ class TestRetrieveNode(unittest.IsolatedAsyncioTestCase):
                 sparse_model="s",
                 candidate_top_k=10,
                 final_top_k=3,
-                rerank_enabled=False,
-                rerank_model="",
             ),
         )
 

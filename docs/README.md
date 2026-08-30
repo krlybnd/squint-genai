@@ -16,6 +16,7 @@ Entry point for **Squint** docs. Start here if you are reviewing the repo or onb
    - [006 — Backend i18n for server-emitted copy](adr/006-backend-i18n.md)
    - [007 — No live-stack tests in default CI](adr/007-no-live-tests-in-ci.md)
    - [008 — Repo metadata in CUE (`project.cue`)](adr/008-repo-metadata-in-cue.md)
+   - [009 — Soft multi-tenancy in Phase 1 auth](adr/009-soft-tenancy-auth.md)
 
 ## Quick links
 

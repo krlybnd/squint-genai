@@ -1,6 +1,6 @@
 import unittest
 
-from agentic_shared.core.i18n import LOCALE_LANGUAGE, t
+from agentic_shared.crosscut.i18n import LOCALE_LANGUAGE, t
 
 from agentic_chat.modules.chat.streaming.session_title import (
     SessionTitleGenerator,

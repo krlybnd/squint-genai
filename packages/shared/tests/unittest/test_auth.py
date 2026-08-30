@@ -1,8 +1,8 @@
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.roles import AppRole
-from agentic_shared.core.auth.roles_claim import parse_access_token_claims
-from agentic_shared.core.auth.service import AuthService
-from agentic_shared.core.auth.settings import AuthSettings, RoleSettings
+from agentic_shared.crosscut.auth.claims import parse_access_token_claims
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.roles import AppRole
+from agentic_shared.crosscut.auth.service import AuthService
+from agentic_shared.crosscut.auth.settings import AuthSettings, RoleSettings
 
 
 def test_auth_service_api_key_mode() -> None:

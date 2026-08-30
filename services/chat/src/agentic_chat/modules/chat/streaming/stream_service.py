@@ -3,7 +3,7 @@ import uuid
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
-from agentic_shared.core.i18n import DEFAULT_LOCALE
+from agentic_shared.crosscut.i18n import DEFAULT_LOCALE
 from agentic_shared.domains.chat.roles import ChatMessageRole
 from agentic_shared.domains.persistence.entities import ChatMessage
 from agentic_shared.domains.persistence.protocols.chat import (

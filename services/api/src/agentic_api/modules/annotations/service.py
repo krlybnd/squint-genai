@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 from typing import cast
 
-from agentic_shared.core.domain_errors import BadRequestError, NotFoundError
-from agentic_shared.core.i18n import DEFAULT_LOCALE, t
+from agentic_shared.crosscut.i18n import DEFAULT_LOCALE, t
+from agentic_shared.domains.domain_errors import BadRequestError, NotFoundError
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
-from agentic_shared.infrastructure.vector.enums import QdrantPointType
+from agentic_shared.infrastructure.vector.qdrant.enums import QdrantPointType
 
 from agentic_api.modules.annotations.schemas import ChunkCommentOut, CreateChunkCommentRequest
 from agentic_api.modules.annotations.state import (

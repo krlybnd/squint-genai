@@ -1,8 +1,8 @@
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.roles import AppRole
-from agentic_shared.core.auth.settings import AuthSettings
-from agentic_shared.core.auth.tenant import resolve_tenant_id
-from agentic_shared.frameworks.fastapi.auth.dependencies import require_roles
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.roles import AppRole
+from agentic_shared.crosscut.auth.settings import AuthSettings
+from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
+from agentic_shared.frameworks.fastapi.dependencies.auth.dependency import require_roles
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter
 

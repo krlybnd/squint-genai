@@ -1,10 +1,10 @@
 import logging
 
-from agentic_shared.core.i18n import DEFAULT_LOCALE, LOCALE_LANGUAGE, SUPPORTED_LOCALES, t
-from agentic_shared.integrations.llm.content import extract_chat_completion_content
-from agentic_shared.integrations.llm.messages import llm_system_user
-from agentic_shared.integrations.llm.protocols import ChatClient
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.crosscut.i18n import DEFAULT_LOCALE, LOCALE_LANGUAGE, SUPPORTED_LOCALES, t
+from agentic_shared.integrations.litellm.llm.content import extract_chat_completion_content
+from agentic_shared.integrations.litellm.llm.messages import llm_system_user
+from agentic_shared.integrations.litellm.llm.protocols import ChatClient
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_chat.modules.chat.settings import get_module_settings
 
@@ -38,7 +38,7 @@ class SessionTitleGenerator:
         result = await self._chat.chat_completion(
             messages=llm_system_user(system, user_message[: module.user_message_preview_chars]),
             temperature=module.session_title_temperature,
-            model=LLMSettings().litellm_router_model,
+            model=LiteLLMChatSettings().litellm_router_model,
         )
         raw = extract_chat_completion_content(result)
         title = raw.strip().strip("\"'«»„“”")

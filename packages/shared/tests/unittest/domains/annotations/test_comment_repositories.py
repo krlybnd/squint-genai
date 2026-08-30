@@ -8,20 +8,29 @@ from agentic_shared.domains.annotations.repositories.qdrant_.comments import (
 )
 
 
+def _point(payload: dict) -> MagicMock:
+    return MagicMock(payload=payload)
+
+
 class TestQdrantCommentRepositories(unittest.TestCase):
     def test_list_for_chunk_returns_comments(self) -> None:
         # Arrange
         client = MagicMock()
-        client.retrieve.return_value = {
-            "tenant_id": "tenant-a",
-            "comments": [
+        client.collection_name = "test"
+        client._sdk.retrieve.return_value = [
+            _point(
                 {
-                    "comment_id": "c1",
-                    "comment_text": "note",
-                    "created_at": "2026-01-01T00:00:00Z",
+                    "tenant_id": "tenant-a",
+                    "comments": [
+                        {
+                            "comment_id": "c1",
+                            "comment_text": "note",
+                            "created_at": "2026-01-01T00:00:00Z",
+                        }
+                    ],
                 }
-            ],
-        }
+            )
+        ]
         repo = QdrantCommentReadRepository(client)
 
         # Act
@@ -34,10 +43,8 @@ class TestQdrantCommentRepositories(unittest.TestCase):
     def test_append_to_chunk_updates_payload(self) -> None:
         # Arrange
         client = MagicMock()
-        client.retrieve.return_value = {
-            "tenant_id": "tenant-a",
-            "comments": [],
-        }
+        client.collection_name = "test"
+        client._sdk.retrieve.return_value = [_point({"tenant_id": "tenant-a", "comments": []})]
         repo = QdrantCommentWriteRepository(client)
         comment = ChunkComment(
             comment_id="c2",
@@ -49,11 +56,11 @@ class TestQdrantCommentRepositories(unittest.TestCase):
         repo.append_to_chunk("chunk-1", comment, tenant_id="tenant-a")
 
         # Assert
-        client.set_payload.assert_called_once()
-        point_ids, payload = client.set_payload.call_args.args
-        self.assertEqual(point_ids, ["chunk-1"])
-        self.assertEqual(len(payload["comments"]), 1)
-        self.assertEqual(payload["comments"][0]["comment_id"], "c2")
+        client._sdk.set_payload.assert_called_once()
+        call_kwargs = client._sdk.set_payload.call_args.kwargs
+        self.assertEqual(call_kwargs["points"], ["chunk-1"])
+        self.assertEqual(len(call_kwargs["payload"]["comments"]), 1)
+        self.assertEqual(call_kwargs["payload"]["comments"][0]["comment_id"], "c2")
 
 
 if __name__ == "__main__":
