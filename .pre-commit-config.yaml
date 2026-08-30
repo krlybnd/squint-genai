@@ -1,3 +1,7 @@
+# Skip non-product trees: pocs/ and .cursor/ alone must not fire hooks.
+# (CI mirrors this via paths-ignore in .github/workflows/ci.yml.)
+exclude: ^(pocs/|\.cursor/)
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -30,5 +34,6 @@ repos:
         name: workspace lint (ruff + eslint + stylelint + tsc)
         entry: make lint
         language: system
-        always_run: true
         pass_filenames: false
+        # Only when product/lintable trees change — not on pocs/.cursor-only commits.
+        files: ^(packages|services|frontend|tests)/

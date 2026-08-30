@@ -50,13 +50,22 @@ openapi/*.json
 # OpenAPI-generated Python clients (run `make generate-keycloak-client`)
 packages/generated/
 
-# IDE / editor (keep project rules in git)
+# IDE / editor (keep project rules + skills in git)
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/**
+!.cursor/skills/
+!.cursor/skills/**
+
 .idea/
 .vscode/
 .hypothesis/
 *.swp
 *.swo
 *~
+
+# PoC machine outputs (metrics only — never commit)
+pocs/**/results/
+pocs/**/run/
+!pocs/**/run/.gitkeep
+!pocs/**/run/.gitignore

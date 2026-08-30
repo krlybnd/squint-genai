@@ -205,6 +205,7 @@ Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api
 | Frontend | Two apps + `@are/ui-core` AppShell — [ADR 005](adr/005-shared-ui-core-appshell.md) |
 | Backend i18n | Shared JSON catalog for SSE / prompts / stored job keys — [ADR 006](adr/006-backend-i18n.md) |
 | Soft tenancy | Shared DB + `tenant_id` / JWT claims — [ADR 009](adr/009-soft-tenancy-auth.md) |
+| PoCs | Isolated `pocs/` harness + light `results/result.log` (gitignored) — [ADR 010](adr/010-poc-workflow.md) |
 
 ---
 
@@ -283,3 +284,4 @@ operations/             postgres, redis, minio, qdrant, litellm, keycloak, traef
 - [ADR 007 — No live-stack tests in default CI](adr/007-no-live-tests-in-ci.md)
 - [ADR 008 — Repo metadata in CUE](adr/008-repo-metadata-in-cue.md)
 - [ADR 009 — Soft multi-tenancy in Phase 1 auth](adr/009-soft-tenancy-auth.md)
+- [ADR 010 — PoC workflow under `pocs/`](adr/010-poc-workflow.md)

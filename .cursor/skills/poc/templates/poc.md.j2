@@ -1,0 +1,47 @@
+# PoC: {{ name }}
+
+> ADR 010. Proof log: `results/result.log` (**gitignored**). Run `./scripts/poc.sh`.
+
+## Hypothesis
+
+{{ hypothesis | default("_What do we believe this will prove?_") }}
+
+## Questions we care about
+
+- [ ] Runs on notebook CPU (no GPU)?
+- [ ] Rough RSS / disk under `run/` acceptable for a demo?
+- [ ] Smoke proves the happy path (and a fail path if relevant)?
+- [ ] Upstream/licence OK for a short-lived demo?
+- [ ] {{ extra_question | default("_PoC-specific question_") }}
+
+## Success criteria
+
+{{ success_criteria | default("_What must the proof log show?_") }}
+
+## Out of scope
+
+{{ out_of_scope | default("_What we are not deciding here._") }}
+
+## Harness
+
+| Item | Value |
+|------|--------|
+| Path | `pocs/{{ name }}/` |
+| Entry | `./scripts/poc.sh` |
+| Related | {{ issue | default("_TBD_") }} |
+
+## Proof (from `results/result.log`)
+
+_Summarize what the script logged — do not invent._
+
+## Interpretation
+
+-
+
+## Decision
+
+- [ ] **Ship** — productize (link issue)
+- [ ] **Iterate** — change harness, re-run `poc.sh`
+- [ ] **Abandon** — why
+
+**Notes:**
