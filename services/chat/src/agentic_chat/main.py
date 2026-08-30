@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from agentic_shared.core.health.providers import make_resource_health_provider
 from agentic_shared.domains.persistence.providers import AsyncDbProvider
+from agentic_shared.domains.pii_vault.providers import PiiVaultProvider
 from agentic_shared.domains.retrieval.providers import AsyncRetrievalProvider
 from agentic_shared.frameworks.fastapi.dishka import make_service_container
 from agentic_shared.frameworks.fastapi.framework import FastAPIAppBuilder
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
             settings.llm,
             settings.embedding,
         ),
+        PiiVaultProvider(settings.crypto, settings.pii_vault),
         ChatProvider(settings),
     )
     return (

@@ -2,7 +2,15 @@
 
 [![CI](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml)
 
-**Squint** is an eval-driven **agentic RAG** platform for asking questions about your own documents — built on the premise that a generated answer is worthless unless you can check it. Every response carries citations back to the exact source chunk; you can select a passage and leave a comment on it, so expert review lives on the same text the answer came from. The agent's reasoning steps are visible while it works, and answer quality is measured by an automated eval gate instead of gut feeling.
+> **If you have 10 minutes:** the LangGraph agent in [`services/chat/.../core/graph/`](services/chat/src/agentic_chat/core/graph/) (`plan → guard → rewrite → retrieve → generate`), the deterministic PII tokenizer in [`tokenizer.py`](packages/shared/src/agentic_shared/domains/pii_vault/tokenizer.py) — why tokens preserve retrieval where masking destroys it — and the measured quality gate in [`reports/eval/`](reports/eval/). For decision-making rather than code, [ADR 011](docs/adr/011-index-time-pii-tokenization.md) is the most representative.
+
+**Squint** is an eval-driven **agentic RAG** platform for asking questions about your own documents — built on the premise that a generated answer is worthless unless you can check it. Every response carries citations back to the exact source chunk; you can select a passage and leave a comment on it, so expert review lives on the same text the answer came from. The agent's reasoning steps are visible while it works, and answer quality is measured by an automated eval gate instead of gut feeling. Sensitive documents stay usable without leaving your infrastructure: an optional PII vault replaces names and identifiers with deterministic tokens before anything reaches an embedding or chat model.
+
+[![Recall@5](https://img.shields.io/badge/Recall%405-1.00-brightgreen)](reports/eval/retrieval.md)
+[![Faithfulness](https://img.shields.io/badge/Faithfulness-0.95-green)](reports/eval/generation.md)
+[![Answer%20Relevancy](https://img.shields.io/badge/Answer%20Relevancy-0.90-green)](reports/eval/generation.md)
+
+Answer quality is measured, not asserted — golden dataset, DeepEval gate, numbers refreshed from real runs. [Details](#evaluation).
 
 > **Why "Squint"?** Because the product is about leaning in and looking closer at the source — citations, comments on the passage, not taking the model's word for it.
 
@@ -17,6 +25,7 @@ Most RAG demos stop at "upload a PDF, get an answer". Squint is built around the
 | **Expert annotations** | Domain experts can select any passage in a source document and leave a comment on it, turning tacit review knowledge into stored, reusable context. |
 | **Measured quality** | A golden dataset plus an automated gate scores retrieval precision/recall and answer faithfulness — regressions surface as numbers, not complaints. |
 | **Guardrails by default** | PII redaction and prompt-injection detection sit in the agent's path, before anything reaches the model. |
+| **PII stays on your hardware** | With the vault enabled, sensitive spans are tokenized *before* embedding — the model provider and the vector store only ever see `<PERSON_A1B2C3D4>`. Plaintext stays Fernet-encrypted in your own Postgres, tenant-scoped, and only an authorized request resolves a token back. Retrieval still works, because the same value always maps to the same token. |
 | **Multi-tenant from day one** | Tenants and users are managed through Keycloak Organizations, with every stored record scoped to a tenant — one deployment serves many customers or departments. |
 | **EU compliance hooks** | Retention windows, audit logging and AI-transparency extension points for GDPR, NIS2 and the EU AI Act. |
 | **No vendor lock-in** | Model access goes through LiteLLM, and the whole stack is self-hosted, so documents and embeddings never have to leave your infrastructure. |
@@ -32,6 +41,19 @@ The value shows up wherever *"the AI said so"* is not an acceptable answer.
 **Research and analyst teams** — working through a paper or report collection, where the annotation layer lets a group build shared understanding on top of the same corpus instead of each person reading in isolation.
 
 > **For reviewers:** microservice layout, LangGraph agent with guard/rewrite/retrieve/generate pipeline, shared retrieval domain lib, Celery write path, React SSE UI, **DeepEval quality gate + LangSmith tracing**. Runnable locally with Docker Compose. See [Project overview](docs/project-overview.md) and [Compliance readiness](docs/compliance.md).
+
+## What you can run on your own hardware
+
+Set `PII_VAULT_ENABLED=true` (plus `INDEXING_PDF_PII_TOKENIZATION_ENABLED=true` on the indexing worker) and the identifying parts of a document never reach the model provider. That makes a class of documents usable that most teams otherwise keep away from an LLM entirely:
+
+- **Employment contracts and HR files** — ask about notice periods, clauses and obligations while names, tax numbers and bank accounts leave as tokens.
+- **Client contracts and NDAs** — compare terms across an archive without counterparty names going anywhere.
+- **Invoices and financial records** — account numbers and company registration numbers are tokenized before the embedding call.
+- **Case files and internal correspondence** — search and summarize while personal identifiers stay in your database.
+
+The answer is detokenized on the way back, so an authorized user in the tenant reads real names — the tokens exist only on the wire to the provider and inside the vector store.
+
+Design notes and the threat model: [ADR 011](docs/adr/011-index-time-pii-tokenization.md). Detection limits are listed under [Current limitations](#current-limitations-phase-1).
 
 ## Highlights
 
@@ -64,47 +86,35 @@ flowchart TB
         api["api :8000"]
         chat["chat :8002"]
         admin["admin :8003"]
-        indexing["indexing Celery worker"]
+        indexing["indexing worker"]
     end
 
-    subgraph shared [packages/shared]
-        retrieval["domains/retrieval"]
+    subgraph platform [Platform — operations/]
+        litellm["LiteLLM :4000"]
+        guard["llm-guard · Presidio"]
     end
 
-    subgraph data [operations/]
+    subgraph data [Data stores]
         postgres[("PostgreSQL")]
         redis[("Redis")]
         minio[("MinIO")]
         qdrant[("Qdrant")]
-        litellm["LiteLLM :4000"]
     end
 
-    llm["LLM provider"]
+    ext["LLM provider"]
 
     frontend --> traefik
     admin_ui --> traefik
-    traefik --> api
     traefik --> chat
-    traefik --> admin
-    api --> postgres
-    api --> redis
-    api --> retrieval
-    chat --> postgres
-    chat --> retrieval
-    chat --> litellm
     admin --> keycloak
-    indexing --> redis
-    indexing --> minio
-    indexing --> qdrant
-    indexing --> litellm
-    retrieval --> qdrant
-    litellm --> llm
-    api -.->|"enqueue"| redis
-    redis -.-> indexing
-    indexing -.->|"write"| qdrant
-    chat -.->|"read"| qdrant
-    frontend -.->|"SSE"| chat
+    chat --> litellm
+    chat --> qdrant
+    litellm --> ext
+
+    api -.->|index jobs| indexing
 ```
+
+Guard sidecars (`make up-guardrails`) and auth (`make up-auth`) are optional Compose profiles. **ops** bootstraps Postgres/MinIO then exits; **api** · **chat** · **indexing** also use **guard** and the other data stores — see [architecture.md](docs/architecture.md). LiteLLM is an internal AI proxy, not user-facing edge.
 
 Full diagrams (context, agent graph, indexing sequence): [`docs/architecture.md`](docs/architecture.md) · docs index: [`docs/README.md`](docs/README.md)
 
@@ -115,9 +125,11 @@ Full diagrams (context, agent graph, indexing sequence): [`docs/architecture.md`
 - **indexing** — semantic chunking via Celery + Redis (write path)
 - **admin** — tenant/user administration via Keycloak Organizations API
 - **ops** — one-shot bootstrap (Alembic migrate + MinIO setup)
-- **packages/shared** — domain libs, integrations (LiteLLM, Qdrant, MinIO)
+- **packages/shared** — domain libs linked into services at build time (not a runtime container)
 - **frontend** (app-ui `:5173`, admin-ui `:5174`) — React SSE UI (`--profile ui`)
-- **PostgreSQL** · **Redis** · **MinIO** · **Qdrant** · **LiteLLM**
+- **PostgreSQL** · **Redis** · **MinIO** · **Qdrant**
+- **LiteLLM** `:4000` — internal chat/embedding proxy
+- **Guardrails** (`make up-guardrails`) — **llm-guard** `:8010`, **Presidio** analyzer + anonymizer
 
 ## Quick start
 
@@ -269,13 +281,18 @@ Squint is a **reference architecture demo**, not a production deployment. The RE
 |------|------------|
 | **CI scope** | No live-stack suites in default CI — e2e, API acceptance, and `make eval-live` are manual/on-demand ([ADR 007](docs/adr/007-no-live-tests-in-ci.md)) |
 | **Infra** | Docker Compose is dev/demo grade: default secrets, HTTP-only Traefik, floating image tags, no resource limits |
-| **Guardrails** | Prompt-injection and PII use LiteLLM-facing APIs (llm-guard / Presidio locally, or a vendor endpoint); masking covers query + retrieved context, not model output |
+| **Guardrails** | Prompt-injection and PII use LiteLLM-facing APIs (llm-guard / Presidio locally, or a vendor endpoint). With the vault enabled, query, retrieved context and streamed answer are all covered; without it, masking stops at query + context. The llm-guard **BanSubstrings** list includes explicit phrases as an e2e/API testing trade-off so rejects stay deterministic without waiting on DeBERTa — see note below. |
+| **PII detection** | Recall is probabilistic (Presidio plus HU/contract regex supplements) and unmeasured on Hungarian legal text — an entity the detector misses is sent in clear. No golden set for detection yet. |
+| **Vault crypto** | Single global Fernet key from env, no rotation and no per-tenant DEK; `.env.example` ships working placeholder values that must be replaced. Token digest is 32-bit, so a large tenant corpus can collide. Original PDFs in MinIO are not encrypted by this feature. |
+| **Vault lifecycle** | Deleting a document does not remove its vault entries, so GDPR erasure is not satisfied end to end. `POST /v1/vault/detokenize` requires only `AppRole.READ` and takes an unbounded token list. |
 | **Compliance** | GDPR / NIS2 / EU AI Act modules are extension points (NoOp stubs) — audit logging and retention are not wired end-to-end |
 | **Multitenancy** | JWT prefers the `tenant_id` claim over `X-Tenant-Id`; API-key and internal-service auth still take `X-Tenant-Id` as-is (misconfiguration risk in prod) |
 | **Chunk comments** | Comments persist on the chunk and have their own vectors, but generate does not attach comment text when answering |
 | **Frontend resilience** | No global React error boundary; chat state lives in a large `useChatController` hook with thin coverage ([#21](https://github.com/krlybnd/squint-genai/issues/21)) |
 
 Run live suites locally after `make up-auth` when validating end-to-end behavior before a demo or release.
+
+> **BanSubstrings testing trade-off:** [`operations/llm-guard/config/scanners.yml`](operations/llm-guard/config/scanners.yml) lists a few explicit phrases in the BanSubstrings scanner so API/e2e acceptance tests get deterministic hard rejects (`tests/api/features/05_guardrails.feature`) without waiting on the DeBERTa prompt-injection model. **These phrases are fixtures for e2e/API acceptance only** — they do not reflect the author's views or vocabulary; please do not draw conclusions about me from this list.
 
 ## API-first (OpenAPI)
 
@@ -310,6 +327,10 @@ operations/           Postgres, Redis, MinIO, Qdrant, LiteLLM, Keycloak configs
 ```
 
 `Squint` is the product name. The repository, Python packages, Docker Compose project and Keycloak realm keep their `agentic-rag-eval` identifiers, so nothing in the deployment or import paths depends on the branding.
+
+## Disclaimer
+
+This repository is a **reference demo**, shared as-is. The author accepts **no responsibility or liability** for personal, commercial, or production use — you run it at your own risk. If you find a bug or want to discuss a concern, please [open a GitHub issue](https://github.com/krlybnd/squint-genai/issues); that is the right place to report problems.
 
 ## License
 

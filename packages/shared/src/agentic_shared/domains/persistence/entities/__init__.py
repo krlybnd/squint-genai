@@ -8,6 +8,7 @@ from agentic_shared.domains.persistence.entities.base import (
 from agentic_shared.domains.persistence.entities.chat import ChatMessage, ChatSession
 from agentic_shared.domains.persistence.entities.document import Document
 from agentic_shared.domains.persistence.entities.index_job import IndexJob, JobStatus
+from agentic_shared.domains.persistence.entities.pii_vault import PiiVaultEntry
 
 __all__ = [
     "AuditMixin",
@@ -20,4 +21,5 @@ __all__ = [
     "Document",
     "IndexJob",
     "JobStatus",
+    "PiiVaultEntry",
 ]

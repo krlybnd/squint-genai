@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Squint Admin API
+  title: agentic-admin
   description: Tenant and user administration (Keycloak Organizations)
   version: 0.1.0
 paths:

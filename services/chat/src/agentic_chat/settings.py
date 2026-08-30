@@ -2,6 +2,8 @@
 
 from agentic_shared.core.settings.app import AppSettings, load_app_settings
 from agentic_shared.crosscut.auth.settings import AuthSettings, RoleSettings
+from agentic_shared.crosscut.crypto.settings import CryptoSettings
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.frameworks.fastapi.defaults import FrameworkDefaults
 from agentic_shared.frameworks.fastapi.settings import FastAPISettings
 from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
@@ -66,6 +68,14 @@ class ChatSettings(AppSettings):
     role: RoleSettings = Field(
         default_factory=RoleSettings,
         description="IdP realm role → AppRole mapping for authorization.",
+    )
+    crypto: CryptoSettings = Field(
+        default_factory=CryptoSettings,
+        description="Fernet key + token salt for PII vault reveal/detokenize.",
+    )
+    pii_vault: PiiVaultSettings = Field(
+        default_factory=PiiVaultSettings,
+        description="Vault query tokenization + SSE detokenize toggles.",
     )
 
 

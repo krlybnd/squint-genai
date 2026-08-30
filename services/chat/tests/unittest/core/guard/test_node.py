@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.integrations.litellm.guard.models import GuardResult
 
 from agentic_chat.core.deps import AgentGraphDeps
@@ -19,6 +20,8 @@ def _deps(*, guard=None, analyzer=None, anonymizer=None) -> AgentGraphDeps:
         analyzer.analyze.return_value = []
     if anonymizer is None:
         anonymizer = AsyncMock()
+    query_pii = AsyncMock()
+    query_pii.enabled = False
     return AgentGraphDeps(
         chat_client=AsyncMock(),
         retrieval=AsyncMock(),
@@ -26,6 +29,8 @@ def _deps(*, guard=None, analyzer=None, anonymizer=None) -> AgentGraphDeps:
         guard=guard,
         analyzer=analyzer,
         anonymizer=anonymizer,
+        query_pii=query_pii,
+        pii_vault=PiiVaultSettings(_env_file=None),
     )
 
 
@@ -34,7 +39,7 @@ class _StubRule:
         self._result = result
         self.calls: list[tuple[str, str]] = []
 
-    async def evaluate(self, query: str, locale: str):
+    async def evaluate(self, query: str, locale: str, *, tenant_id: str = "default"):
         self.calls.append((query, locale))
         return self._result
 

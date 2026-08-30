@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.domains.retrieval.models import (
     RetrievedChunk,
     SearchDocumentsResult,
@@ -15,6 +16,8 @@ from agentic_chat.core.nodes.retrieve import RetrieveNode
 class TestRetrieveNode(unittest.IsolatedAsyncioTestCase):
     def _node(self, *, top_k: int = 5) -> tuple[RetrieveNode, AsyncMock]:
         retrieval = AsyncMock()
+        query_pii = AsyncMock()
+        query_pii.enabled = False
         deps = AgentGraphDeps(
             chat_client=MagicMock(),
             retrieval=retrieval,
@@ -22,6 +25,8 @@ class TestRetrieveNode(unittest.IsolatedAsyncioTestCase):
             guard=AsyncMock(),
             analyzer=AsyncMock(),
             anonymizer=AsyncMock(),
+            query_pii=query_pii,
+            pii_vault=PiiVaultSettings(_env_file=None),
         )
         return RetrieveNode(deps), retrieval
 
