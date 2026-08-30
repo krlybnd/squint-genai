@@ -8,7 +8,13 @@ from dataclasses import dataclass
 from pydantic_evals import Case, Dataset
 from pydantic_evals.reporting import EvaluationReport
 
-from agentic_eval.core.goldendata import Golden, case_name, labeled_goldens, load_goldens
+from agentic_eval.core.goldendata import (
+    Golden,
+    GoldenSettings,
+    case_name,
+    labeled_goldens,
+    load_goldens,
+)
 from agentic_eval.core.protocols import HostStack
 from agentic_eval.modules.retrieval.evaluators import RetrievalIR
 from agentic_eval.modules.retrieval.metrics import RetrievalScores
@@ -37,8 +43,15 @@ class RetrievalExperiment:
         self,
         settings: EvalSettings,
         goldens: Sequence[Golden] | None = None,
+        *,
+        golden_settings: GoldenSettings | None = None,
+        stem_match: bool = False,
     ) -> Dataset[str, list[str]]:
-        loaded = goldens if goldens is not None else load_goldens(settings=settings.golden)
+        loaded = (
+            goldens
+            if goldens is not None
+            else load_goldens(settings=golden_settings or settings.golden)
+        )
         labeled = labeled_goldens(list(loaded))
         return Dataset(
             name=self.name,
@@ -50,7 +63,7 @@ class RetrievalExperiment:
                 )
                 for index, item in enumerate(labeled, start=1)
             ],
-            evaluators=[RetrievalIR(k=settings.retrieval.k)],
+            evaluators=[RetrievalIR(k=settings.retrieval.k, stem_match=stem_match)],
         )
 
     def run(
@@ -59,6 +72,8 @@ class RetrievalExperiment:
         stack: HostStack,
         *,
         progress: bool = True,
+        golden_settings: GoldenSettings | None = None,
+        stem_match: bool = False,
     ) -> EvaluationReport[str, list[str]]:
         async def task(question: str) -> list[str]:
             deps = stack.to_graph_deps(top_k=settings.retrieval.k)
@@ -69,7 +84,11 @@ class RetrievalExperiment:
             )
             return [chunk.source_file for chunk in result.chunks if chunk.source_file]
 
-        return self.dataset(settings).evaluate_sync(
+        return self.dataset(
+            settings,
+            golden_settings=golden_settings,
+            stem_match=stem_match,
+        ).evaluate_sync(
             task,
             max_concurrency=settings.max_concurrency,
             progress=progress,

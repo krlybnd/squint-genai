@@ -9,9 +9,9 @@ from pydantic_evals.reporting import EvaluationReport
 
 from agentic_eval.modules.retrieval.metrics import RetrievalScores
 from agentic_eval.modules.retrieval.settings import RetrievalSettings
-from agentic_eval.settings import EVAL_ROOT
 
-EVAL_REPORTS_DIR = EVAL_ROOT.parents[1] / "reports" / "eval"
+# tests/eval/src/agentic_eval/core/reports.py → repo root is parents[5]
+EVAL_REPORTS_DIR = Path(__file__).resolve().parents[5] / "reports" / "eval"
 GENERATION_REPORT = EVAL_REPORTS_DIR / "generation.md"
 RETRIEVAL_REPORT = EVAL_REPORTS_DIR / "retrieval.md"
 

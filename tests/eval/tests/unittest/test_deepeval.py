@@ -11,33 +11,35 @@ from agentic_eval.settings import EVAL_ROOT, EvalSettings
 
 def test_generation_runner_uses_deepeval_evaluate() -> None:
     # Arrange
-    source = (EVAL_ROOT / "tests" / "suit" / "run_generation_eval.py").read_text(encoding="utf-8")
+    runner_path = EVAL_ROOT / "src" / "agentic_eval" / "modules" / "generation" / "runner.py"
+    runner = runner_path.read_text(encoding="utf-8")
+    entry = (EVAL_ROOT / "tests" / "suit" / "run_generation_eval.py").read_text(encoding="utf-8")
     adapter = inspect.getsource(judge_model)
 
     # Assert
-    assert "evaluate(" in source
-    assert "assert_test" not in source
-    assert "show_indicator=True" in source
-    assert "inspect_after_run=False" in source
-    assert "ignore_errors=True" in source
-    assert "run_async=True" in source
-    assert "judge_max_concurrency" in source
-    assert "judge_throttle_seconds" in source
-    assert "async_mode=False" in source
+    assert "evaluate(" in runner
+    assert "run_generation_gate" in entry
+    assert "show_indicator=True" in runner
+    assert "inspect_after_run=False" in runner
+    assert "ignore_errors=True" in runner
+    assert "run_async=True" in runner
+    assert "judge_max_concurrency" in runner
+    assert "judge_throttle_seconds" in runner
+    assert "async_mode=False" in runner
     assert "deepeval.apply" in adapter
-    assert 'file_type="md"' in source
-    assert "file_output_dir" in source
-    assert 'identifier="generation"' in source
-    assert "promote_deepeval_report" in source
+    assert 'file_type="md"' in runner
+    assert "file_output_dir" in runner
+    assert 'identifier="generation"' in runner or "deepeval_identifier" in runner
+    assert "promote_deepeval_report" in runner
     assert "os.environ" not in adapter
     assert "os.environ" not in inspect.getsource(DeepEvalSettings.apply)
-    assert "retry_env" not in source
-    assert "answer_questions" in source
-    assert "[index/" not in source
-    assert "FaithfulnessMetric" in source
-    assert "AnswerRelevancyMetric" in source
-    assert "ContextualPrecisionMetric" not in source
-    assert "ContextualRecallMetric" not in source
+    assert "retry_env" not in runner
+    assert "answer_questions" in runner
+    assert "[index/" not in runner
+    assert "FaithfulnessMetric" in runner
+    assert "AnswerRelevancyMetric" in runner
+    assert "ContextualPrecisionMetric" not in runner
+    assert "ContextualRecallMetric" not in runner
     assert "OpenAIModel" in adapter
 
 

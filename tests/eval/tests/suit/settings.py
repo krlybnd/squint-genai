@@ -7,11 +7,21 @@ from pathlib import Path
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_shared.core.settings.base import EnvSettings
 from agentic_shared.core.settings.secrets import SecuredStr
+from agentic_shared.crosscut.crypto.settings import CryptoSettings
+from agentic_shared.domains.pii_vault.query_service import QueryPiiTokenizationService
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
+from agentic_shared.domains.pii_vault.tokenizer import PiiTokenizer
 from agentic_shared.domains.retrieval.factory import create_async_retrieval_service
 from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import QdrantChunkReadRepository
 from agentic_shared.infrastructure.vector.qdrant.client import QdrantClient
 from agentic_shared.infrastructure.vector.qdrant.settings import QdrantSettings
+from agentic_shared.integrations.litellm.analyzer.client import AnalyzerClient
+from agentic_shared.integrations.litellm.analyzer.settings import AnalyzerSettings
+from agentic_shared.integrations.litellm.anonymizer.client import AnonymizerClient
+from agentic_shared.integrations.litellm.anonymizer.settings import AnonymizerSettings
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.guard.client import GuardClient
+from agentic_shared.integrations.litellm.guard.settings import GuardSettings
 from agentic_shared.integrations.litellm.llm import LiteLLMChatClient
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 from pydantic import AliasChoices, Field
@@ -53,28 +63,46 @@ class SutSettings(EnvSettings):
         return self.litellm_api_key.get_secret_value()
 
     def to_graph_deps(self, *, top_k: int | None = None) -> AgentGraphDeps:
+        env = eval_env_file()
         llm = LiteLLMChatSettings(
-            _env_file=None,
+            _env_file=env,
             litellm_base_url=self.litellm_base_url,
             litellm_master_key=self.litellm_api_key,
         )
         qdrant_settings = QdrantSettings(
-            _env_file=None,
+            _env_file=env,
             qdrant_url=self.qdrant_url,
             qdrant_collection=self.qdrant_collection,
         )
         qdrant = QdrantClient(qdrant_settings)
+        guard_settings = GuardSettings(_env_file=env)
+        analyzer_settings = AnalyzerSettings(_env_file=env)
+        anonymizer_settings = AnonymizerSettings(_env_file=env)
+        crypto = CryptoSettings(_env_file=env)
+        pii_vault = PiiVaultSettings(_env_file=env)
+        analyzer = AnalyzerClient(analyzer_settings)
+        query_pii = QueryPiiTokenizationService(
+            analyzer=analyzer,
+            tokenizer=PiiTokenizer(token_salt=crypto.token_salt),
+            settings=pii_vault,
+        )
         return AgentGraphDeps(
             chat_client=LiteLLMChatClient(llm),
             retrieval=create_async_retrieval_service(
                 chunk_read=QdrantChunkReadRepository(qdrant),
                 llm=llm,
                 embedding=LiteLLMEmbeddingSettings(
-                    _env_file=None,
+                    _env_file=env,
                     embedding_model=self.embedding_model,
                 ),
+                query_pii=query_pii,
             ),
             qdrant_top_k=top_k if top_k is not None else 5,
+            guard=GuardClient(guard_settings),
+            analyzer=analyzer,
+            anonymizer=AnonymizerClient(anonymizer_settings),
+            query_pii=query_pii,
+            pii_vault=pii_vault,
         )
 
 

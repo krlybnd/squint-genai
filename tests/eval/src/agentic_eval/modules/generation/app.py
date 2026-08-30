@@ -13,6 +13,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from agentic_eval.core.protocols import HostStack
 from agentic_eval.modules.generation.types import GenerationResult
+from agentic_eval.modules.generation.vault_reveal import EvalVaultReveal
 
 THREAD_ID = "eval"
 
@@ -35,6 +36,7 @@ async def answer_question(
     *,
     tenant_id: str,
     graph: Any,
+    vault_reveal: EvalVaultReveal | None = None,
 ) -> GenerationResult:
     thread_id = f"{THREAD_ID}-{hash(question) & 0xFFFFFFFF:x}"
     state = AgentGraphInput(
@@ -45,7 +47,10 @@ async def answer_question(
     result = await graph.ainvoke(state, graph_config(thread_id=thread_id))
     raw_answer = result.get("answer") or ""
     answer = raw_answer if isinstance(raw_answer, str) else ""
-    return GenerationResult(answer=answer, contexts=_contexts_from_result(result))
+    generation = GenerationResult(answer=answer, contexts=_contexts_from_result(result))
+    if vault_reveal is not None and vault_reveal.enabled:
+        return await vault_reveal.reveal_result(generation)
+    return generation
 
 
 async def answer_questions(
@@ -55,13 +60,19 @@ async def answer_questions(
     graph: Any,
     max_concurrent: int,
     on_done: Callable[[], None] | None = None,
+    vault_reveal: EvalVaultReveal | None = None,
 ) -> list[GenerationResult]:
     """Run the graph on every question, capped by ``max_concurrent``."""
     semaphore = asyncio.Semaphore(max_concurrent)
 
     async def one(question: str) -> GenerationResult:
         async with semaphore:
-            result = await answer_question(question, tenant_id=tenant_id, graph=graph)
+            result = await answer_question(
+                question,
+                tenant_id=tenant_id,
+                graph=graph,
+                vault_reveal=vault_reveal,
+            )
         if on_done is not None:
             on_done()
         return result

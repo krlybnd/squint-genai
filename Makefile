@@ -128,7 +128,7 @@ format: ## Auto-format Python (libs, services, suites)
 hooks: ## Install pre-commit
 	$(UVX) pre-commit install
 
-.PHONY: eval eval-live eval-live-generation e2e test-api
+.PHONY: eval eval-live eval-live-generation eval-live-investigation eval-live-investigation-generation eval-live-guardrails e2e test-api
 eval: ## Offline eval checks (dataset + metrics)
 	$(MAKE) -C tests/eval run
 
@@ -137,6 +137,15 @@ eval-live: ## Retrieval IR gate (live stack, no judge LLM)
 
 eval-live-generation: ## DeepEval generation gate (slow; live stack)
 	$(MAKE) -C tests/eval run-live-generation
+
+eval-live-investigation: ## Investigation retrieval IR (indexed resources/eval/)
+	$(MAKE) -C tests/eval run-live-investigation
+
+eval-live-investigation-generation: ## Investigation DeepEval gate (LLM judge)
+	$(MAKE) -C tests/eval run-live-investigation-generation
+
+eval-live-guardrails: ## Live llm-guard metrics (make up-guardrails)
+	$(MAKE) -C tests/eval run-live-guardrails
 
 e2e: ## Playwright BDD UI (needs make up-ui; not in default CI)
 	$(MAKE) -C tests/e2e run

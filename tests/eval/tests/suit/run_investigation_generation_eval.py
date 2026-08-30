@@ -1,14 +1,11 @@
-"""Generation eval as a DeepEval script (not pytest).
-
-Calls ``run_generation_gate`` — chat graph + LLM-as-judge (Faithfulness / Answer Relevancy).
-"""
+"""Investigation corpus — DeepEval generation gate (LLM-as-judge)."""
 
 from __future__ import annotations
 
 import sys
 
 from agentic_eval.modules.generation.runner import run_generation_gate
-from agentic_eval.profiles import get_profile
+from agentic_eval.profiles import EvalProfile, get_profile
 from agentic_eval.settings import EvalMode
 from suit.qdrant import require_qdrant_collection
 from suit.settings import eval_env_file, load_suit_settings
@@ -26,7 +23,7 @@ def main() -> int:
         print("Set EVAL_MODE=live in tests/eval/.env", file=sys.stderr)
         return 2
     require_qdrant_collection(url=suit.sut.qdrant_url, collection=suit.sut.qdrant_collection)
-    profile = get_profile(suit.profile)
+    profile = get_profile(EvalProfile.investigation)
     return run_generation_gate(suit, profile)
 
 

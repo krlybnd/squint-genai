@@ -11,6 +11,7 @@ from agentic_eval.core.deepeval.settings import DeepEvalSettings
 from agentic_eval.core.goldendata.settings import GoldenSettings
 from agentic_eval.modules.generation.settings import GenerationSettings
 from agentic_eval.modules.retrieval.settings import RetrievalSettings
+from agentic_eval.profiles import EvalProfile
 
 # tests/eval/src/agentic_eval/settings.py → parents[2]=tests/eval
 EVAL_ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,7 @@ class EvalSettings(EnvSettings):
     model_config = SettingsConfigDict(env_prefix="EVAL_", extra="ignore", env_file=None)
 
     mode: EvalMode = EvalMode.mock
+    profile: EvalProfile = EvalProfile.default
     tenant_id: str = "default"
     judge_model: str = "judge"
     max_concurrency: int = 20

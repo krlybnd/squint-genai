@@ -18,6 +18,18 @@ The live eval suite (`make eval-live`) uses goldens in [`tests/eval/dataset.json
 
 EUR-Lex (GDPR / EU AI Act) blocked automated download (WAF challenge). Use those from the browser if you want a legal corpus.
 
+## Eval golden corpus (committed)
+
+Synthetic investigation dossiers for PII vault, guardrails, and DeepEval testing — **all fictional**:
+
+| File | Purpose |
+|------|---------|
+| [`eval/investigation-dossier-alpha.md`](eval/investigation-dossier-alpha.md) | Procurement fraud referral (~10 pages) |
+| [`eval/investigation-dossier-beta.md`](eval/investigation-dossier-beta.md) | Financial trace — linked to Alpha |
+| [`eval/investigation-dossier-gamma-decoy.md`](eval/investigation-dossier-gamma-decoy.md) | Environmental penalty decoy |
+
+See [`eval/README.md`](eval/README.md) for rubric, cross-doc ground truth, and sample goldens. Convert to PDF with pandoc before UI upload if desired.
+
 ## Sources and licenses
 
 | File | Source | License / terms |

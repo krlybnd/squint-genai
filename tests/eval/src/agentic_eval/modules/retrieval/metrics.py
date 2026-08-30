@@ -4,8 +4,17 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
+
+
+def source_file_matches(expected: str, actual: str, *, stem_match: bool = False) -> bool:
+    if expected == actual:
+        return True
+    if not stem_match:
+        return False
+    return Path(expected).stem == Path(actual).stem
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +23,7 @@ class RetrievalEvalCase:
     expected_source_file: str
     ranked_source_files: list[str]
     k: int = 5
+    stem_match: bool = False
 
 
 class RetrievalScores(BaseModel):
@@ -84,7 +94,10 @@ def ndcg_at_k(relevances: list[int], *, k: int) -> float:
 
 def score_retrieval(case: RetrievalEvalCase) -> RetrievalScores:
     relevances = [
-        1 if source == case.expected_source_file else 0 for source in case.ranked_source_files
+        1
+        if source_file_matches(case.expected_source_file, source, stem_match=case.stem_match)
+        else 0
+        for source in case.ranked_source_files
     ]
     k = case.k
     return RetrievalScores(

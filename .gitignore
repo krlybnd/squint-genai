@@ -40,8 +40,9 @@ coverage/
 .deepeval/
 .deepeval-cache.json
 
-# DeepEval timestamped copies (stable reports/eval/generation.md is committed)
+# DeepEval timestamped copies (stable reports/eval/*.md is committed)
 reports/eval/generation_*.md
+reports/eval/investigation-generation_*.md
 
 # Generated OpenAPI YAML (committed — regenerate with `make generate-openapi`)
 # openapi/*.yaml is tracked; JSON twins are not used

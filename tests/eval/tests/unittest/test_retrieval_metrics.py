@@ -45,6 +45,18 @@ def test_dcg_at_k_zero_when_no_relevant() -> None:
     assert dcg_at_k([0, 0, 0], k=3) == 0.0
 
 
+def test_stem_match_accepts_pdf_when_golden_expects_md() -> None:
+    case = RetrievalEvalCase(
+        query="q",
+        expected_source_file="investigation-dossier-alpha.md",
+        ranked_source_files=["investigation-dossier-beta.pdf", "investigation-dossier-alpha.pdf"],
+        k=5,
+        stem_match=True,
+    )
+    assert score_retrieval(case).recall_at_k == 1.0
+    assert score_retrieval(replace(case, stem_match=False)).recall_at_k == 0.0
+
+
 def test_aggregate_scores_averages_cases() -> None:
     # Arrange
     first = score_retrieval(RetrievalEvalCase("q1", "a.pdf", ["a.pdf"], k=1))

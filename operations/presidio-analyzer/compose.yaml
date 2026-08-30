@@ -3,6 +3,8 @@ services:
   presidio-analyzer:
     profiles: ["guardrails"]
     image: ghcr.io/data-privacy-stack/presidio-analyzer:latest
+    ports:
+      - "5002:3000"
     environment:
       WORKERS: "1"
     healthcheck:

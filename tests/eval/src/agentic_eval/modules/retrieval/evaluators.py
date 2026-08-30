@@ -14,6 +14,7 @@ class RetrievalIR(Evaluator[str, list[str]]):
     """Recall@k, Precision@k, MRR, nDCG@k against ``expected_source_file``."""
 
     k: int = 5
+    stem_match: bool = False
 
     def evaluate(self, ctx: EvaluatorContext[str, list[str]]) -> dict[str, float]:
         expected = ctx.expected_output if isinstance(ctx.expected_output, str) else ""
@@ -23,6 +24,7 @@ class RetrievalIR(Evaluator[str, list[str]]):
                 expected_source_file=expected,
                 ranked_source_files=ctx.output,
                 k=self.k,
+                stem_match=self.stem_match,
             )
         )
         return scores.model_dump()
