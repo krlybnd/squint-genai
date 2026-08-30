@@ -1,6 +1,9 @@
 # Role aliases are what the app calls. Provider ids stay in this file.
 # Legacy names (gpt-4o-mini, text-embedding-3-small, rerank-multilingual-v3.0)
 # stay registered so existing .env values keep working.
+#
+# Guarded aliases (*-guarded) attach `local-cpu-guards` when profile `guardrails`
+# is up (Presidio + llm-guard). Unguarded generate/router/judge stay default.
 model_list:
   - model_name: router
     litellm_params:
@@ -30,6 +33,21 @@ model_list:
       api_key: os.environ/COHERE_API_KEY
     model_info:
       mode: rerank
+  # --- Guarded chat aliases (opt-in; requires --profile guardrails) ---
+  - model_name: generate-guarded
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      rpm: 60
+      tpm: 100000
+      guardrails: ["local-cpu-guards"]
+  - model_name: router-guarded
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      rpm: 60
+      tpm: 100000
+      guardrails: ["local-cpu-guards"]
   - model_name: gpt-4o-mini
     litellm_params:
       model: openai/gpt-4o-mini
@@ -44,6 +62,35 @@ model_list:
       api_key: os.environ/COHERE_API_KEY
     model_info:
       mode: rerank
+
+# Guardrail names (also passable in request body: "guardrails": ["local-cpu-guards"]).
+# default_on: false — only *-guarded aliases (or explicit request) activate them.
+# Standalone names kept for curl experiments.
+guardrails:
+  - guardrail_name: local-cpu-guards
+    litellm_params:
+      guardrail: local_cpu_guards.LocalCpuGuardrails
+      mode: pre_call
+      default_on: false
+      api_base: os.environ/LLM_GUARD_API_BASE
+      api_key: os.environ/LLM_GUARD_AUTH_TOKEN
+  - guardrail_name: prompt-injection
+    litellm_params:
+      guardrail: prompt_injection.PromptInjectionGuardrail
+      mode: pre_call
+      default_on: false
+      api_base: os.environ/LLM_GUARD_API_BASE
+      api_key: os.environ/LLM_GUARD_AUTH_TOKEN
+  - guardrail_name: presidio-pii
+    litellm_params:
+      guardrail: presidio
+      mode: pre_call
+      default_on: false
+      presidio_language: en
+      pii_entities_config:
+        EMAIL_ADDRESS: MASK
+        PHONE_NUMBER: MASK
+        PERSON: MASK
 
 # Judge stays on gpt-4o. Do not fall back to `generate` (gpt-4o-mini):
 # DeepEval Faithfulness/Relevancy need valid JSON from the judge.

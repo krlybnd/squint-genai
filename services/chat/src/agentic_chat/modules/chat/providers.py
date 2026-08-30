@@ -7,6 +7,9 @@ from agentic_shared.domains.persistence.protocols.chat import (
     ChatSessionWriteRepository,
 )
 from agentic_shared.domains.retrieval.protocols import AsyncRetrievalReader
+from agentic_shared.integrations.litellm.analyzer.protocols import Analyzer
+from agentic_shared.integrations.litellm.anonymizer.protocols import Anonymizer
+from agentic_shared.integrations.litellm.guard.protocols import Guard
 from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 from dishka import Provider, Scope, provide
 
@@ -31,12 +34,18 @@ class ChatProvider(Provider):
         self,
         chat_client: ChatClient,
         retrieval: AsyncRetrievalReader,
+        guard: Guard,
+        analyzer: Analyzer,
+        anonymizer: Anonymizer,
     ) -> AgentGraphDeps:
         chat_module = get_chat_module_settings()
         return AgentGraphDeps(
             chat_client=chat_client,
             retrieval=retrieval,
             qdrant_top_k=chat_module.qdrant_top_k or self._settings.qdrant.top_k,
+            guard=guard,
+            analyzer=analyzer,
+            anonymizer=anonymizer,
         )
 
     @provide(scope=Scope.APP)

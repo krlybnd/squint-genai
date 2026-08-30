@@ -4,6 +4,9 @@ include:
   - path: operations/minio/compose.yaml
   - path: operations/qdrant/compose.yaml
   - path: operations/litellm/compose.yaml
+  - path: operations/llm-guard/compose.yaml
+  - path: operations/presidio-analyzer/compose.yaml
+  - path: operations/presidio-anonymizer/compose.yaml
   - path: operations/keycloak/compose.yaml
   - path: operations/traefik/compose.yaml
 
@@ -15,7 +18,6 @@ x-app-env: &app-env
   KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
   KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-agentic-rag-eval-api}
   KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-change-me-api-client-secret}
-  ROLES: ${ROLES:-{"admin":"admin","read":"read","write":"write"}}
 
 services:
   ops:

@@ -4,6 +4,12 @@ from agentic_shared.domains.retrieval.factory import create_async_retrieval_serv
 from agentic_shared.domains.retrieval.protocols import AsyncRetrievalReader
 from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import QdrantChunkReadRepository
 from agentic_shared.infrastructure.vector.qdrant.client import QdrantClient
+from agentic_shared.integrations.litellm.analyzer.client import AnalyzerClient
+from agentic_shared.integrations.litellm.analyzer.protocols import Analyzer
+from agentic_shared.integrations.litellm.anonymizer.client import AnonymizerClient
+from agentic_shared.integrations.litellm.anonymizer.protocols import Anonymizer
+from agentic_shared.integrations.litellm.guard.client import GuardClient
+from agentic_shared.integrations.litellm.guard.protocols import Guard
 from agentic_shared.integrations.litellm.llm import LiteLLMChatClient
 from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 
@@ -16,6 +22,9 @@ class AgentGraphDeps:
     chat_client: ChatClient
     retrieval: AsyncRetrievalReader
     qdrant_top_k: int
+    guard: Guard
+    analyzer: Analyzer
+    anonymizer: Anonymizer
 
 
 def agent_graph_deps_from_settings() -> AgentGraphDeps:
@@ -31,4 +40,7 @@ def agent_graph_deps_from_settings() -> AgentGraphDeps:
             embedding=root.embedding,
         ),
         qdrant_top_k=chat_module.qdrant_top_k or root.qdrant.top_k,
+        guard=GuardClient(root.guard),
+        analyzer=AnalyzerClient(root.analyzer),
+        anonymizer=AnonymizerClient(root.anonymizer),
     )

@@ -36,3 +36,16 @@ class LiteLLMChatSettings(LiteLLMSettings):
         default="judge",
         description="LiteLLM model alias for evaluation / judge calls.",
     )
+    litellm_guarded_model: str = Field(
+        default="generate-guarded",
+        description=(
+            "LiteLLM alias with local-cpu-guards (Presidio + llm-guard). "
+            "Requires compose profile guardrails."
+        ),
+    )
+    litellm_guarded_router_model: str = Field(
+        default="router-guarded",
+        description=(
+            "LiteLLM router alias with local-cpu-guards. Requires compose profile guardrails."
+        ),
+    )

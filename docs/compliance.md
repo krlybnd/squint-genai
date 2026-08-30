@@ -33,7 +33,7 @@ compliance/
 
 1. **Ports, not vendors** — log to Postgres, stdout, or an external API via future adapters; no Wazuh/Elastic bundled.
 2. **Opt-in** — `ComplianceSettings.compliance_enabled` defaults to `false`; services inject ports when ready.
-3. **Reuse existing security** — PII redaction stays in `core/security/guard/`; compliance layer records *that* redaction occurred, not duplicate logic.
+3. **Reuse existing security** — PII / injection checks live in chat guard rules and API annotations via LiteLLM `Guard` / `Analyzer` / `Anonymizer` clients; compliance records *that* redaction occurred, not duplicate logic.
 4. **Tenant-aware** — all models carry optional `tenant_id` for multi-tenant erasure/export.
 
 ---
@@ -44,7 +44,7 @@ compliance/
 
 | Requirement area | Implementation |
 |------------------|----------------|
-| Data minimization (Art. 5) | PII redaction before LLM provider (`core/security/guard/pii.py`); guard node in chat |
+| Data minimization (Art. 5) | PII masking in chat guard / generate via analyzer + anonymizer APIs |
 | Purpose limitation | RAG scoped to uploaded/indexed documents; system prompts in module settings |
 | Storage limitation | `ComplianceSettings.document_retention_days`, `chat_retention_days` (enforcement TBD) |
 | Integrity & confidentiality | TLS at edge (Traefik), auth (Keycloak/API key), RBAC |
@@ -169,11 +169,10 @@ Replace NoOp adapters in Dishka providers per service — same pattern as `Datab
 
 | Path | Role |
 |------|------|
-| `core/security/guard/pii.py` | GDPR — personal data redaction before LLM |
-| `core/security/guard/injection.py` | Security — prompt injection detection |
+| `integrations/litellm/{guard,analyzer,anonymizer}/` | Prompt-injection + PII APIs (local compose or vendor) |
 | `crosscut/auth/` | Access control, tenant resolution |
 | `domains/persistence/entities/base.py` | `AuditMixin`, `TenantMixin` |
-| `services/chat/core/guard/` | Agent guard node (PII + injection rules) |
+| `services/chat/.../core/guard/` | Agent guard node (injection + PII rules) |
 | `tests/eval/` | DeepEval generation gate + Pydantic Evals retrieval IR + golden dataset (AI quality evidence) |
 | Chat + `LANGSMITH_*` | Production LangGraph trace export for monitoring |
 

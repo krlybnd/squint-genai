@@ -24,6 +24,10 @@ export type ScenarioMemory = {
   sessions?: ChatSession[];
   tenants?: TenantList;
   users?: UserList;
+  chunkId?: string;
+  sseEvents?: Array<{ event: string; data: Record<string, unknown> }>;
+  commentStatus?: number;
+  commentBody?: unknown;
 };
 
 export const test = bddTest.extend<{

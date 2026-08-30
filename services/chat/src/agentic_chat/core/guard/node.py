@@ -1,7 +1,8 @@
 import logging
 
+from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
-from agentic_chat.core.guard.protocols import DEFAULT_GUARD_RULES, GuardRule
+from agentic_chat.core.guard.protocols import GuardRule, default_guard_rules
 from agentic_chat.core.nodes.protocols import GraphNode
 from agentic_chat.core.state import AgentState, AgentStateUpdate, locale_of
 
@@ -9,8 +10,18 @@ logger = logging.getLogger(__name__)
 
 
 class GuardNode(GraphNode):
-    def __init__(self, rules: tuple[GuardRule, ...] = DEFAULT_GUARD_RULES) -> None:
-        self._rules = rules
+    def __init__(
+        self,
+        deps: AgentGraphDeps | None = None,
+        *,
+        rules: tuple[GuardRule, ...] | None = None,
+    ) -> None:
+        if rules is not None:
+            self._rules = rules
+        elif deps is not None:
+            self._rules = default_guard_rules(deps.guard, deps.analyzer, deps.anonymizer)
+        else:
+            raise TypeError("GuardNode requires deps or rules")
 
     @property
     def node_id(self) -> AgentGraphNode:
@@ -20,7 +31,7 @@ class GuardNode(GraphNode):
         query = (state.get("query") or "").strip()
         locale = locale_of(state)
         for rule in self._rules:
-            result = rule.evaluate(query, locale)
+            result = await rule.evaluate(query, locale)
             if result is not None:
                 if result.get("guard_blocked"):
                     logger.warning("guard blocked rule=%s", rule.__class__.__name__)

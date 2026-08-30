@@ -1,0 +1,44 @@
+# Minimal llm-guard config: deterministic ban list + PromptInjection (CPU).
+# BanSubstrings first + scan_fail_fast → known tokens reject without waiting on DeBERTa.
+
+app:
+  name: squint-llm-guard
+  log_level: ${LOG_LEVEL:INFO}
+  log_json: false
+  scan_fail_fast: true
+  scan_prompt_timeout: 60
+  scan_output_timeout: 60
+  lazy_load: true
+
+rate_limit:
+  enabled: false
+
+auth:
+  type: http_bearer
+  token: ${AUTH_TOKEN:poc-local-classifier}
+
+tracing:
+  exporter: console
+
+metrics:
+  exporter: prometheus
+
+input_scanners:
+  # Exact substring ban — 100% deterministic (API acceptance / demos).
+  - type: BanSubstrings
+    params:
+      substrings:
+        - "squint-e2e-banned"
+        - "motherfucker"
+        - "fuck you"
+      match_type: str
+      case_sensitive: false
+      redact: false
+      contains_all: false
+  - type: PromptInjection
+    params:
+      threshold: 0.85
+      match_type: full
+      # Default model: protectai/deberta-v3-base-prompt-injection-v2
+
+output_scanners: []

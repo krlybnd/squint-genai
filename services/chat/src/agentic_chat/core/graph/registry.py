@@ -16,7 +16,7 @@ def build_graph_nodes(deps: AgentGraphDeps) -> dict[AgentGraphNode, GraphNode]:
 
     nodes: list[GraphNode] = [
         PlanNode(),
-        GuardNode(),
+        GuardNode(deps),
         BlockNode(),
         RewriteQueryNode(deps),
         RetrieveNode(deps),

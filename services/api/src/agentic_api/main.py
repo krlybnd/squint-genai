@@ -13,6 +13,7 @@ from agentic_shared.infrastructure.sql.postgres.providers import DatabaseProvide
 from agentic_shared.infrastructure.storage.minio.providers import MinioProvider
 from agentic_shared.infrastructure.vector.qdrant.providers import QdrantProvider
 from agentic_shared.integrations.litellm.embedding.providers import EmbeddingProvider
+from agentic_shared.integrations.litellm.guard.providers import GuardProvider
 from agentic_shared.integrations.litellm.llm.providers import LLMProvider
 from dishka import AsyncContainer
 from fastapi import FastAPI
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
         DatabaseProvider(settings.database),
         LLMProvider(settings.llm),
         EmbeddingProvider(settings.llm, settings.embedding),
+        GuardProvider(settings.guard),
         MinioProvider(settings.minio),
         RedisProvider(settings.redis),
         QdrantProvider(settings.qdrant),

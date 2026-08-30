@@ -19,6 +19,9 @@ class TestRetrieveNode(unittest.IsolatedAsyncioTestCase):
             chat_client=MagicMock(),
             retrieval=retrieval,
             qdrant_top_k=top_k,
+            guard=AsyncMock(),
+            analyzer=AsyncMock(),
+            anonymizer=AsyncMock(),
         )
         return RetrieveNode(deps), retrieval
 

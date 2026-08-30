@@ -1,0 +1,29 @@
+# Prompt-injection classifier (llm-guard-api + DeBERTa). Profile: guardrails.
+# Start with siblings: make up-guardrails
+services:
+  llm-guard:
+    profiles: ["guardrails"]
+    image: laiyer/llm-guard-api:latest
+    environment:
+      AUTH_TOKEN: ${LLM_GUARD_AUTH_TOKEN:-poc-local-classifier}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      APP_WORKERS: "1"
+      HF_HOME: /data/hf
+      TRANSFORMERS_CACHE: /data/hf/transformers
+      HUGGINGFACE_HUB_CACHE: /data/hf/hub
+    volumes:
+      - ./config/scanners.yml:/home/user/app/config/scanners.yml:ro
+      # Prefer PoC HF cache when present (gitignored). Override with LLM_GUARD_HF_CACHE.
+      - ${LLM_GUARD_HF_CACHE:-../../pocs/local_classifier/run/hf-cache}:/data/hf
+    ports:
+      - "8010:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')\"",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
