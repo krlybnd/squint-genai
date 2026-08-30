@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# pocs/<name>/scripts/poc.sh — copy from this skeleton (ADR 010).
+#
+# Purpose: prove the PoC runs. Output is a light log under results/ (gitignored).
+# No shared lib. No fixed result schema — just informative steps.
+#
+# Fill-in:
+#   1) Start your harness (compose, process, …)
+#   2) Health / readiness checks
+#   3) A few calls that prove the hypothesis
+#   4) Optional: one resource snapshot (docker stats / du)
+# Then stop. AI fills poc.md Interpretation from this log + your notes.
+
+set -euo pipefail
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+cd "$ROOT"
+
+mkdir -p "$ROOT/run" "$ROOT/results"
+RESULT_LOG="$ROOT/results/result.log"
+: >"$RESULT_LOG"
+exec > >(tee -a "$RESULT_LOG") 2>&1
+
+log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+die() { log "ERROR: $*"; exit 1; }
+
+log "poc=$(basename "$ROOT") start"
+
+# --- 1) Start harness ---------------------------------------------------------
+# Example:
+#   docker compose up -d
+#   log "compose up"
+#
+# TODO: start whatever this PoC needs.
+
+
+# --- 2) Wait until usable -----------------------------------------------------
+# Example:
+#   until curl -sf http://127.0.0.1:PORT/health; do sleep 2; done
+#   log "health ok"
+#
+# TODO: block until services answer.
+
+
+# --- 3) Proof calls -----------------------------------------------------------
+# Example:
+#   curl ... | tee /dev/stderr | grep -q EXPECTED || die "smoke failed"
+#   log "smoke X: pass"
+#
+# TODO: 2–5 calls that show the thing works (and fails when it should).
+
+
+# --- 4) Optional resource snapshot --------------------------------------------
+# Example:
+#   docker compose ps
+#   docker stats --no-stream $(docker compose ps -q) || true
+#   du -sh run || true
+#   log "resource snapshot done"
+#
+# TODO: optional — only if RSS/disk matters for the questions in poc.md.
+
+
+log "poc=$(basename "$ROOT") done — proof log: results/result.log (gitignored)"
+log "Next: fill Interpretation / Decision in poc.md from this log."

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Optional alias — copy next to poc.sh only if you want ./scripts/check.sh.
+# Prefer ./scripts/poc.sh (ADR 010). Not required in each PoC.
+exec "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/poc.sh" "$@"

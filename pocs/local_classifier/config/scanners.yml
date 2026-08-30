@@ -1,0 +1,33 @@
+# Minimal llm-guard config: PromptInjection classifier only (CPU PoC).
+# Full scanner lists pull many models and need much more RAM.
+
+app:
+  name: local-classifier-poc
+  log_level: ${LOG_LEVEL:INFO}
+  log_json: false
+  scan_fail_fast: true
+  scan_prompt_timeout: 60
+  scan_output_timeout: 60
+  lazy_load: true
+
+rate_limit:
+  enabled: false
+
+auth:
+  type: http_bearer
+  token: ${AUTH_TOKEN:poc-local-classifier}
+
+tracing:
+  exporter: console
+
+metrics:
+  exporter: prometheus
+
+input_scanners:
+  - type: PromptInjection
+    params:
+      threshold: 0.85
+      match_type: full
+      # Default model: protectai/deberta-v3-base-prompt-injection-v2
+
+output_scanners: []

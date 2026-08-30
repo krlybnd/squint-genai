@@ -247,6 +247,30 @@ folders: {
 		related: ["docker-compose.yml", "tools/ops/bootstrap"]
 	}
 
+	"pocs": #Folder & {
+		path:    "pocs"
+		stack:   "infra"
+		phase:   1
+		adr:     ["010"]
+		purpose: "Isolated proof-of-concepts (not wired into the main compose stack). Explore infra/model options before productizing."
+		contains: ["local_classifier/"]
+		mustNot:  ["production service code", "Phase 1 product APIs", "committed results/ or run/ caches"]
+		related:  ["operations/litellm", "services/chat", ".cursor/skills/poc"]
+	}
+
+	"pocs/local_classifier": #Folder & {
+		path:    "pocs/local_classifier"
+		stack:   "infra"
+		phase:   1
+		adr:     ["010"]
+		purpose: """
+			PoC: local CPU guardrail containers (Presidio PII + llm-guard PromptInjection /
+			DeBERTa). compose + scripts/poc.sh → results/result.log (gitignored). See poc.md.
+			"""
+		contains: ["compose.yaml", "config/", "poc.md", "run/", "scripts/", "results/"]
+		related:  ["operations/litellm", "services/chat"]
+	}
+
 	"tools/ops": #Folder & {
 		path:    "tools/ops"
 		stack:   "tooling"
@@ -284,6 +308,16 @@ folders: {
 		phase:   1
 		purpose: "Cursor agent conventions: scope, backend/frontend/testing rules, repo-map drift policy."
 		related: ["project.cue", "docs/adr"]
+	}
+
+	".cursor/skills": #Folder & {
+		path:    ".cursor/skills"
+		stack:   "meta"
+		phase:   1
+		adr:     ["010"]
+		purpose: "Cursor agent skills (e.g. poc workflow: SKILL.md, poc.md.j2, poc.sh.skeleton)."
+		contains: ["poc/"]
+		related: ["pocs", "docs/adr/010-poc-workflow.md"]
 	}
 
 	"licenses": #Folder & {
