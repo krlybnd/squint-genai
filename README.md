@@ -281,7 +281,7 @@ Squint is a **reference architecture demo**, not a production deployment. The RE
 |------|------------|
 | **CI scope** | No live-stack suites in default CI — e2e, API acceptance, and `make eval-live` are manual/on-demand ([ADR 007](docs/adr/007-no-live-tests-in-ci.md)) |
 | **Infra** | Docker Compose is dev/demo grade: default secrets, HTTP-only Traefik, floating image tags, no resource limits |
-| **Guardrails** | Prompt-injection and PII use LiteLLM-facing APIs (llm-guard / Presidio locally, or a vendor endpoint). With the vault enabled, query, retrieved context and streamed answer are all covered; without it, masking stops at query + context. |
+| **Guardrails** | Prompt-injection and PII use LiteLLM-facing APIs (llm-guard / Presidio locally, or a vendor endpoint). With the vault enabled, query, retrieved context and streamed answer are all covered; without it, masking stops at query + context. The llm-guard **BanSubstrings** list includes explicit phrases as an e2e/API testing trade-off so rejects stay deterministic without waiting on DeBERTa — see note below. |
 | **PII detection** | Recall is probabilistic (Presidio plus HU/contract regex supplements) and unmeasured on Hungarian legal text — an entity the detector misses is sent in clear. No golden set for detection yet. |
 | **Vault crypto** | Single global Fernet key from env, no rotation and no per-tenant DEK; `.env.example` ships working placeholder values that must be replaced. Token digest is 32-bit, so a large tenant corpus can collide. Original PDFs in MinIO are not encrypted by this feature. |
 | **Vault lifecycle** | Deleting a document does not remove its vault entries, so GDPR erasure is not satisfied end to end. `POST /v1/vault/detokenize` requires only `AppRole.READ` and takes an unbounded token list. |
@@ -291,6 +291,8 @@ Squint is a **reference architecture demo**, not a production deployment. The RE
 | **Frontend resilience** | No global React error boundary; chat state lives in a large `useChatController` hook with thin coverage ([#21](https://github.com/krlybnd/squint-genai/issues/21)) |
 
 Run live suites locally after `make up-auth` when validating end-to-end behavior before a demo or release.
+
+> **BanSubstrings testing trade-off:** [`operations/llm-guard/config/scanners.yml`](operations/llm-guard/config/scanners.yml) lists a few explicit phrases in the BanSubstrings scanner so API/e2e acceptance tests get deterministic hard rejects (`tests/api/features/05_guardrails.feature`) without waiting on the DeBERTa prompt-injection model. **These phrases are fixtures for e2e/API acceptance only** — they do not reflect the author's views or vocabulary; please do not draw conclusions about me from this list.
 
 ## API-first (OpenAPI)
 
@@ -325,6 +327,10 @@ operations/           Postgres, Redis, MinIO, Qdrant, LiteLLM, Keycloak configs
 ```
 
 `Squint` is the product name. The repository, Python packages, Docker Compose project and Keycloak realm keep their `agentic-rag-eval` identifiers, so nothing in the deployment or import paths depends on the branding.
+
+## Disclaimer
+
+This repository is a **reference demo**, shared as-is. The author accepts **no responsibility or liability** for personal, commercial, or production use — you run it at your own risk. If you find a bug or want to discuss a concern, please [open a GitHub issue](https://github.com/krlybnd/squint-genai/issues); that is the right place to report problems.
 
 ## License
 
