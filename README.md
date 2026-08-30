@@ -86,47 +86,35 @@ flowchart TB
         api["api :8000"]
         chat["chat :8002"]
         admin["admin :8003"]
-        indexing["indexing Celery worker"]
+        indexing["indexing worker"]
     end
 
-    subgraph shared [packages/shared]
-        retrieval["domains/retrieval"]
+    subgraph platform [Platform — operations/]
+        litellm["LiteLLM :4000"]
+        guard["llm-guard · Presidio"]
     end
 
-    subgraph data [operations/]
+    subgraph data [Data stores]
         postgres[("PostgreSQL")]
         redis[("Redis")]
         minio[("MinIO")]
         qdrant[("Qdrant")]
-        litellm["LiteLLM :4000"]
     end
 
-    llm["LLM provider"]
+    ext["LLM provider"]
 
     frontend --> traefik
     admin_ui --> traefik
-    traefik --> api
     traefik --> chat
-    traefik --> admin
-    api --> postgres
-    api --> redis
-    api --> retrieval
-    chat --> postgres
-    chat --> retrieval
-    chat --> litellm
     admin --> keycloak
-    indexing --> redis
-    indexing --> minio
-    indexing --> qdrant
-    indexing --> litellm
-    retrieval --> qdrant
-    litellm --> llm
-    api -.->|"enqueue"| redis
-    redis -.-> indexing
-    indexing -.->|"write"| qdrant
-    chat -.->|"read"| qdrant
-    frontend -.->|"SSE"| chat
+    chat --> litellm
+    chat --> qdrant
+    litellm --> ext
+
+    api -.->|index jobs| indexing
 ```
+
+Guard sidecars (`make up-guardrails`) and auth (`make up-auth`) are optional Compose profiles. **ops** bootstraps Postgres/MinIO then exits; **api** · **chat** · **indexing** also use **guard** and the other data stores — see [architecture.md](docs/architecture.md). LiteLLM is an internal AI proxy, not user-facing edge.
 
 Full diagrams (context, agent graph, indexing sequence): [`docs/architecture.md`](docs/architecture.md) · docs index: [`docs/README.md`](docs/README.md)
 
@@ -137,9 +125,11 @@ Full diagrams (context, agent graph, indexing sequence): [`docs/architecture.md`
 - **indexing** — semantic chunking via Celery + Redis (write path)
 - **admin** — tenant/user administration via Keycloak Organizations API
 - **ops** — one-shot bootstrap (Alembic migrate + MinIO setup)
-- **packages/shared** — domain libs, integrations (LiteLLM, Qdrant, MinIO)
+- **packages/shared** — domain libs linked into services at build time (not a runtime container)
 - **frontend** (app-ui `:5173`, admin-ui `:5174`) — React SSE UI (`--profile ui`)
-- **PostgreSQL** · **Redis** · **MinIO** · **Qdrant** · **LiteLLM**
+- **PostgreSQL** · **Redis** · **MinIO** · **Qdrant**
+- **LiteLLM** `:4000` — internal chat/embedding proxy
+- **Guardrails** (`make up-guardrails`) — **llm-guard** `:8010`, **Presidio** analyzer + anonymizer
 
 ## Quick start
 
