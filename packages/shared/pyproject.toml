@@ -77,13 +77,7 @@ omit = [
     "**/protocols/*.py",
     # Thin SDK adapters — integration behavior is covered by service/domain tests.
     "**/infrastructure/**/client.py",
-    "**/infrastructure/storage/**",
-    "**/infrastructure/cache/**",
     "**/integrations/**/client.py",
-    "**/integrations/idp/keycloak/user/create.py",
-    "**/integrations/idp/keycloak/user/update.py",
-    "**/integrations/idp/keycloak/user/membership.py",
-    "**/integrations/idp/keycloak/user/repository.py",
 ]
 
 [tool.coverage.report]
