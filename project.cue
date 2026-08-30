@@ -252,7 +252,7 @@ folders: {
 		path:    "operations/llm-guard"
 		stack:   "infra"
 		phase:   1
-		purpose: "llm-guard-api PromptInjection (DeBERTa). Compose profile `guardrails`; LiteLLM local-cpu-guards."
+		purpose: "llm-guard-api (BanSubstrings + PromptInjection). Compose profile `guardrails`; chat/api GuardClient."
 		contains: ["compose.yaml", "config/", "README.md"]
 		related: ["operations/litellm", "operations/presidio-analyzer", "pocs/local_classifier"]
 	}
@@ -279,8 +279,8 @@ folders: {
 		path:    "operations/litellm"
 		stack:   "infra"
 		phase:   1
-		purpose: "LiteLLM proxy config + compose; role aliases and optional guardrail hooks."
-		contains: ["compose.yaml", "litellm.config.yaml", "guardrails/", "README.md"]
+		purpose: "LiteLLM proxy config + compose; role aliases and optional built-in Presidio guardrail."
+		contains: ["compose.yaml", "litellm.config.yaml", "README.md"]
 		related: ["operations/llm-guard", "operations/presidio-analyzer", "operations/presidio-anonymizer"]
 	}
 

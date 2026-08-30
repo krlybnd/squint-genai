@@ -30,7 +30,7 @@ Post-start bootstrap (Alembic migrate + MinIO bucket/CORS): **`tools/ops`** — 
 
 ```bash
 make up              # infra + app services + ops bootstrap
-make up-guardrails   # optional: llm-guard + Presidio (profile guardrails) for *-guarded aliases
+make up-guardrails   # optional: llm-guard + Presidio (profile guardrails) for chat/api Guard clients
 make up-auth         # + Traefik + Keycloak (profiles auth + ui)
 docker compose --profile auth --profile ui up -d
 make ops-bootstrap   # run bootstrap via Dagger (host env)

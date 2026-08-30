@@ -13,21 +13,11 @@ OpenAI-compatible LLM and embedding proxy (rerank alias kept for legacy `.env` o
 | `judge` | `gpt-4o` | DeepEval generation gate (no fallback to `generate`) |
 | `embed` | `text-embedding-3-small` | Indexing + query embeddings |
 | `rerank` | Cohere `rerank-multilingual-v3.0` | Optional retrieval rerank |
-| `generate-guarded` | same as `generate` + `local-cpu-guards` | Opt-in guarded chat (#29) |
-| `router-guarded` | same as `router` + `local-cpu-guards` | Opt-in guarded rewrite |
 
 Legacy names (`gpt-4o-mini`, `text-embedding-3-small`, `rerank-multilingual-v3.0`) remain registered so existing `.env` values keep working.
 
-### Guardrails (optional)
+### Guardrails
 
-Requires `make up-guardrails` (compose profile `guardrails` → `llm-guard` + `presidio-analyzer` + `presidio-anonymizer`).
-
-| Guardrail alias | Backend |
-|-----------------|---------|
-| `local-cpu-guards` | Presidio MASK + llm-guard PromptInjection (used by `*-guarded`) |
-| `presidio-pii` | Presidio only (request-body experiments) |
-| `prompt-injection` | llm-guard only (request-body experiments) |
-
-Unguarded aliases stay the app default so eval/`judge`/`embed` are unaffected.
+Chat/api call **llm-guard + Presidio HTTP clients** directly (`make up-guardrails`). The proxy keeps an optional built-in `presidio-pii` guardrail for request-body experiments only — no custom Python guardrail plugins.
 
 All Python services call LiteLLM — never OpenAI or Cohere directly. Recreate the `litellm` container after changing this config (`docker compose up -d litellm`).

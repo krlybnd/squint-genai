@@ -40,8 +40,6 @@ class TestIntegrationSettingsInheritance(unittest.TestCase):
         self.assertEqual(llm.litellm_model, "generate")
         self.assertEqual(llm.litellm_router_model, "router")
         self.assertEqual(llm.litellm_judge_model, "judge")
-        self.assertEqual(llm.litellm_guarded_model, "generate-guarded")
-        self.assertEqual(llm.litellm_guarded_router_model, "router-guarded")
         self.assertNotEqual(llm.litellm_model, llm.litellm_judge_model)
         self.assertIsInstance(llm, LiteLLMSettings)
 

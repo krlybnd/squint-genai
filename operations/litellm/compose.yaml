@@ -3,9 +3,6 @@ services:
     image: ghcr.io/berriai/litellm:main-latest
     volumes:
       - ./litellm.config.yaml:/app/config.yaml:ro
-      # Custom guardrails under /app (import: local_cpu_guards / prompt_injection)
-      - ./guardrails/local_cpu_guards.py:/app/local_cpu_guards.py:ro
-      - ./guardrails/prompt_injection.py:/app/prompt_injection.py:ro
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     env_file: ../../.env
     environment:
@@ -13,11 +10,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-agentic}:${POSTGRES_PASSWORD:-agentic}@postgres:5432/${POSTGRES_DB:-agentic_rag_eval}
       # Proxy auth key (apps send this as Bearer). Provider OPENAI_API_KEY stays for upstream calls.
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
-      # Guardrail sidecars (profile guardrails) — docker DNS names on the compose network
+      # Optional Presidio env for built-in `presidio` guardrail experiments
       PRESIDIO_ANALYZER_API_BASE: ${PRESIDIO_ANALYZER_API_BASE:-http://presidio-analyzer:3000}
       PRESIDIO_ANONYMIZER_API_BASE: ${PRESIDIO_ANONYMIZER_API_BASE:-http://presidio-anonymizer:3000}
-      LLM_GUARD_API_BASE: ${LLM_GUARD_API_BASE:-http://llm-guard:8000}
-      LLM_GUARD_AUTH_TOKEN: ${LLM_GUARD_AUTH_TOKEN:-poc-local-classifier}
     ports:
       - "${LITELLM_PORT:-4000}:4000"
     healthcheck:

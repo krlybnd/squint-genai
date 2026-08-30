@@ -1,4 +1,11 @@
-/** Deterministic BanSubstrings token — keep in sync with operations/llm-guard/config/scanners.yml */
+/**
+ * Deterministic BanSubstrings token — keep in sync with
+ * operations/llm-guard/config/scanners.yml.
+ *
+ * Fixture for API acceptance only so rejects stay deterministic.
+ * Does not reflect the author's views or vocabulary; please do not
+ * draw conclusions about me from this constant.
+ */
 export const GUARDRAILS_BANNED_PHRASE = "motherfucker";
 
 export const GUARDRAILS_CLEAN_CHAT_MESSAGE =

@@ -171,7 +171,7 @@ up-auth: ## Full stack + Keycloak + Traefik + UI
 	AUTH_MODE=jwt VITE_AUTH_ENABLED=true VITE_KEYCLOAK_URL=$${VITE_KEYCLOAK_URL:-http://localhost} \
 		docker compose --profile auth --profile ui up -d --build
 
-up-guardrails: ## Presidio + llm-guard for LiteLLM (*-guarded aliases)
+up-guardrails: ## Presidio + llm-guard (profile guardrails) for chat/api Guard clients
 	docker compose --profile guardrails up -d
 	docker compose up -d litellm
 

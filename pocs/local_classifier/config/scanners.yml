@@ -1,4 +1,5 @@
-# Keep in sync with operations/llm-guard for PoC smoke (BanSubstrings + PromptInjection).
+# Minimal llm-guard config: PromptInjection classifier only (CPU PoC).
+# Full scanner lists pull many models and need much more RAM.
 
 app:
   name: local-classifier-poc
@@ -23,21 +24,10 @@ metrics:
   exporter: prometheus
 
 input_scanners:
-  # Fixture ban list for e2e/API acceptance only (deterministic rejects).
-  # Does not reflect the author's views; please do not infer otherwise.
-  - type: BanSubstrings
-    params:
-      substrings:
-        - "squint-e2e-banned"
-        - "motherfucker"
-        - "fuck you"
-      match_type: str
-      case_sensitive: false
-      redact: false
-      contains_all: false
   - type: PromptInjection
     params:
       threshold: 0.85
       match_type: full
+      # Default model: protectai/deberta-v3-base-prompt-injection-v2
 
 output_scanners: []

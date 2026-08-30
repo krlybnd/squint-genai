@@ -1,4 +1,4 @@
-# Presidio analyzer (PII NER)
+# Presidio analyzer (PII detect)
 
 Compose profile: **`guardrails`**. Internal DNS: `presidio-analyzer:3000`.
 
@@ -6,5 +6,4 @@ Compose profile: **`guardrails`**. Internal DNS: `presidio-analyzer:3000`.
 make up-guardrails
 ```
 
-Used by LiteLLM `local-cpu-guards` / `presidio-pii` and by `presidio-anonymizer` results.
-~0.8 GiB RSS typical.
+Used by shared `AnalyzerClient` (`ANALYZER_API_BASE`) and optionally by LiteLLM's built-in `presidio-pii` guardrail.
