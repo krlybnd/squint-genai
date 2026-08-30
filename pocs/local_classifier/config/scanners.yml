@@ -23,7 +23,8 @@ metrics:
   exporter: prometheus
 
 input_scanners:
-  # Demo/e2e fixtures only; not the author's views. Please don't infer otherwise.
+  # Fixture ban list for e2e/API acceptance only (deterministic rejects).
+  # Does not reflect the author's views; please do not infer otherwise.
   - type: BanSubstrings
     params:
       substrings:

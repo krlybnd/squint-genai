@@ -25,7 +25,9 @@ metrics:
 
 input_scanners:
   # Exact substring ban — 100% deterministic (API acceptance / demos).
-  # Demo/e2e fixtures only; not the author's views. Please don't infer otherwise.
+  # These phrases are fixtures for e2e/API acceptance only so rejects stay
+  # deterministic. They do not reflect the author's views or vocabulary;
+  # please do not draw conclusions about the originator from this list.
   - type: BanSubstrings
     params:
       substrings:
