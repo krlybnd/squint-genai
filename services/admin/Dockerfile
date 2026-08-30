@@ -2,6 +2,7 @@ FROM python:3.12-slim
 WORKDIR /app
 RUN pip install --no-cache-dir uv
 
+COPY locales locales
 COPY packages/shared packages/shared
 COPY packages/generated/keycloak-admin-client packages/generated/keycloak-admin-client
 COPY services/admin services/admin

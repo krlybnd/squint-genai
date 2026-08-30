@@ -94,7 +94,3 @@ def redact_pii(text: str) -> RedactionResult:
     redacted, n = _SENSITIVE_FIELD.subn(_field_repl, redacted)
     count += n
     return RedactionResult(redacted, count, details)
-
-
-def redact_for_provider(text: str) -> RedactionResult:
-    return redact_pii(text)

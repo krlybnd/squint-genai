@@ -1,6 +1,7 @@
 [project]
 name = "agentic-chat"
 version = "0.1.0"
+description = "Stateful chat with LangGraph workflow and SSE streaming"
 requires-python = ">=3.12"
 dependencies = [
     "agentic-shared",

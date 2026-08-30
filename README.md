@@ -305,6 +305,7 @@ frontend/
 tests/
   api/ eval/ e2e/               api + e2e in npm workspaces; eval is Python
 openapi/              committed OpenAPI YAML (api, chat, admin)
+locales/              i18n catalogs (messages, core, app, admin)
 operations/           Postgres, Redis, MinIO, Qdrant, LiteLLM, Keycloak configs
 ```
 

@@ -1,1 +1,1 @@
-"""Third-party AI / API integrations (LLM, embeddings)."""
+"""Third-party API integrations (LiteLLM, IdP)."""

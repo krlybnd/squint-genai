@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, TypedDict, cast
 
-from agentic_shared.core.i18n import DEFAULT_LOCALE
+from agentic_shared.crosscut.i18n import DEFAULT_LOCALE
 from agentic_shared.domains.chat.roles import ChatMessageRole
 from agentic_shared.domains.retrieval.models import ChunkCitation, SearchMeta
 from langchain_core.runnables import RunnableConfig

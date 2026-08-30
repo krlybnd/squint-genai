@@ -15,15 +15,19 @@ the same catalog and stay in lockstep with every graph node.
 
 ## Decision
 
-- **`agentic_shared/core/i18n`** — `resolve_locale(Accept-Language)` (`en` /
+- **`agentic_shared/crosscut/i18n`** — `resolve_locale(Accept-Language)` (`en` /
   `hu` / `de`, default `en`); `t(key, locale)` and `t_stored` over JSON in
-  `agentic_shared/locales/messages/`.
+  root ``locales/messages/`` (shipped into the wheel as
+  `agentic_shared/locales/messages/`).
+- **UI catalogs** live beside them under root ``locales/`` (`core/`, `app/`,
+  `admin/`); `@are/ui-core` merges `messages` + `core` + app namespace via the
+  `@locales` Vite alias.
 - **Translate at the producer:** chat graph/SSE, annotation graph, job status
   read path. Shared catalog so api and chat do not fork strings.
 - **`t_stored`:** persist catalog keys in the DB; pass through free-text
   worker errors unchanged.
-- **Not gettext/Babel.** Thin JSON flatten + placeholders. Frontend catalogs
-  stay separate (UI chrome vs server-emitted copy).
+- **Not gettext/Babel.** Thin JSON flatten + placeholders. Frontend chrome vs
+  server-emitted copy stay separate *files*, one repo-level tree.
 
 REST `detail` on domain errors may remain English; that is not the SSE/LLM
 prompt path.

@@ -8,15 +8,15 @@ services:
     environment:
       # LiteLLM requires sync postgresql://, not SQLAlchemy asyncpg URLs from .env
       DATABASE_URL: postgresql://${POSTGRES_USER:-agentic}:${POSTGRES_PASSWORD:-agentic}@postgres:5432/${POSTGRES_DB:-agentic_rag_eval}
-      # Proxy auth key (apps send this as Bearer token). Falls back to OPENAI_API_KEY.
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-${OPENAI_API_KEY}}
+      # Proxy auth key (apps send this as Bearer). Provider OPENAI_API_KEY stays for upstream calls.
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
     ports:
       - "${LITELLM_PORT:-4000}:4000"
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "python3 -c \"import os,urllib.request; k=os.environ.get('LITELLM_MASTER_KEY') or os.environ.get('OPENAI_API_KEY',''); req=urllib.request.Request('http://127.0.0.1:4000/health', headers={'Authorization': 'Bearer '+k}); urllib.request.urlopen(req)\"",
+          "python3 -c \"import os,urllib.request; k=os.environ['LITELLM_MASTER_KEY']; req=urllib.request.Request('http://127.0.0.1:4000/health', headers={'Authorization': 'Bearer '+k}); urllib.request.urlopen(req)\"",
         ]
       interval: 15s
       timeout: 5s

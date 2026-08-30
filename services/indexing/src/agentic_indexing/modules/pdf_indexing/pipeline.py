@@ -4,8 +4,8 @@ import tempfile
 from pathlib import Path
 
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
-from agentic_shared.integrations.embedding.settings import EmbeddingSettings
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 from llama_index.core import Settings as LISettings
 from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.core.schema import BaseNode, Document
@@ -108,8 +108,8 @@ def index_pdf_bytes(
     source_file: str,
     tenant_id: str,
     chunk_write: ChunkWriteRepository,
-    llm: LLMSettings,
-    embedding: EmbeddingSettings,
+    llm: LiteLLMChatSettings,
+    embedding: LiteLLMEmbeddingSettings,
 ) -> int:
     """Semantic chunk PDF and upsert into Qdrant. Returns chunk count."""
     materialize_nltk_cache()

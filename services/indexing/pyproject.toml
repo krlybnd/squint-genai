@@ -1,6 +1,7 @@
 [project]
 name = "agentic-indexing"
 version = "0.1.0"
+description = "Celery worker for PDF semantic chunking and Qdrant indexing"
 requires-python = ">=3.12"
 dependencies = [
     "agentic-shared",

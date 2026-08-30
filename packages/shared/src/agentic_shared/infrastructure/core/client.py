@@ -1,11 +1,9 @@
-from agentic_shared.core.resources.client import (
-    BaseResourceClient as BaseInfraClient,
-)
-from agentic_shared.core.resources.client import (
-    ResourceClient as InfraClient,
-)
-from agentic_shared.core.resources.client import (
-    open_resource as open_client,
-)
+from agentic_shared.core.resources.client import BaseResourceClient
+from agentic_shared.infrastructure.core.settings import InfraSettings
 
-__all__ = ["BaseInfraClient", "InfraClient", "open_client"]
+
+class InfrastructureClient[S: InfraSettings](BaseResourceClient[S]):
+    """Base client for infrastructure resources (Postgres, Redis, MinIO, Qdrant)."""
+
+
+__all__ = ["InfrastructureClient"]

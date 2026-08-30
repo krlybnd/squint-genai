@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock
 
-from agentic_shared.integrations.keycloak_admin.errors import KeycloakNotFoundError
-from agentic_shared.integrations.keycloak_admin.gateway import (
+from agentic_shared.integrations.idp.core.errors import IdpNotFoundError
+from agentic_shared.integrations.idp.keycloak import (
     TenantMemberRecord,
     TenantRecord,
     UserRecord,
@@ -174,7 +174,7 @@ class TestTenantAdminService(unittest.IsolatedAsyncioTestCase):
         service = TenantAdminService(tenant_gateway, user_gateway)
 
         # Act / Assert
-        with self.assertRaises(KeycloakNotFoundError):
+        with self.assertRaises(IdpNotFoundError):
             await service.add_member("acme", "missing")
 
     async def test_remove_member(self) -> None:

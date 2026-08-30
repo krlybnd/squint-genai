@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agentic_shared.domains.annotations.models import ChunkComment
 from agentic_shared.domains.retrieval.enums import FusionStrategy, SearchType
-from agentic_shared.infrastructure.vector.types import VectorPayload
+from agentic_shared.infrastructure.vector.core.types import VectorPayload
 
 
 class ChunkPointPayload(VectorPayload):
@@ -90,11 +90,6 @@ class SearchMeta(BaseModel):
     final_top_k: int = 0
     candidates_found: int = 0
     results_count: int = 0
-    rerank_enabled: bool = False
-    rerank_model: str = ""
-    rerank_applied: bool = False
-    rerank_skip_reason: str | None = None
-    rerank_error: str | None = None
     skipped: bool = False
     reason: str = ""
     search_query: str = ""
@@ -115,8 +110,6 @@ class SearchMeta(BaseModel):
         sparse_model: str,
         candidate_top_k: int,
         final_top_k: int,
-        rerank_enabled: bool,
-        rerank_model: str,
     ) -> Self:
         return cls(
             query=query,
@@ -124,13 +117,6 @@ class SearchMeta(BaseModel):
             sparse_model=sparse_model,
             candidate_top_k=candidate_top_k,
             final_top_k=final_top_k,
-            rerank_enabled=rerank_enabled,
-            rerank_model=rerank_model,
-            rerank_skip_reason=(
-                None
-                if rerank_enabled
-                else "disabled (requires COHERE_API_KEY via LiteLLM; OpenAI has no rerank API)"
-            ),
         )
 
     def with_error(self, message: str) -> Self:

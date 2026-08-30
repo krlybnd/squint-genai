@@ -3,7 +3,8 @@
   "compilerOptions": {
     "paths": {
       "@are/ui-core": ["../../packages/ui-core/src/index.ts"],
-      "@are/ui-core/*": ["../../packages/ui-core/src/*"]
+      "@are/ui-core/*": ["../../packages/ui-core/src/*"],
+      "@locales/*": ["../../locales/*"]
     }
   },
   "include": ["src"],

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from agentic_shared.domains.persistence.entities import Document, IndexJob, JobStatus
 from agentic_shared.domains.persistence.index_job_status import apply_index_job_status
-from agentic_shared.infrastructure.postgres.repository import SqlAlchemySyncWriteRepository
+from agentic_shared.infrastructure.sql.core.repository import SqlAlchemySyncWriteRepository
 
 
 class SqlAlchemyDocumentWriteRepositorySync(SqlAlchemySyncWriteRepository[Document]):

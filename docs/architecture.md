@@ -204,6 +204,7 @@ Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api
 | Compliance hooks | Extension ports in `core/compliance` — [ADR 003](adr/003-compliance-extension-points.md), [compliance.md](compliance.md) |
 | Frontend | Two apps + `@are/ui-core` AppShell — [ADR 005](adr/005-shared-ui-core-appshell.md) |
 | Backend i18n | Shared JSON catalog for SSE / prompts / stored job keys — [ADR 006](adr/006-backend-i18n.md) |
+| Soft tenancy | Shared DB + `tenant_id` / JWT claims — [ADR 009](adr/009-soft-tenancy-auth.md) |
 
 ---
 
@@ -226,7 +227,7 @@ Retrieval read path ([QdrantSettings](../packages/shared/src/agentic_shared/infr
 | Setting | Default | Notes |
 |---------|---------|-------|
 | `candidate_top_k` | `30` | Initial hybrid search pool from Qdrant |
-| `top_k` | `5` | Final results after reranking |
+| `top_k` | `5` | Final results after RRF fusion |
 | Collection | `agentic_rag_eval_hybrid` | Dense + sparse (BM25) vectors |
 
 Live eval goldens ([dataset.json](../tests/eval/dataset.json)) are questions against the PDFs in `resources/` (`make resources`). Retrieval IR is Pydantic Evals (`make eval-live`). Generation is DeepEval `evaluate()` (`make eval-live-generation` → `python tests/suit/run_generation_eval.py`), judged by the LiteLLM `judge` alias (not `generate`). Live stack wiring is `tests/eval/tests/suit` (`SutSettings`, `EVAL_SUT_*` localhost defaults). Config is `tests/eval/.env`. Snapshots: [`reports/eval/`](../reports/eval/). Not in default CI.
@@ -281,3 +282,4 @@ operations/             postgres, redis, minio, qdrant, litellm, keycloak, traef
 - [ADR 006 — Backend i18n for server-emitted copy](adr/006-backend-i18n.md)
 - [ADR 007 — No live-stack tests in default CI](adr/007-no-live-tests-in-ci.md)
 - [ADR 008 — Repo metadata in CUE](adr/008-repo-metadata-in-cue.md)
+- [ADR 009 — Soft multi-tenancy in Phase 1 auth](adr/009-soft-tenancy-auth.md)

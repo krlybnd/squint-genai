@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock
 
-from agentic_shared.integrations.keycloak_admin.errors import KeycloakNotFoundError
-from agentic_shared.integrations.keycloak_admin.gateway import UserRecord
+from agentic_shared.integrations.idp.core.errors import IdpNotFoundError
+from agentic_shared.integrations.idp.keycloak import UserRecord
 
 from agentic_admin.modules.users.schemas import UpdateUserRequest
 from agentic_admin.modules.users.service import UserAdminService
@@ -53,7 +53,7 @@ class TestUserAdminService(unittest.IsolatedAsyncioTestCase):
         service = UserAdminService(gateway)
 
         # Act / Assert
-        with self.assertRaises(KeycloakNotFoundError):
+        with self.assertRaises(IdpNotFoundError):
             await service.get_user("missing")
 
     async def test_list_users_pagination_passthrough(self) -> None:

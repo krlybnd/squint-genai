@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
 
 from agentic_shared.domains.persistence.entities import Document, IndexJob, JobStatus
-from agentic_shared.infrastructure.redis.settings import RedisSettings
+from agentic_shared.infrastructure.cache.redis.settings import RedisSettings
 
 from agentic_api.modules.jobs.service import JOB_CANCELLED_BY_USER, JobService
 

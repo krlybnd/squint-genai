@@ -1,6 +1,7 @@
 [project]
 name = "agentic-admin"
 version = "0.1.0"
+description = "Tenant and user administration (Keycloak Organizations)"
 requires-python = ">=3.12"
 dependencies = [
     "agentic-shared",

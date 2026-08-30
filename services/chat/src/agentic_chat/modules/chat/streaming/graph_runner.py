@@ -4,7 +4,7 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any, Literal, cast
 
-from agentic_shared.core.i18n import DEFAULT_LOCALE, t
+from agentic_shared.crosscut.i18n import DEFAULT_LOCALE, t
 from agentic_shared.domains.chat.roles import ChatMessageRole
 from agentic_shared.domains.persistence.entities import ChatMessage
 from agentic_shared.domains.persistence.protocols.chat import ChatMessageWriteRepository

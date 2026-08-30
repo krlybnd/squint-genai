@@ -1,3 +1,4 @@
+import path from "node:path";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { appDirFromMeta } from "./src/build/viteAppConfig";
@@ -5,9 +6,15 @@ import { vitestNodeReportConfig } from "./src/build/vitestReportConfig";
 
 const appDir = appDirFromMeta(import.meta.url);
 const reports = vitestNodeReportConfig({ appDir, projectName: "ui-core" });
+const locales = path.resolve(appDir, "../../locales");
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "@locales": locales,
+    },
+  },
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],

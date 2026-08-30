@@ -1,6 +1,7 @@
 [project]
 name = "agentic-shared"
 version = "0.1.0"
+description = "Shared domain, infrastructure, integrations, and FastAPI adapters for Squint services"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.10",
@@ -20,6 +21,7 @@ dependencies = [
     "pyjwt[crypto]>=2.10",
     "dishka>=1.4",
     "starlette>=0.41",
+    "jinja2>=3.1",
 ]
 
 [build-system]
@@ -30,9 +32,10 @@ build-backend = "hatchling.build"
 packages = ["src/agentic_shared"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"src/agentic_shared/locales/messages/en.json" = "agentic_shared/locales/messages/en.json"
-"src/agentic_shared/locales/messages/hu.json" = "agentic_shared/locales/messages/hu.json"
-"src/agentic_shared/locales/messages/de.json" = "agentic_shared/locales/messages/de.json"
+"locales/messages/en.json" = "agentic_shared/locales/messages/en.json"
+"locales/messages/hu.json" = "agentic_shared/locales/messages/hu.json"
+"locales/messages/de.json" = "agentic_shared/locales/messages/de.json"
+"templates/banner.j2" = "agentic_shared/templates/banner.j2"
 
 [dependency-groups]
 dev = [
@@ -64,15 +67,17 @@ omit = [
     "**/router.py",
     "**/providers.py",
     "**/factory.py",
+    "**/framework.py",
     "**/bootstrap.py",
     "**/configure.py",
     "**/binder.py",
     "**/checkpointer.py",
+    # Typing-only Protocol modules (no runtime behavior under test).
+    "**/protocols.py",
+    "**/protocols/*.py",
     # Thin SDK adapters — integration behavior is covered by service/domain tests.
     "**/infrastructure/**/client.py",
     "**/integrations/**/client.py",
-    "**/integrations/keycloak_admin/gateway.py",
-    "**/integrations/langsmith/**",
 ]
 
 [tool.coverage.report]

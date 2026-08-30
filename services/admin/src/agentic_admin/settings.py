@@ -1,15 +1,36 @@
 """Admin service settings."""
 
-from agentic_shared.core.auth.settings import AuthSettings, RoleSettings
 from agentic_shared.core.settings.app import AppSettings, load_app_settings
-from agentic_shared.integrations.keycloak_admin.settings import KeycloakAdminSettings
+from agentic_shared.crosscut.auth.settings import AuthSettings, RoleSettings
+from agentic_shared.frameworks.fastapi.defaults import FrameworkDefaults
+from agentic_shared.frameworks.fastapi.settings import FastAPISettings
+from agentic_shared.integrations.idp.keycloak.settings import KeycloakAdminSettings
 from pydantic import Field
 
 
 class AdminSettings(AppSettings):
-    auth: AuthSettings = Field(default_factory=AuthSettings)
-    role: RoleSettings = Field(default_factory=RoleSettings)
-    keycloak_integration: KeycloakAdminSettings = Field(default_factory=KeycloakAdminSettings)
+    """Composed settings for tenant/user admin (Keycloak Organizations)."""
+
+    defaults: FrameworkDefaults = Field(
+        default_factory=lambda: FrameworkDefaults.from_distribution("agentic-admin"),
+        description="Service identity from pyproject (name / version / description).",
+    )
+    fastapi: FastAPISettings = Field(
+        default_factory=FastAPISettings,
+        description="FastAPI CORS, OpenAPI docs paths, security headers.",
+    )
+    auth: AuthSettings = Field(
+        default_factory=AuthSettings,
+        description="Inbound request authentication (JWT / API key / none).",
+    )
+    role: RoleSettings = Field(
+        default_factory=RoleSettings,
+        description="IdP realm role → AppRole mapping for authorization.",
+    )
+    keycloak_integration: KeycloakAdminSettings = Field(
+        default_factory=KeycloakAdminSettings,
+        description="Keycloak Admin API client-credentials integration.",
+    )
 
 
 def load_settings() -> AdminSettings:

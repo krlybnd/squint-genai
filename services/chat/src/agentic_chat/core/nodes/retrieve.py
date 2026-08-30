@@ -1,6 +1,6 @@
 import logging
 
-from agentic_shared.core.i18n import t
+from agentic_shared.crosscut.i18n import t
 from agentic_shared.domains.retrieval.models import SearchMeta
 
 from agentic_chat.core.deps import AgentGraphDeps
@@ -58,10 +58,9 @@ class RetrieveNode(GraphNode):
             update={"search_query": search_query, "results_count": len(chunks)},
         )
         logger.info(
-            "retrieved chunks=%d tenant_id=%s candidates=%d rerank=%s",
+            "retrieved chunks=%d tenant_id=%s candidates=%d",
             len(chunks),
             tenant_id,
             parsed.meta.candidates_found,
-            parsed.meta.rerank_applied,
         )
         return retrieve_result_update(retrieved_chunks=chunks, search_meta=meta)

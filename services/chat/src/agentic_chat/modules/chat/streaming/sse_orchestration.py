@@ -1,6 +1,6 @@
 """Orchestration-level SSE (session title, stream start) — graph steps in sse_reasoning."""
 
-from agentic_shared.core.i18n import t
+from agentic_shared.crosscut.i18n import t
 
 from agentic_chat.modules.chat.enums import ReasoningStatus, ReasoningStep
 from agentic_chat.modules.chat.streaming.sse_events import (

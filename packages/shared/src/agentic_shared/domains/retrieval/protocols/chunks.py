@@ -7,16 +7,16 @@ from agentic_shared.domains.retrieval.models import (
     IndexedDocumentEntry,
     RetrievedChunk,
 )
-from agentic_shared.infrastructure.vector.protocols import (
-    VectorReadRepository,
-    VectorWriteRepository,
+from agentic_shared.infrastructure.vector.core.protocols import (
+    VectorReader,
+    VectorWriter,
 )
-from agentic_shared.integrations.embedding.settings import EmbeddingSettings
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 
 @runtime_checkable
-class ChunkReadRepository(VectorReadRepository[ChunkPointPayload], Protocol):
+class ChunkReadRepository(VectorReader[ChunkPointPayload], Protocol):
     @property
     def default_top_k(self) -> int: ...
 
@@ -57,15 +57,15 @@ class ChunkReadRepository(VectorReadRepository[ChunkPointPayload], Protocol):
 
 
 @runtime_checkable
-class ChunkWriteRepository(VectorWriteRepository[ChunkPointPayload], Protocol):
+class ChunkWriteRepository(VectorWriter[ChunkPointPayload], Protocol):
     def ensure_collection(self, *, vector_dim: int = 1536) -> None: ...
 
     def index_nodes(
         self,
         nodes: list[Any],
         *,
-        llm: LLMSettings,
-        embedding: EmbeddingSettings,
+        llm: LiteLLMChatSettings,
+        embedding: LiteLLMEmbeddingSettings,
     ) -> int: ...
 
     def delete_by_doc_id(self, doc_id: str, *, tenant_id: str) -> None: ...

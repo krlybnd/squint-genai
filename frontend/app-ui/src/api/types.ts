@@ -66,11 +66,6 @@ export type SearchMeta = {
   final_top_k?: number;
   candidates_found?: number;
   results_count?: number;
-  rerank_enabled?: boolean;
-  rerank_applied?: boolean;
-  rerank_model?: string;
-  rerank_skip_reason?: string | null;
-  rerank_error?: string | null;
   skipped?: boolean;
   reason?: string;
   error?: string;

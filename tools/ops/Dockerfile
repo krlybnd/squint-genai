@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY tools/ops/bootstrap/ /app/bootstrap/
 COPY packages/shared/src/ /app/packages/shared/src/
 COPY packages/shared/alembic/ /app/alembic/
+COPY locales/messages/ /app/locales/messages/
 
 ENV PYTHONPATH=/app/packages/shared/src
 

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentic_shared.domains.persistence.entities import IndexJob, JobStatus
 from agentic_shared.domains.persistence.index_job_status import apply_index_job_status
-from agentic_shared.infrastructure.postgres.repository import (
+from agentic_shared.infrastructure.sql.core.repository import (
     SqlAlchemyReadRepository,
     SqlAlchemyWriteRepository,
 )

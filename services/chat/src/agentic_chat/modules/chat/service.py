@@ -2,7 +2,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from agentic_shared.core.domain_errors import NotFoundError
+from agentic_shared.domains.domain_errors import NotFoundError
 from agentic_shared.domains.persistence.entities import ChatSession
 from agentic_shared.domains.persistence.protocols.chat import (
     ChatMessageReadRepository,

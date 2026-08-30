@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 from agentic_shared.domains.indexing.models import IndexDocumentTaskResult
 from agentic_shared.domains.persistence.entities import JobStatus
-from agentic_shared.integrations.embedding.settings import EmbeddingSettings
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_indexing.core.indexing_document import IndexDocumentUseCase
 
@@ -23,8 +23,8 @@ class TestIndexDocumentUseCase(unittest.TestCase):
             documents=documents,
             storage_read=storage_read,
             chunk_write=chunk_write,
-            llm=LLMSettings(),
-            embedding=EmbeddingSettings(),
+            llm=LiteLLMChatSettings(),
+            embedding=LiteLLMEmbeddingSettings(),
         )
         return use_case, jobs, documents, storage_read, chunk_write
 

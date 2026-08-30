@@ -1,1 +1,1 @@
-"""Domain modules (persistence, retrieval, …)."""
+"""Domain modules (persistence, retrieval, …) and shared domain errors."""

@@ -8,7 +8,6 @@ from suit.qdrant import require_qdrant_collection
 from suit.settings import SUIT_REFUSAL_MARKERS, SuitSettings, SutSettings
 
 _PROXY_ENV = (
-    "OPENAI_API_KEY",
     "LITELLM_MASTER_KEY",
     "EVAL_SUT_LITELLM_API_KEY",
     "EVAL_SUT_LITELLM_BASE_URL",
@@ -54,7 +53,6 @@ def test_sut_defaults_ignore_compose_dns_env(monkeypatch) -> None:
     assert sut.qdrant_url == "http://localhost:6333"
     assert sut.qdrant_collection == "agentic_rag_eval_hybrid"
     assert sut.embedding_model == "embed"
-    assert sut.rerank_model == "rerank"
     assert sut.openai_compatible_base_url == "http://localhost:4000/v1"
 
 
@@ -89,15 +87,15 @@ def test_sut_reads_api_key_from_eval_env_file(tmp_path) -> None:
     sut = SutSettings(_env_file=env_file)
 
     # Assert
-    assert sut.litellm_api_key == "sk-from-eval-env"
+    assert sut.proxy_api_key == "sk-from-eval-env"
     assert sut.litellm_base_url == "http://localhost:4000"
 
 
-def test_sut_empty_prefixed_key_falls_through_to_openai_api_key(tmp_path) -> None:
+def test_sut_empty_prefixed_key_falls_through_to_litellm_master_key(tmp_path) -> None:
     # Arrange
     env_file = tmp_path / ".env"
     env_file.write_text(
-        "EVAL_SUT_LITELLM_API_KEY=\nOPENAI_API_KEY=sk-from-openai-alias\n",
+        "EVAL_SUT_LITELLM_API_KEY=\nLITELLM_MASTER_KEY=sk-from-master-key\n",
         encoding="utf-8",
     )
 
@@ -105,19 +103,19 @@ def test_sut_empty_prefixed_key_falls_through_to_openai_api_key(tmp_path) -> Non
     sut = SutSettings(_env_file=env_file)
 
     # Assert
-    assert sut.proxy_api_key == "sk-from-openai-alias"
+    assert sut.proxy_api_key == "sk-from-master-key"
 
 
 def test_sut_empty_keys_keep_placeholder_default(tmp_path) -> None:
     # Arrange
     env_file = tmp_path / ".env"
-    env_file.write_text("EVAL_SUT_LITELLM_API_KEY=\nOPENAI_API_KEY=\n", encoding="utf-8")
+    env_file.write_text("EVAL_SUT_LITELLM_API_KEY=\nLITELLM_MASTER_KEY=\n", encoding="utf-8")
 
     # Act
     sut = SutSettings(_env_file=env_file)
 
     # Assert
-    assert sut.litellm_api_key == "sk-change-me"
+    assert sut.proxy_api_key == "sk-change-me"
 
 
 def test_require_qdrant_collection_ok_when_present(monkeypatch) -> None:

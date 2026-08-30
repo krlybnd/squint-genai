@@ -1,16 +1,14 @@
+"""Admin service entrypoint."""
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from agentic_shared.core.auth.providers import AuthProvider
-from agentic_shared.core.ioc.container import make_service_container
-from agentic_shared.frameworks.fastapi.bootstrap import (
-    apply_standard_http_middleware,
-    create_fastapi_service_app,
-)
+from agentic_shared.frameworks.fastapi.dishka import make_service_container
+from agentic_shared.frameworks.fastapi.framework import FastAPIAppBuilder
 from agentic_shared.frameworks.fastapi.health import router as health_router
-from agentic_shared.integrations.keycloak_admin.providers import KeycloakAdminProvider
+from agentic_shared.frameworks.fastapi.providers.auth import AuthProvider
+from agentic_shared.integrations.idp.keycloak.providers import KeycloakAdminProvider
 from dishka import AsyncContainer
-from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 
 from agentic_admin.modules.tenants.providers import TenantsProvider
@@ -35,18 +33,20 @@ def create_app() -> FastAPI:
         TenantsProvider(),
         UsersProvider(),
     )
-    app = create_fastapi_service_app(
-        title="Squint Admin API",
-        description="Tenant and user administration (Keycloak Organizations)",
-        log_level=settings.log_level,
-        lifespan=lifespan,
+    return (
+        FastAPIAppBuilder(
+            settings.defaults.package,
+            settings=settings.fastapi,
+            log_level=settings.log_level,
+        )
+        .lifespan(lifespan)
+        .with_standard_middleware()
+        .with_dishka(container)
+        .include_router(health_router)
+        .include_router(tenants_router, prefix="/v1")
+        .include_router(users_router, prefix="/v1")
+        .build()
     )
-    apply_standard_http_middleware(app)
-    setup_dishka(container, app)
-    app.include_router(health_router)
-    app.include_router(tenants_router, prefix="/v1")
-    app.include_router(users_router, prefix="/v1")
-    return app
 
 
 app = create_app()

@@ -135,7 +135,7 @@ sync_user_realm_roles_from_active_tenant() {
   if [ -z "${tenant_roles_raw}" ] || [ -z "${tenant_id}" ]; then
     return
   fi
-  desired_json="$(echo "${tenant_roles_raw}" | jq -c --arg t "${tenant_id}" '.[$t] // []')"
+  desired_json="$(echo "${tenant_roles_raw}" | jq -c --arg t "${tenant_id}" '(.[$t] // []) | sort')"
   current_json="$(
     curl -sf "${API}/users/${user_id}/role-mappings/realm" \
       -H "Authorization: Bearer ${TOKEN}" \
@@ -146,10 +146,10 @@ sync_user_realm_roles_from_active_tenant() {
     return
   fi
   echo "Syncing realm roles for ${username} (active tenant ${tenant_id})..."
-  to_remove="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
-    '$current - $desired | .[]')"
-  to_add="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
-    '$desired - $current | .[]')"
+  to_remove="$(jq -nr --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '($current - $desired)[]')"
+  to_add="$(jq -nr --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '($desired - $current)[]')"
   for role in ${to_remove}; do
     role_json="$(
       curl -sf "${API}/roles/${role}" -H "Authorization: Bearer ${TOKEN}"
@@ -256,10 +256,10 @@ repair_demo_user_realm_roles() {
     return
   fi
   echo "Repairing demo realm roles for ${username}..."
-  to_remove="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
-    '$current - $desired | .[]')"
-  to_add="$(jq -n --argjson current "${current_json}" --argjson desired "${desired_json}" \
-    '$desired - $current | .[]')"
+  to_remove="$(jq -nr --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '($current - $desired)[]')"
+  to_add="$(jq -nr --argjson current "${current_json}" --argjson desired "${desired_json}" \
+    '($desired - $current)[]')"
   for role in ${to_remove}; do
     role_json="$(curl -sf "${API}/roles/${role}" -H "Authorization: Bearer ${TOKEN}")"
     curl -sf -X DELETE "${API}/users/${user_id}/role-mappings/realm" \

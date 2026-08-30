@@ -1,5 +1,5 @@
-from agentic_shared.core.auth.context import AuthContext
-from agentic_shared.core.auth.tenant import resolve_tenant_id
+from agentic_shared.crosscut.auth.context import AuthContext
+from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
 from agentic_shared.domains.persistence.protocols.documents import (
     DocumentReadRepository,
     DocumentWriteRepository,
@@ -9,9 +9,9 @@ from agentic_shared.domains.persistence.protocols.index_jobs import (
     IndexJobWriteRepository,
 )
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
-from agentic_shared.infrastructure.object_storage.protocols import (
-    ObjectStorageReader,
-    ObjectStorageWriter,
+from agentic_shared.infrastructure.storage.core.protocols import (
+    StorageReader,
+    StorageWriter,
 )
 from dishka import Provider, Scope, provide
 
@@ -28,8 +28,8 @@ class DocumentsProvider(Provider):
         documents_write: DocumentWriteRepository,
         jobs_read: IndexJobReadRepository,
         jobs_write: IndexJobWriteRepository,
-        storage_read: ObjectStorageReader,
-        storage_write: ObjectStorageWriter,
+        storage_read: StorageReader,
+        storage_write: StorageWriter,
         chunk_write: ChunkWriteRepository,
         job_service: JobService,
     ) -> DocumentService:

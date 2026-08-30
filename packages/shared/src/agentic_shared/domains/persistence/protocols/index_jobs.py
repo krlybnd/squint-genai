@@ -2,7 +2,7 @@ from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 from agentic_shared.domains.persistence.entities import IndexJob, JobStatus
-from agentic_shared.infrastructure.postgres.protocols import (
+from agentic_shared.infrastructure.sql.core.protocols import (
     ReadRepository,
     SyncReadRepository,
     SyncWriteRepository,

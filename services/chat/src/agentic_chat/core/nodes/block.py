@@ -1,6 +1,6 @@
 import logging
 
-from agentic_shared.core.i18n import t
+from agentic_shared.crosscut.i18n import t
 
 from agentic_chat.core.graph.enums import AgentGraphNode
 from agentic_chat.core.nodes.protocols import GraphNode

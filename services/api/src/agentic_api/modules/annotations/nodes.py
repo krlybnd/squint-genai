@@ -5,15 +5,15 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from agentic_shared.core.i18n import DEFAULT_LOCALE, LOCALE_LANGUAGE, t
 from agentic_shared.core.security.guard import looks_like_prompt_injection
+from agentic_shared.crosscut.i18n import DEFAULT_LOCALE, LOCALE_LANGUAGE, t
 from agentic_shared.domains.annotations.models import ChunkComment, CommentPointPayload
 from agentic_shared.domains.retrieval.models import ChunkPointPayload
-from agentic_shared.infrastructure.vector.enums import QdrantPointType
-from agentic_shared.infrastructure.vector.payload import payload_page
-from agentic_shared.integrations.llm.content import extract_chat_completion_content
-from agentic_shared.integrations.llm.messages import llm_system_user
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.infrastructure.vector.core.payload import payload_page
+from agentic_shared.infrastructure.vector.qdrant.enums import QdrantPointType
+from agentic_shared.integrations.litellm.llm.content import extract_chat_completion_content
+from agentic_shared.integrations.litellm.llm.messages import llm_system_user
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_api.modules.annotations.deps import CommentGraphDeps
 from agentic_api.modules.annotations.settings import get_module_settings
@@ -88,7 +88,7 @@ async def moderate_node(state: CommentState, deps: CommentGraphDeps) -> CommentS
                 f"Selected excerpt:\n{selected}\n\nUser comment:\n{comment}",
             ),
             temperature=module.moderation_temperature,
-            model=LLMSettings().litellm_model,
+            model=LiteLLMChatSettings().litellm_model,
         )
         content = extract_chat_completion_content(result)
         parsed = _parse_moderation(content)

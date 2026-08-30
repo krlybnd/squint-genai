@@ -20,7 +20,7 @@ target_metadata = Base.metadata
 
 
 def _database_url() -> str:
-    from agentic_shared.infrastructure.postgres.settings import DatabaseSettings
+    from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
 
     return DatabaseSettings().sqlalchemy_psycopg2_url()
 

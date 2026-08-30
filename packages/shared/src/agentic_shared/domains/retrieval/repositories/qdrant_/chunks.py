@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 from qdrant_client.http.models import (
     Condition,
@@ -24,17 +24,15 @@ from agentic_shared.domains.retrieval.protocols.chunks import (
     ChunkReadRepository,
     ChunkWriteRepository,
 )
-from agentic_shared.infrastructure.vector.client import QdrantClient
-from agentic_shared.infrastructure.vector.dense import embed_dense_texts
-from agentic_shared.infrastructure.vector.enums import QdrantPointType
-from agentic_shared.infrastructure.vector.payload import payload_page, payload_text
-from agentic_shared.infrastructure.vector.repository import (
-    QdrantReadRepository,
-    QdrantWriteRepository,
-)
-from agentic_shared.infrastructure.vector.sparse import embed_sparse_texts
-from agentic_shared.integrations.embedding.settings import EmbeddingSettings
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.infrastructure.vector.core.payload import payload_page, payload_text
+from agentic_shared.infrastructure.vector.qdrant.client import QdrantClient
+from agentic_shared.infrastructure.vector.qdrant.dense import embed_dense_texts
+from agentic_shared.infrastructure.vector.qdrant.enums import QdrantPointType
+from agentic_shared.infrastructure.vector.qdrant.reader import QdrantVectorReader
+from agentic_shared.infrastructure.vector.qdrant.sparse import embed_sparse_texts
+from agentic_shared.infrastructure.vector.qdrant.writer import QdrantVectorWriter
+from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 logger = logging.getLogger(__name__)
 
@@ -56,28 +54,16 @@ def chunk_payload_to_retrieved(
     )
 
 
-class QdrantChunkReadRepository(QdrantReadRepository[ChunkPointPayload], ChunkReadRepository):
+class QdrantChunkReadRepository(QdrantVectorReader[ChunkPointPayload], ChunkReadRepository):
     def __init__(self, client: QdrantClient) -> None:
         super().__init__(client, ChunkPointPayload)
-
-    @property
-    def default_top_k(self) -> int:
-        return self._client.default_top_k
-
-    @property
-    def candidate_top_k(self) -> int:
-        return self._client.candidate_top_k
-
-    @property
-    def sparse_model(self) -> str:
-        return self._client.sparse_model
 
     def scroll_document_catalog(self, *, tenant_id: str) -> list[IndexedDocumentEntry]:
         docs: dict[str, IndexedDocumentEntry] = {}
         try:
             offset = None
             while True:
-                records, offset = self._client.scroll(
+                records, offset = self.scroll(
                     scroll_filter=self._chunk_only_filter(
                         must=[FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))]
                     ),
@@ -155,17 +141,17 @@ class QdrantChunkReadRepository(QdrantReadRepository[ChunkPointPayload], ChunkRe
     ) -> list[RetrievedChunk]:
         tenant_filter = FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))
         try:
-            response = self._client.query_points(
+            response = self.query_points(
                 prefetch=[
                     Prefetch(
                         query=dense_vector,
-                        using=self._client.dense_vector_name,
+                        using=self.dense_vector_name,
                         limit=limit,
                         filter=Filter(must=[tenant_filter]),
                     ),
                     Prefetch(
                         query=sparse_vector,
-                        using=self._client.sparse_vector_name,
+                        using=self.sparse_vector_name,
                         limit=limit,
                         filter=Filter(must=[tenant_filter]),
                     ),
@@ -206,7 +192,7 @@ class QdrantChunkReadRepository(QdrantReadRepository[ChunkPointPayload], ChunkRe
     ) -> tuple[list[RetrievedChunk], str | None]:
         chunks: list[RetrievedChunk] = []
         try:
-            records, next_offset = self._client.scroll(
+            records, next_offset = self.scroll(
                 scroll_filter=scroll_filter,
                 limit=limit,
                 offset=offset,
@@ -221,20 +207,17 @@ class QdrantChunkReadRepository(QdrantReadRepository[ChunkPointPayload], ChunkRe
             return [], None
 
 
-class QdrantChunkWriteRepository(QdrantWriteRepository[ChunkPointPayload], ChunkWriteRepository):
+class QdrantChunkWriteRepository(QdrantVectorWriter[ChunkPointPayload], ChunkWriteRepository):
     def __init__(self, client: QdrantClient) -> None:
         super().__init__(client, ChunkPointPayload)
         self._read = QdrantChunkReadRepository(client)
-
-    def ensure_collection(self, *, vector_dim: int = 1536) -> None:
-        self._client.ensure_collection(vector_dim=vector_dim)
 
     def index_nodes(
         self,
         nodes: list[Any],
         *,
-        llm: LLMSettings,
-        embedding: EmbeddingSettings,
+        llm: LiteLLMChatSettings,
+        embedding: LiteLLMEmbeddingSettings,
     ) -> int:
         if not nodes:
             return 0
@@ -245,38 +228,41 @@ class QdrantChunkWriteRepository(QdrantWriteRepository[ChunkPointPayload], Chunk
 
         texts = [node.get_content() for node in nodes]
         dense_vectors = embed_dense_texts(texts, llm=llm, embedding=embedding)
-        sparse_vectors = embed_sparse_texts(texts, model_name=self._client.sparse_model)
+        sparse_vectors = embed_sparse_texts(texts, model_name=self.sparse_model)
         vector_dim = len(dense_vectors[0])
         self.ensure_collection(vector_dim=vector_dim)
 
         points: list[PointStruct] = []
         for node, dense, sparse in zip(nodes, dense_vectors, sparse_vectors, strict=True):
             metadata = node.metadata or {}
-            text = node.get_content()
+            payload = ChunkPointPayload(
+                text=node.get_content(),
+                doc_id=metadata.get("doc_id"),
+                source_file=metadata.get("source_file") or "",
+                page=metadata.get("page", metadata.get("page_label")),
+                tenant_id=metadata.get("tenant_id"),
+            )
             points.append(
                 PointStruct(
                     id=node.node_id,
                     vector={
-                        self._client.dense_vector_name: dense,
-                        self._client.sparse_vector_name: sparse,
+                        self.dense_vector_name: dense,
+                        self.sparse_vector_name: sparse,
                     },
-                    payload={
-                        "text": text,
-                        "doc_id": metadata.get("doc_id"),
-                        "source_file": metadata.get("source_file", ""),
-                        "page": metadata.get("page", metadata.get("page_label")),
-                        "tenant_id": metadata.get("tenant_id"),
-                    },
+                    payload=cast(
+                        dict[str, Any],
+                        payload.model_dump(mode="json", by_alias=True),
+                    ),
                 )
             )
 
-        self._client.upsert(points)
+        self.upsert_points(points)
         logger.info("indexed qdrant points count=%d", len(points))
         return len(points)
 
     def delete_by_doc_id(self, doc_id: str, *, tenant_id: str) -> None:
         try:
-            self._client.delete(
+            self.delete_by_filter(
                 points_selector=FilterSelector(
                     filter=self._read._chunk_only_filter(
                         must=[

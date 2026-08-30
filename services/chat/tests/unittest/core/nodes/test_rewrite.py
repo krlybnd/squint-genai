@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import AsyncMock
 
 from agentic_shared.domains.retrieval.models import IndexedDocumentEntry
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_chat.core.graph.enums import AgentGraphNode
@@ -62,7 +62,7 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(update["search_query"], "what is in the pdf?")
         self.assertEqual(update["indexed_document_count"], 1)
         kwargs = chat_client.chat_completion.await_args.kwargs
-        self.assertEqual(kwargs["model"], LLMSettings().litellm_router_model)
+        self.assertEqual(kwargs["model"], LiteLLMChatSettings().litellm_router_model)
 
     async def test_success_needs_retrieval_false(self) -> None:
         # Arrange

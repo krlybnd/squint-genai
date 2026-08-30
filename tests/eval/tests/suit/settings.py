@@ -6,14 +6,14 @@ from pathlib import Path
 
 from agentic_chat.core.deps import AgentGraphDeps
 from agentic_shared.core.settings.base import EnvSettings
+from agentic_shared.core.settings.secrets import SecuredStr
 from agentic_shared.domains.retrieval.factory import create_async_retrieval_service
 from agentic_shared.domains.retrieval.repositories.qdrant_.chunks import QdrantChunkReadRepository
-from agentic_shared.infrastructure.vector.client import QdrantClient
-from agentic_shared.infrastructure.vector.settings import QdrantSettings
-from agentic_shared.integrations.embedding.settings import EmbeddingSettings
-from agentic_shared.integrations.llm import OpenAIChatClient
-from agentic_shared.integrations.llm.settings import LLMSettings
-from agentic_shared.integrations.rerank.settings import RerankSettings
+from agentic_shared.infrastructure.vector.qdrant.client import QdrantClient
+from agentic_shared.infrastructure.vector.qdrant.settings import QdrantSettings
+from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.llm import LiteLLMChatClient
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 from pydantic import AliasChoices, Field
 from pydantic_settings import SettingsConfigDict
 
@@ -33,19 +33,16 @@ class SutSettings(EnvSettings):
     )
 
     litellm_base_url: str = "http://localhost:4000"
-    litellm_api_key: str = Field(
-        default="sk-change-me",
+    litellm_api_key: SecuredStr = Field(
+        default=SecuredStr("sk-change-me"),
         validation_alias=AliasChoices(
             "EVAL_SUT_LITELLM_API_KEY",
             "LITELLM_MASTER_KEY",
-            "OPENAI_API_KEY",
         ),
     )
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "agentic_rag_eval_hybrid"
     embedding_model: str = "embed"
-    rerank_model: str = "rerank"
-    rerank_enabled: bool = False
 
     @property
     def openai_compatible_base_url(self) -> str:
@@ -53,13 +50,13 @@ class SutSettings(EnvSettings):
 
     @property
     def proxy_api_key(self) -> str:
-        return self.litellm_api_key
+        return self.litellm_api_key.get_secret_value()
 
     def to_graph_deps(self, *, top_k: int | None = None) -> AgentGraphDeps:
-        llm = LLMSettings(
+        llm = LiteLLMChatSettings(
             _env_file=None,
             litellm_base_url=self.litellm_base_url,
-            openai_api_key=self.litellm_api_key,
+            litellm_master_key=self.litellm_api_key,
         )
         qdrant_settings = QdrantSettings(
             _env_file=None,
@@ -68,18 +65,13 @@ class SutSettings(EnvSettings):
         )
         qdrant = QdrantClient(qdrant_settings)
         return AgentGraphDeps(
-            chat_client=OpenAIChatClient(llm),
+            chat_client=LiteLLMChatClient(llm),
             retrieval=create_async_retrieval_service(
                 chunk_read=QdrantChunkReadRepository(qdrant),
                 llm=llm,
-                embedding=EmbeddingSettings(
+                embedding=LiteLLMEmbeddingSettings(
                     _env_file=None,
                     embedding_model=self.embedding_model,
-                ),
-                rerank=RerankSettings(
-                    _env_file=None,
-                    rerank_model=self.rerank_model,
-                    rerank_enabled=self.rerank_enabled,
                 ),
             ),
             qdrant_top_k=top_k if top_k is not None else 5,

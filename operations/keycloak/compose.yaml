@@ -37,6 +37,8 @@ services:
         condition: service_healthy
     volumes:
       - ./init/init-organizations.sh:/init/init-organizations.sh:ro
+      # Script resolves REALM_DIR as sibling of /init → /realm
+      - ./realm:/realm:ro
     environment:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}

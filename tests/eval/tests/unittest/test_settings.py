@@ -1,7 +1,7 @@
 import os
 from unittest.mock import patch
 
-from agentic_shared.integrations.llm.settings import LLMSettings
+from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_eval.core.goldendata.settings import DEFAULT_SOURCE_FILES, GoldenSettings
 from agentic_eval.core.goldendata.settings import EVAL_ROOT as GOLDEN_ROOT
@@ -21,7 +21,7 @@ def test_eval_settings_defaults_use_judge_alias_not_generator() -> None:
     # Arrange / Act
     with patch.dict(os.environ, {}, clear=True):
         settings = EvalSettings()
-        llm = LLMSettings(_env_file=None)
+        llm = LiteLLMChatSettings(_env_file=None)
 
     # Assert
     assert settings.mode is EvalMode.mock

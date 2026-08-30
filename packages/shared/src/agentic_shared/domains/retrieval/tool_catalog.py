@@ -16,10 +16,7 @@ class RetrievalToolSpec:
 
 SEARCH_DOCUMENTS = RetrievalToolSpec(
     name="search_documents",
-    summary=(
-        "Hybrid search (dense embedding + sparse BM25, RRF fusion) "
-        "over indexed PDF chunks, optional rerank."
-    ),
+    summary=("Hybrid search (dense embedding + sparse BM25, RRF fusion) over indexed PDF chunks."),
     parameters="query: str (required), top_k: int (optional, default 5, range 1–20)",
     query_guidelines="""
 How to formulate `query` for best recall:

@@ -3,8 +3,8 @@ import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
-from agentic_shared.core.domain_errors import NotFoundError
 from agentic_shared.domains.chat.roles import ChatMessageRole
+from agentic_shared.domains.domain_errors import NotFoundError
 from agentic_shared.domains.persistence.entities import ChatMessage, ChatSession
 
 from agentic_chat.modules.chat.service import ChatService

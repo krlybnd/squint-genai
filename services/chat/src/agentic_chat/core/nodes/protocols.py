@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Protocol, TypeVar, runtime_checkable
 
-from agentic_shared.integrations.llm.content import extract_chat_completion_content
+from agentic_shared.integrations.litellm.llm.content import extract_chat_completion_content
 from langgraph.config import get_stream_writer
 
 from agentic_chat.core.deps import AgentGraphDeps
