@@ -26,7 +26,7 @@ export default defineConfig({
     ["list"],
     ["html", { outputFolder: path.join(reportsDir, "html"), open: "never" }],
   ],
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  timeout: 90_000,
+  expect: { timeout: 15_000 },
   projects: [{ name: "api" }],
 });

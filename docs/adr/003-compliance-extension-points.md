@@ -17,7 +17,7 @@ Add `agentic_shared/core/compliance/` with:
 - **Settings:** `ComplianceSettings` (retention days, AI metadata, toggles)
 - **NoOp defaults** for development until services inject real adapters
 
-Existing PII redaction (`core/security/guard/`) and auth (`crosscut/auth/`) remain separate;
+Existing LiteLLM guard/analyzer clients (`integrations/litellm/`) and auth (`crosscut/auth/`) remain separate;
 compliance layer records events and orchestrates rights requests, not duplicate guard logic.
 
 Documentation: `docs/compliance.md`, `docs/project-overview.md`.

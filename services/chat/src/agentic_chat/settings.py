@@ -6,7 +6,10 @@ from agentic_shared.frameworks.fastapi.defaults import FrameworkDefaults
 from agentic_shared.frameworks.fastapi.settings import FastAPISettings
 from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
 from agentic_shared.infrastructure.vector.qdrant.settings import QdrantSettings
+from agentic_shared.integrations.litellm.analyzer.settings import AnalyzerSettings
+from agentic_shared.integrations.litellm.anonymizer.settings import AnonymizerSettings
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.guard.settings import GuardSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 from pydantic import Field
 
@@ -35,6 +38,18 @@ class ChatSettings(AppSettings):
     embedding: LiteLLMEmbeddingSettings = Field(
         default_factory=LiteLLMEmbeddingSettings,
         description="LiteLLM embeddings for in-process retrieval.",
+    )
+    analyzer: AnalyzerSettings = Field(
+        default_factory=AnalyzerSettings,
+        description="PII analyzer API (local or vendor; compose profile guardrails).",
+    )
+    anonymizer: AnonymizerSettings = Field(
+        default_factory=AnonymizerSettings,
+        description="PII anonymizer API (local or vendor; compose profile guardrails).",
+    )
+    guard: GuardSettings = Field(
+        default_factory=GuardSettings,
+        description="Prompt-injection guard API (local or vendor; compose profile guardrails).",
     )
     database: DatabaseSettings = Field(
         default_factory=DatabaseSettings,

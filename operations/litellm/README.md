@@ -16,4 +16,8 @@ OpenAI-compatible LLM and embedding proxy (rerank alias kept for legacy `.env` o
 
 Legacy names (`gpt-4o-mini`, `text-embedding-3-small`, `rerank-multilingual-v3.0`) remain registered so existing `.env` values keep working.
 
+### Guardrails
+
+Chat/api call **llm-guard + Presidio HTTP clients** directly (`make up-guardrails`). The proxy keeps an optional built-in `presidio-pii` guardrail for request-body experiments only — no custom Python guardrail plugins.
+
 All Python services call LiteLLM — never OpenAI or Cohere directly. Recreate the `litellm` container after changing this config (`docker compose up -d litellm`).

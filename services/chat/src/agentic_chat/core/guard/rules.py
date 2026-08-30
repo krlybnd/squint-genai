@@ -1,10 +1,13 @@
 import logging
 
-from agentic_shared.core.security.guard import looks_like_prompt_injection, redact_pii
 from agentic_shared.crosscut.i18n import t
+from agentic_shared.integrations.litellm.analyzer.protocols import Analyzer
+from agentic_shared.integrations.litellm.anonymizer.protocols import Anonymizer
+from agentic_shared.integrations.litellm.guard.protocols import Guard
 
+from agentic_chat.core.guard.pii import mask_text
 from agentic_chat.core.guard.protocols import GuardRule
-from agentic_chat.core.state import AgentStateUpdate, PiiDetail, PiiDetailState
+from agentic_chat.core.state import AgentStateUpdate
 from agentic_chat.core.state.updates import (
     guard_empty_query_update,
     guard_injection_update,
@@ -21,15 +24,19 @@ __all__ = [
 
 
 class EmptyQueryRule(GuardRule):
-    def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None:
+    async def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None:
         if not query:
             return guard_empty_query_update(reason=t("guard.empty_query", locale))
         return None
 
 
 class PromptInjectionRule(GuardRule):
-    def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None:
-        if looks_like_prompt_injection(query):
+    def __init__(self, guard: Guard) -> None:
+        self._guard = guard
+
+    async def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None:
+        result = await self._guard.analyze_prompt(query)
+        if result.is_injection:
             logger.warning("prompt injection detected")
             return guard_injection_update(
                 reason=t("guard.injection", locale),
@@ -39,21 +46,26 @@ class PromptInjectionRule(GuardRule):
 
 
 class PiiRedactionRule(GuardRule):
-    """Terminal rule: always applies redaction (never returns ``None``)."""
+    """Terminal rule: always applies masking (never returns ``None``)."""
 
-    def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None:
-        redacted = redact_pii(query)
-        if redacted.count:
-            logger.debug("pii redacted count=%d", redacted.count)
-            reason = t("guard.pii_masked", locale, count=redacted.count)
+    def __init__(self, analyzer: Analyzer, anonymizer: Anonymizer) -> None:
+        self._analyzer = analyzer
+        self._anonymizer = anonymizer
+
+    async def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None:
+        masked = await mask_text(
+            query,
+            analyzer=self._analyzer,
+            anonymizer=self._anonymizer,
+        )
+        if masked.count:
+            logger.debug("pii masked count=%d", masked.count)
+            reason = t("guard.pii_masked", locale, count=masked.count)
         else:
             reason = t("guard.ok", locale)
-        pii_details: list[PiiDetailState] = [
-            PiiDetail(kind=d.kind, placeholder=d.placeholder).as_state() for d in redacted.details
-        ]
         return guard_redacted_update(
-            safe_query=redacted.text,
-            pii_redactions=redacted.count,
-            pii_details=pii_details,
+            safe_query=masked.text,
+            pii_redactions=masked.count,
+            pii_details=masked.details,
             reason=reason,
         )

@@ -18,6 +18,9 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
             chat_client=chat_client,
             retrieval=retrieval,
             qdrant_top_k=5,
+            guard=AsyncMock(),
+            analyzer=AsyncMock(),
+            anonymizer=AsyncMock(),
         )
         return RewriteQueryNode(deps), retrieval, chat_client
 

@@ -1,0 +1,17 @@
+# Presidio anonymizer (PII redact). Profile: guardrails.
+services:
+  presidio-anonymizer:
+    profiles: ["guardrails"]
+    image: ghcr.io/data-privacy-stack/presidio-anonymizer:latest
+    environment:
+      WORKERS: "1"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health')\" || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s

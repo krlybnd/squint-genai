@@ -5,7 +5,6 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from agentic_shared.core.security.guard import looks_like_prompt_injection
 from agentic_shared.crosscut.i18n import DEFAULT_LOCALE, LOCALE_LANGUAGE, t
 from agentic_shared.domains.annotations.models import ChunkComment, CommentPointPayload
 from agentic_shared.domains.retrieval.models import ChunkPointPayload
@@ -72,14 +71,14 @@ async def moderate_node(state: CommentState, deps: CommentGraphDeps) -> CommentS
             ),
         }
 
-    if looks_like_prompt_injection(comment):
+    system = _moderation_system_prompt(locale)
+    guard_result = await deps.guard.analyze_prompt(comment)
+    if guard_result.is_injection:
         logger.warning("comment rejected injection chunk_id=%s", state["chunk_id"])
         return {
             "approved": False,
             "rejection_reason": t("annotations.rejection.injection", locale),
         }
-
-    system = _moderation_system_prompt(locale)
 
     try:
         result = await deps.chat_client.chat_completion(

@@ -24,10 +24,19 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         chat_client = MagicMock()
         chat_client.chat_completion = AsyncMock()
         chat_client.stream_chat_completion = MagicMock(return_value=_text_stream(""))
+
+        async def _analyze(text: str, *, language: str = "en"):
+            return []
+
+        analyzer = AsyncMock()
+        analyzer.analyze.side_effect = _analyze
         deps = AgentGraphDeps(
             chat_client=chat_client,
             retrieval=MagicMock(),
             qdrant_top_k=5,
+            guard=AsyncMock(),
+            analyzer=analyzer,
+            anonymizer=AsyncMock(),
         )
         return GenerateNode(deps), chat_client
 

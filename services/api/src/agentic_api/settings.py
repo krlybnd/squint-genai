@@ -9,6 +9,7 @@ from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
 from agentic_shared.infrastructure.storage.minio.settings import MinioSettings
 from agentic_shared.infrastructure.vector.qdrant.settings import QdrantSettings
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
+from agentic_shared.integrations.litellm.guard.settings import GuardSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 from pydantic import Field
 
@@ -31,6 +32,10 @@ class ApiSettings(AppSettings):
     embedding: LiteLLMEmbeddingSettings = Field(
         default_factory=LiteLLMEmbeddingSettings,
         description="LiteLLM embedding model alias used by retrieval.",
+    )
+    guard: GuardSettings = Field(
+        default_factory=GuardSettings,
+        description="Prompt-injection guard API (local or vendor; compose profile guardrails).",
     )
     database: DatabaseSettings = Field(
         default_factory=DatabaseSettings,

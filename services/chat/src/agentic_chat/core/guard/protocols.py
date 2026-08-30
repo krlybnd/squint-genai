@@ -1,5 +1,9 @@
 from typing import Protocol, runtime_checkable
 
+from agentic_shared.integrations.litellm.analyzer.protocols import Analyzer
+from agentic_shared.integrations.litellm.anonymizer.protocols import Anonymizer
+from agentic_shared.integrations.litellm.guard.protocols import Guard
+
 from agentic_chat.core.state import AgentStateUpdate
 
 
@@ -7,10 +11,14 @@ from agentic_chat.core.state import AgentStateUpdate
 class GuardRule(Protocol):
     """Returns a state update when the rule applies, or ``None`` to defer."""
 
-    def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None: ...
+    async def evaluate(self, query: str, locale: str) -> AgentStateUpdate | None: ...
 
 
-def default_guard_rules() -> tuple[GuardRule, ...]:
+def default_guard_rules(
+    guard: Guard,
+    analyzer: Analyzer,
+    anonymizer: Anonymizer,
+) -> tuple[GuardRule, ...]:
     from agentic_chat.core.guard.rules import (
         EmptyQueryRule,
         PiiRedactionRule,
@@ -19,15 +27,12 @@ def default_guard_rules() -> tuple[GuardRule, ...]:
 
     return (
         EmptyQueryRule(),
-        PromptInjectionRule(),
-        PiiRedactionRule(),
+        PromptInjectionRule(guard),
+        PiiRedactionRule(analyzer, anonymizer),
     )
 
 
-DEFAULT_GUARD_RULES: tuple[GuardRule, ...] = default_guard_rules()
-
 __all__ = [
-    "DEFAULT_GUARD_RULES",
     "GuardRule",
     "default_guard_rules",
 ]

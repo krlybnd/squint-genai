@@ -13,6 +13,9 @@ from agentic_shared.frameworks.fastapi.providers.auth import AuthProvider
 from agentic_shared.infrastructure.sql.postgres.client import DatabaseClient
 from agentic_shared.infrastructure.sql.postgres.providers import DatabaseProvider
 from agentic_shared.infrastructure.vector.qdrant.providers import QdrantProvider
+from agentic_shared.integrations.litellm.analyzer.providers import AnalyzerProvider
+from agentic_shared.integrations.litellm.anonymizer.providers import AnonymizerProvider
+from agentic_shared.integrations.litellm.guard.providers import GuardProvider
 from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 from agentic_shared.integrations.litellm.llm.providers import LLMProvider
 from dishka import AsyncContainer
@@ -40,6 +43,9 @@ def create_app() -> FastAPI:
         AuthProvider(settings.auth, settings.role),
         DatabaseProvider(settings.database),
         LLMProvider(settings.llm),
+        AnalyzerProvider(settings.analyzer),
+        AnonymizerProvider(settings.anonymizer),
+        GuardProvider(settings.guard),
         make_resource_health_provider(DatabaseClient, ChatClient),
         QdrantProvider(settings.qdrant),
         AsyncDbProvider(settings.database),

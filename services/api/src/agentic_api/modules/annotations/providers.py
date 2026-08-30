@@ -3,6 +3,7 @@ from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
 from agentic_shared.domains.annotations.protocols.comments import CommentWriteRepository
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
 from agentic_shared.integrations.litellm.embedding.protocols import EmbeddingClient
+from agentic_shared.integrations.litellm.guard.protocols import Guard
 from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 from dishka import Provider, Scope, provide
 
@@ -19,11 +20,13 @@ class AnnotationsProvider(Provider):
         chat_client: ChatClient,
         embedding_client: EmbeddingClient,
         comment_write: CommentWriteRepository,
+        guard: Guard,
     ) -> CommentGraphDeps:
         return CommentGraphDeps(
             chat_client=chat_client,
             embedding_client=embedding_client,
             comment_write=comment_write,
+            guard=guard,
         )
 
     @provide(scope=Scope.APP)

@@ -9,6 +9,9 @@ Docker Compose **include** fragments — one folder per dependency.
 | `minio/` | MinIO | 9000 / 9001 |
 | `qdrant/` | Qdrant | 6333 |
 | `litellm/` | LiteLLM proxy | 4000 |
+| `llm-guard/` | PromptInjection DeBERTa (`--profile guardrails`) | internal |
+| `presidio-analyzer/` | PII detect (`--profile guardrails`) | internal |
+| `presidio-anonymizer/` | PII redact (`--profile guardrails`) | internal |
 | `keycloak/` | Keycloak + org bootstrap (`--profile auth`) | via Traefik `/realms` |
 | `traefik/` | API gateway + JWT auth (`--profile auth`) | 80 / 8088 |
 
@@ -27,6 +30,7 @@ Post-start bootstrap (Alembic migrate + MinIO bucket/CORS): **`tools/ops`** — 
 
 ```bash
 make up              # infra + app services + ops bootstrap
+make up-guardrails   # optional: llm-guard + Presidio (profile guardrails) for chat/api Guard clients
 make up-auth         # + Traefik + Keycloak (profiles auth + ui)
 docker compose --profile auth --profile ui up -d
 make ops-bootstrap   # run bootstrap via Dagger (host env)

@@ -243,8 +243,45 @@ folders: {
 		path:    "operations"
 		stack:   "infra"
 		phase:   1
-		purpose: "Infra-side configs: Keycloak realm, LiteLLM, Postgres/Redis/MinIO/Qdrant/Traefik snippets for docker-compose."
+		purpose: "Infra-side configs: Keycloak realm, LiteLLM, local classifiers, Postgres/Redis/MinIO/Qdrant/Traefik snippets for docker-compose."
+		contains: ["postgres/", "redis/", "minio/", "qdrant/", "litellm/", "llm-guard/", "presidio-analyzer/", "presidio-anonymizer/", "keycloak/", "traefik/"]
 		related: ["docker-compose.yml", "tools/ops/bootstrap"]
+	}
+
+	"operations/llm-guard": #Folder & {
+		path:    "operations/llm-guard"
+		stack:   "infra"
+		phase:   1
+		purpose: "llm-guard-api (BanSubstrings + PromptInjection). Compose profile `guardrails`; chat/api GuardClient."
+		contains: ["compose.yaml", "config/", "README.md"]
+		related: ["operations/litellm", "operations/presidio-analyzer", "pocs/local_classifier"]
+	}
+
+	"operations/presidio-analyzer": #Folder & {
+		path:    "operations/presidio-analyzer"
+		stack:   "infra"
+		phase:   1
+		purpose: "Presidio analyzer (PII detect). Compose profile `guardrails`."
+		contains: ["compose.yaml", "README.md"]
+		related: ["operations/presidio-anonymizer", "operations/litellm"]
+	}
+
+	"operations/presidio-anonymizer": #Folder & {
+		path:    "operations/presidio-anonymizer"
+		stack:   "infra"
+		phase:   1
+		purpose: "Presidio anonymizer (PII redact). Compose profile `guardrails`."
+		contains: ["compose.yaml", "README.md"]
+		related: ["operations/presidio-analyzer", "operations/litellm"]
+	}
+
+	"operations/litellm": #Folder & {
+		path:    "operations/litellm"
+		stack:   "infra"
+		phase:   1
+		purpose: "LiteLLM proxy config + compose; role aliases and optional built-in Presidio guardrail."
+		contains: ["compose.yaml", "litellm.config.yaml", "README.md"]
+		related: ["operations/llm-guard", "operations/presidio-analyzer", "operations/presidio-anonymizer"]
 	}
 
 	"pocs": #Folder & {
