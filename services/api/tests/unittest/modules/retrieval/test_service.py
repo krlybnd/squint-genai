@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock, patch
 
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
+
 from agentic_api.modules.retrieval.service import RetrievalApiService
 from agentic_api.modules.retrieval.settings import RetrievalModuleSettings
 from agentic_api.settings import ApiSettings
@@ -79,6 +81,33 @@ class TestRetrievalApiService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.doc_id, "doc-1")
         self.assertIsNone(response.source_file)
         self.assertEqual(response.chunks, [])
+
+    async def test_source_file_chunks_reveals_vault_tokens(self) -> None:
+        retrieval = AsyncMock()
+        retrieval.list_source_file_chunks.return_value = [
+            AsyncMock(
+                chunk_id="c1",
+                text="Ask <PERSON_AABBCCDD> today.",
+                score=None,
+                doc_id="d1",
+                source_file="paper.pdf",
+                page=1,
+                comments=None,
+            )
+        ]
+        vault = AsyncMock()
+        vault.reveal_text.return_value = "Ask Jane VaultTest today."
+        service = RetrievalApiService(
+            retrieval,
+            ApiSettings(),
+            vault_reveal=vault,
+            pii_vault=PiiVaultSettings(enabled=True, sse_detokenize_enabled=True, _env_file=None),
+        )
+
+        response = await service.source_file_chunks("paper.pdf", tenant_id="tenant-1")
+
+        self.assertEqual(response.chunks[0].text, "Ask Jane VaultTest today.")
+        vault.reveal_text.assert_awaited_with("Ask <PERSON_AABBCCDD> today.", marked=True)
 
     async def test_source_file_chunks_empty_defaults(self) -> None:
         # Arrange

@@ -1,0 +1,30 @@
+# HuggingFace TEI cross-encoder reranker. Profile: rerank.
+# Start with: make up-rerank
+# LiteLLM alias `rerank` posts here (http://tei-rerank:80/rerank).
+services:
+  tei-rerank:
+    profiles: ["rerank"]
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    environment:
+      HF_HOME: /data
+      HUGGINGFACE_HUB_CACHE: /data/hub
+    volumes:
+      # Prefer PoC HF cache when present (gitignored). Override with LLM_GUARD_HF_CACHE.
+      - ${LLM_GUARD_HF_CACHE:-../../pocs/local_classifier/run/hf-cache}:/data
+    ports:
+      - "8090:80"
+    command:
+      - --model-id
+      - cross-encoder/ms-marco-MiniLM-L-6-v2
+      - --max-client-batch-size
+      - "32"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:80/health >/dev/null || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s

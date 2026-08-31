@@ -17,6 +17,27 @@ class PiiVaultWriteRepositorySync(Protocol):
 class PiiVaultReadRepository(Protocol):
     async def resolve_tokens(self, tokens: Sequence[str]) -> dict[str, SecuredStr]: ...
 
+    async def existing_tokens(self, tokens: Sequence[str]) -> frozenset[str]: ...
+
+
+@runtime_checkable
+class VaultTokenExistencePort(Protocol):
+    """Tenant-parameterized token existence (query path; no plaintext)."""
+
+    async def existing_tokens(
+        self,
+        tokens: Sequence[str],
+        *,
+        tenant_id: str,
+    ) -> frozenset[str]: ...
+
+
+@runtime_checkable
+class VaultPersonIdentityPort(Protocol):
+    """Map a query name span to the index-time PERSON token for that person."""
+
+    async def token_for_equivalent_name(self, name: str, *, tenant_id: str) -> str | None: ...
+
 
 @runtime_checkable
 class QueryPiiTokenizationPort(Protocol):
@@ -44,4 +65,6 @@ __all__ = [
     "PiiVaultReadRepository",
     "PiiVaultWriteRepositorySync",
     "QueryPiiTokenizationPort",
+    "VaultPersonIdentityPort",
+    "VaultTokenExistencePort",
 ]

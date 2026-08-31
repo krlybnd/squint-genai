@@ -8,6 +8,7 @@ from agentic_shared.domains.retrieval.protocols import AsyncRetrievalReader
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkReadRepository
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
+from agentic_shared.integrations.litellm.rerank.protocols import RerankPort
 
 
 class AsyncRetrievalProvider(Provider):
@@ -25,10 +26,12 @@ class AsyncRetrievalProvider(Provider):
         self,
         chunk_read: ChunkReadRepository,
         query_pii: QueryPiiTokenizationService,
+        reranker: RerankPort,
     ) -> AsyncIterator[AsyncRetrievalReader]:
         yield create_async_retrieval_service(
             llm=self._llm,
             embedding=self._embedding,
             chunk_read=chunk_read,
             query_pii=query_pii,
+            reranker=reranker,
         )

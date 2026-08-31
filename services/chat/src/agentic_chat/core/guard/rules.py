@@ -4,6 +4,7 @@ from agentic_shared.crosscut.i18n import t
 from agentic_shared.domains.pii_vault.protocols import QueryPiiTokenizationPort
 from agentic_shared.integrations.litellm.analyzer.protocols import Analyzer
 from agentic_shared.integrations.litellm.anonymizer.protocols import Anonymizer
+from agentic_shared.integrations.litellm.guard.errors import GuardError
 from agentic_shared.integrations.litellm.guard.protocols import Guard
 
 from agentic_chat.core.guard.pii import mask_text
@@ -49,7 +50,11 @@ class PromptInjectionRule(GuardRule):
         *,
         tenant_id: str,
     ) -> AgentStateUpdate | None:
-        result = await self._guard.analyze_prompt(query)
+        try:
+            result = await self._guard.analyze_prompt(query)
+        except GuardError:
+            logger.warning("prompt injection scan unavailable; continuing", exc_info=True)
+            return None
         if result.is_injection:
             logger.warning("prompt injection detected")
             return guard_injection_update(

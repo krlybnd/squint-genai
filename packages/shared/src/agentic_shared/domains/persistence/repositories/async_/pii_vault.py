@@ -31,5 +31,17 @@ class SqlAlchemyPiiVaultReadRepository(SqlAlchemyReadRepository[PiiVaultEntry]):
             resolved[entry.token] = self._cipher.decrypt(entry.ciphertext)
         return resolved
 
+    async def existing_tokens(self, tokens: Sequence[str]) -> frozenset[str]:
+        unique = sorted({token for token in tokens if token})
+        if not unique:
+            return frozenset()
+        result = await self._session.execute(
+            select(PiiVaultEntry.token).where(
+                PiiVaultEntry.tenant_id == self._tenant_id,
+                PiiVaultEntry.token.in_(unique),
+            )
+        )
+        return frozenset(result.scalars().all())
+
 
 __all__ = ["SqlAlchemyPiiVaultReadRepository"]

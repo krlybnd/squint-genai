@@ -1,30 +1,25 @@
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../..)
 UV   ?= uv
+UV_SYNC_FLAGS ?=
 
-.PHONY: sync install run run-live eval-live run-live-generation format help
+.PHONY: sync run-generation-suite run-retrieval-suite run unittest
 
-help: ## Show targets
-	@grep -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-18s %s\n", $$1, $$2}'
-
-sync: ## uv sync
+sync:
+	@test -d $(ROOT)/packages/generated/agentic-api-client \
+		|| $(MAKE) -C $(ROOT) generate-openapi-clients
 	$(UV) sync $(UV_SYNC_FLAGS)
 
-install: sync ## Alias
+run-generation-suite: sync
+	mkdir -p $(ROOT)/reports/eval
+	DEEPEVAL_TELEMETRY_OPT_OUT=YES DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=180 \
+		PYTHONUNBUFFERED=1 \
+		$(UV) run python tests/generation/main.py
 
-run: sync ## Offline dataset + metric + Pydantic Evals checks
+run-retrieval-suite: sync
+	PYTHONUNBUFFERED=1 \
+		$(UV) run python tests/retrieval/main.py
+
+unittest: sync
 	$(UV) run pytest -q tests/unittest
 
-run-live: sync ## Retrieval IR gate (no judge LLM — seconds, not minutes)
-	DEEPEVAL_TELEMETRY_OPT_OUT=YES EVAL_MODE=live \
-		$(UV) run pytest -s tests/suit/test_retrieval_eval.py
-
-eval-live: run-live ## Same as run-live (root `make eval-live` also works)
-
-run-live-generation: sync ## DeepEval generation gate (slow: graph + Faithfulness/Relevancy judges)
-	DEEPEVAL_TELEMETRY_OPT_OUT=YES DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE=180 \
-		EVAL_MODE=live PYTHONPATH=tests PYTHONUNBUFFERED=1 \
-		$(UV) run python tests/suit/run_generation_eval.py
-
-format: sync ## Auto-format
-	$(UV) run ruff check --fix
-	$(UV) run ruff format
+run: unittest

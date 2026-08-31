@@ -13,6 +13,7 @@ from agentic_shared.integrations.litellm.anonymizer.settings import AnonymizerSe
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.guard.settings import GuardSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
+from agentic_shared.integrations.litellm.rerank.settings import LiteLLMRerankSettings
 from pydantic import Field
 
 from agentic_chat.tracing import LangSmithTracingSettings
@@ -40,6 +41,10 @@ class ChatSettings(AppSettings):
     embedding: LiteLLMEmbeddingSettings = Field(
         default_factory=LiteLLMEmbeddingSettings,
         description="LiteLLM embeddings for in-process retrieval.",
+    )
+    rerank: LiteLLMRerankSettings = Field(
+        default_factory=LiteLLMRerankSettings,
+        description="LiteLLM /rerank after hybrid RRF (local TEI; fail-open).",
     )
     analyzer: AnalyzerSettings = Field(
         default_factory=AnalyzerSettings,

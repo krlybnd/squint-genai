@@ -3,6 +3,8 @@ services:
   presidio-anonymizer:
     profiles: ["guardrails"]
     image: ghcr.io/data-privacy-stack/presidio-anonymizer:latest
+    ports:
+      - "5001:3000"
     environment:
       WORKERS: "1"
     healthcheck:

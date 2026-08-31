@@ -37,7 +37,10 @@ class AnalyzerSyncClient(IntegrationClient[AnalyzerSettings]):
     def analyze(self, text: str, *, language: str = "en") -> list[AnalyzerEntity]:
         self._logger.info("analyze sync chars=%d language=%s", len(text), language)
         try:
-            response = self._http.post("/analyze", json={"text": text, "language": language})
+            response = self._http.post(
+                "/analyze",
+                json=self._settings.analyze_payload(text, language=language),
+            )
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise AnalyzerError(f"analyzer failed: {exc}") from exc

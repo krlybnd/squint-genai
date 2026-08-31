@@ -2,6 +2,8 @@ import { RotateCcw, Sparkles } from "lucide-react";
 import type { TFunction } from "i18next";
 import type { ChatMessage, Citation } from "../../../api/types";
 import { sanitizeText } from "@are/ui-core";
+import { VaultMarkedText } from "../../../vault/VaultMarkedText";
+import { AutoGrowTextarea } from "./AutoGrowTextarea";
 
 interface Props {
   t: TFunction;
@@ -51,16 +53,20 @@ export function MessageList({
               >
                 <RotateCcw size={12} />
               </button>
-              <textarea
+              <AutoGrowTextarea
                 className="message-bubble message-bubble-editable"
                 value={getMessageText(m)}
                 onChange={(e) => onEditMessage(m.id, e.target.value)}
-                rows={Math.min(8, Math.max(1, getMessageText(m).split("\n").length))}
                 disabled={streaming || !canWrite}
               />
             </div>
           ) : (
-            <div className="message-bubble">{sanitizeText(m.content)}</div>
+            <div className="message-bubble">
+              <VaultMarkedText
+                text={m.content}
+                formatTooltip={(token) => t("chat.vaultTokenTooltip", { token })}
+              />
+            </div>
           )}
           {(m.citations?.length ?? 0) > 0 && (
             <div className="citations">
@@ -85,7 +91,12 @@ export function MessageList({
       ))}
       {streaming && streamText && (
         <div className="message assistant">
-          <div className="message-bubble streaming">{sanitizeText(streamText)}</div>
+          <div className="message-bubble streaming">
+            <VaultMarkedText
+              text={streamText}
+              formatTooltip={(token) => t("chat.vaultTokenTooltip", { token })}
+            />
+          </div>
         </div>
       )}
       <div ref={bottomRef} />

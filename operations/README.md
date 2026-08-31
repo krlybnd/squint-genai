@@ -12,6 +12,7 @@ Docker Compose **include** fragments — one folder per dependency.
 | `llm-guard/` | PromptInjection DeBERTa (`--profile guardrails`) | internal |
 | `presidio-analyzer/` | PII detect (`--profile guardrails`) | internal |
 | `presidio-anonymizer/` | PII redact (`--profile guardrails`) | internal |
+| `rerank/` | TEI MiniLM reranker (`--profile rerank`) | 8090 |
 | `keycloak/` | Keycloak + org bootstrap (`--profile auth`) | via Traefik `/realms` |
 | `traefik/` | API gateway + JWT auth (`--profile auth`) | 80 / 8088 |
 
@@ -31,6 +32,7 @@ Post-start bootstrap (Alembic migrate + MinIO bucket/CORS): **`tools/ops`** — 
 ```bash
 make up              # infra + app services + ops bootstrap
 make up-guardrails   # optional: llm-guard + Presidio (profile guardrails) for chat/api Guard clients
+make up-rerank       # optional: TEI reranker (profile rerank) for LiteLLM alias `rerank`
 make up-auth         # + Traefik + Keycloak (profiles auth + ui)
 docker compose --profile auth --profile ui up -d
 make ops-bootstrap   # run bootstrap via Dagger (host env)

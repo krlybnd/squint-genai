@@ -43,7 +43,8 @@
     "sessionAuthError": "Could not create chat session. Sign out and sign in again.",
     "sessionDeleteError": "Could not delete session.",
     "sessionDeleteWhileStreaming": "Stop generation before deleting a session.",
-    "chunkOpenError": "Could not open chunk — missing file name or chunk id."
+    "chunkOpenError": "Could not open chunk — missing file name or chunk id.",
+    "vaultTokenTooltip": "Vault token: {{token}}"
   },
   "reasoning": {
     "steps": {

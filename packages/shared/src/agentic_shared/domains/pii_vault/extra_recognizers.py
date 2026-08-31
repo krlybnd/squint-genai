@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from agentic_shared.integrations.litellm.analyzer.models import AnalyzerEntity
 
 _HU_TAX_NUMBER = re.compile(r"\b\d{8}-\d-\d{2}\b")
 _HU_COMPANY_REG = re.compile(r"\b\d{2}-\d{2}-\d{6}\b")
-_HU_IBAN = re.compile(r"\bHU\d{2}[A-Z0-9]{23}\b", re.IGNORECASE)
+# HU IBAN is HU + 2 check digits + a 24 character BBAN, usually printed in groups of four.
+_HU_IBAN = re.compile(r"\bHU\d{2}(?:[ ]?[A-Z0-9]{4}){6}\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,7 +28,7 @@ _CONTRACT_RULES: tuple[_RegexEntityRule, ...] = (
 )
 
 
-def _overlaps(start: int, end: int, entities: list[AnalyzerEntity]) -> bool:
+def _overlaps(start: int, end: int, entities: Sequence[AnalyzerEntity]) -> bool:
     for entity in entities:
         if start < entity.end and end > entity.start:
             return True
@@ -37,22 +39,27 @@ def supplement_analyzer_entities(
     text: str,
     entities: list[AnalyzerEntity],
 ) -> list[AnalyzerEntity]:
-    """Add HU/contract regex hits Presidio may miss."""
-    merged = list(entities)
-    for rule in _CONTRACT_RULES:
-        for match in rule.pattern.finditer(text):
-            start, end = match.span()
-            if _overlaps(start, end, merged):
-                continue
-            merged.append(
-                AnalyzerEntity(
-                    entity_type=rule.entity_type,
-                    start=start,
-                    end=end,
-                    score=rule.score,
-                )
-            )
-    return merged
+    """Add HU/contract regex hits, dropping the analyzer spans they overlap.
+
+    The generic recognizers routinely claim a fragment of a Hungarian identifier — the
+    leading eight digits of a tax number, a group of four inside an IBAN — which would
+    split one value across a token and some leftover plaintext. The contract rules know
+    the full shape, so they win the span and each identifier stays a single token.
+    """
+    contract_hits = [
+        AnalyzerEntity(
+            entity_type=rule.entity_type,
+            start=match.start(),
+            end=match.end(),
+            score=rule.score,
+        )
+        for rule in _CONTRACT_RULES
+        for match in rule.pattern.finditer(text)
+    ]
+    if not contract_hits:
+        return list(entities)
+    kept = [entity for entity in entities if not _overlaps(entity.start, entity.end, contract_hits)]
+    return kept + contract_hits
 
 
 __all__ = ["supplement_analyzer_entities"]

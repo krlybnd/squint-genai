@@ -8,7 +8,7 @@ const { Given, When, Then } = createBdd(test);
 Given("the application is running with authentication enabled", async ({ page }) => {
   await ensureLoggedIn(page);
   if (process.env.E2E_AUTH === "0") {
-    await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Documents", exact: true })).toBeVisible();
     return;
   }
   await expect(page.locator(".documents-panel")).toBeVisible();

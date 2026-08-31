@@ -6,7 +6,7 @@ Requires Postgres database `keycloak` (see `operations/postgres/init/`).
 
 ## Realm export
 
-`realm/agentic-rag-eval-realm.json` — imported on startup.
+`realm/agentic-rag-eval-realm.json` — imported on startup (this file only; `user-profile.json` stays out of the import dir so Keycloak 26 does not treat it as a realm).
 
 Official **Admin REST OpenAPI** (vendor copy): `openapi/admin-rest.openapi.yaml` (+ `.json`). See `openapi/README.md` for download URLs, refresh steps, and **`make generate-keycloak-client`** (async httpx Python client in `packages/generated/`, gitignored).
 

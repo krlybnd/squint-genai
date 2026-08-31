@@ -43,7 +43,8 @@
     "sessionAuthError": "Nem sikerült létrehozni a chat sessiont. Jelentkezz ki és be újra.",
     "sessionDeleteError": "Nem sikerült törölni a sessiont.",
     "sessionDeleteWhileStreaming": "A session törlése előtt állítsd le a válaszgenerálást.",
-    "chunkOpenError": "Nem sikerült megnyitni a chunkot — hiányzó fájlnév vagy chunk azonosító."
+    "chunkOpenError": "Nem sikerült megnyitni a chunkot — hiányzó fájlnév vagy chunk azonosító.",
+    "vaultTokenTooltip": "Vault kód: {{token}}"
   },
   "reasoning": {
     "steps": {

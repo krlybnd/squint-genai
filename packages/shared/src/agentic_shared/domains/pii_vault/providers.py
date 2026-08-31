@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 
 from dishka import Provider, Scope, provide
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from agentic_shared.crosscut.auth.context import AuthContext
 from agentic_shared.crosscut.auth.tenant import resolve_tenant_id
@@ -10,7 +10,15 @@ from agentic_shared.crosscut.crypto.settings import CryptoSettings
 from agentic_shared.domains.persistence.repositories.async_.pii_vault import (
     SqlAlchemyPiiVaultReadRepository,
 )
-from agentic_shared.domains.pii_vault.protocols import PiiVaultReadRepository
+from agentic_shared.domains.pii_vault.lookup import (
+    SqlAlchemyVaultPersonIdentity,
+    SqlAlchemyVaultTokenLookup,
+)
+from agentic_shared.domains.pii_vault.protocols import (
+    PiiVaultReadRepository,
+    VaultPersonIdentityPort,
+    VaultTokenExistencePort,
+)
 from agentic_shared.domains.pii_vault.query_service import QueryPiiTokenizationService
 from agentic_shared.domains.pii_vault.reveal_service import VaultRevealService
 from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
@@ -47,14 +55,32 @@ class PiiVaultProvider(Provider):
         )
 
     @provide(scope=Scope.APP)
+    def vault_token_existence(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> VaultTokenExistencePort:
+        return SqlAlchemyVaultTokenLookup(session_factory)
+
+    @provide(scope=Scope.APP)
+    def vault_person_identity(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> VaultPersonIdentityPort:
+        return SqlAlchemyVaultPersonIdentity(session_factory, self._cipher)
+
+    @provide(scope=Scope.APP)
     def query_pii_tokenization(
         self,
         analyzer: Analyzer,
+        existence: VaultTokenExistencePort,
+        person_identity: VaultPersonIdentityPort,
     ) -> QueryPiiTokenizationService:
         return QueryPiiTokenizationService(
             analyzer=analyzer,
             tokenizer=self._tokenizer,
             settings=self._vault_settings,
+            existence=existence,
+            person_identity=person_identity,
         )
 
     @provide(scope=Scope.REQUEST)

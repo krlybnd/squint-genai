@@ -181,10 +181,13 @@ paths:
               $ref: '#/components/schemas/ChatStreamRequest'
       responses:
         '200':
-          description: Successful Response
+          description: 'Server-Sent Events. Each frame is `event: <name>` and `data:
+            <json>`, where name is run, reasoning, status, token, session, done, or
+            error, and data matches the corresponding *EventData model.'
           content:
-            application/json:
-              schema: {}
+            text/event-stream:
+              schema:
+                type: string
         '422':
           description: Validation Error
           content:
@@ -213,10 +216,13 @@ paths:
               $ref: '#/components/schemas/ChatReplayRequest'
       responses:
         '200':
-          description: Successful Response
+          description: 'Server-Sent Events. Each frame is `event: <name>` and `data:
+            <json>`, where name is run, reasoning, status, token, session, done, or
+            error, and data matches the corresponding *EventData model.'
           content:
-            application/json:
-              schema: {}
+            text/event-stream:
+              schema:
+                type: string
         '422':
           description: Validation Error
           content:
