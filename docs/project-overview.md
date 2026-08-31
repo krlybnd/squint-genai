@@ -31,7 +31,7 @@ This repository shows an alternative: **vertical service slices**, a **shared re
 
 ## Architecture (Phase 1)
 
-See **[Architecture](architecture.md)** for C4-style diagrams (system context, containers, LangGraph workflow, indexing sequence), service ports, and chunking/retrieval defaults.
+See **[Architecture](architecture.md)** for C4-style Mermaid diagrams (system context, containers, retrieval with TEI rerank, LangGraph workflow, indexing sequence), service ports, and chunking/retrieval defaults.
 
 Services:
 

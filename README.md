@@ -69,32 +69,39 @@ Design notes and the threat model: [ADR 011](docs/adr/011-index-time-pii-tokeniz
 
 ## Architecture
 
+Layers left-to-right as they run. Traefik and Keycloak are `make up-auth`; TEI rerank is `make up-rerank`; guard sidecars are `make up-guardrails`.
+
 ```mermaid
 flowchart TB
     subgraph client [Client]
+        direction LR
         frontend["app-ui :5173"]
         admin_ui["admin-ui :5174"]
     end
 
-    subgraph edge [Edge — profile auth]
+    subgraph edge ["Edge · profile auth"]
+        direction LR
         traefik["Traefik :80"]
         keycloak["Keycloak :8080"]
     end
 
-    subgraph app [Application services]
-        ops["ops bootstrap"]
+    subgraph app [Application]
+        direction LR
         api["api :8000"]
         chat["chat :8002"]
         admin["admin :8003"]
-        indexing["indexing worker"]
+        indexing["indexing · Celery"]
     end
 
-    subgraph platform [Platform — operations/]
+    subgraph platform [Platform]
+        direction LR
         litellm["LiteLLM :4000"]
+        rerank["TEI rerank :8090"]
         guard["llm-guard · Presidio"]
     end
 
-    subgraph data [Data stores]
+    subgraph data [Data]
+        direction LR
         postgres[("PostgreSQL")]
         redis[("Redis")]
         minio[("MinIO")]
@@ -105,18 +112,37 @@ flowchart TB
 
     frontend --> traefik
     admin_ui --> traefik
+    traefik --> api
     traefik --> chat
+    traefik --> admin
+    traefik --> keycloak
     admin --> keycloak
-    chat --> litellm
+
+    api --> indexing
     chat --> qdrant
+    api --> qdrant
+    indexing --> qdrant
+    api --> postgres
+    chat --> postgres
+    indexing --> postgres
+    api --> redis
+    indexing --> redis
+    api --> minio
+    indexing --> minio
+    chat --> litellm
+    api --> litellm
+    indexing --> litellm
+    litellm --> rerank
     litellm --> ext
 
-    api -.->|index jobs| indexing
+    chat -.-> guard
+    api -.-> guard
+    indexing -.-> guard
 ```
 
-Guard sidecars (`make up-guardrails`) and auth (`make up-auth`) are optional Compose profiles. **ops** bootstraps Postgres/MinIO then exits; **api** · **chat** · **indexing** also use **guard** and the other data stores — see [architecture.md](docs/architecture.md). LiteLLM is an internal AI proxy, not user-facing edge.
+**ops** bootstraps Postgres/MinIO then exits (not on the request path). Retrieval is hybrid Qdrant → RRF → LiteLLM `rerank` → TEI; if TEI is down, rank stays RRF. LiteLLM is an internal proxy — Traefik terminates inbound HTTP.
 
-Full diagrams (context, agent graph, indexing sequence): [`docs/architecture.md`](docs/architecture.md) · docs index: [`docs/README.md`](docs/README.md)
+Full diagrams (retrieval path, agent graph, indexing): [`docs/architecture.md`](docs/architecture.md) · docs index: [`docs/README.md`](docs/README.md)
 
 ## Stack
 
@@ -128,7 +154,8 @@ Full diagrams (context, agent graph, indexing sequence): [`docs/architecture.md`
 - **packages/shared** — domain libs linked into services at build time (not a runtime container)
 - **frontend** (app-ui `:5173`, admin-ui `:5174`) — React SSE UI (`--profile ui`)
 - **PostgreSQL** · **Redis** · **MinIO** · **Qdrant**
-- **LiteLLM** `:4000` — internal chat/embedding proxy
+- **LiteLLM** `:4000` — internal chat / embed / rerank proxy
+- **TEI rerank** (`make up-rerank`) — MiniLM cross-encoder `:8090`
 - **Guardrails** (`make up-guardrails`) — **llm-guard** `:8010`, **Presidio** analyzer + anonymizer
 
 ## Quick start

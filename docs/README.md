@@ -5,7 +5,7 @@ Entry point for **Squint** docs. Start here if you are reviewing the repo or onb
 ## Recommended reading order
 
 1. **[Project overview](project-overview.md)** — what the system does, who it is for, design principles
-2. **[Architecture](architecture.md)** — C4-style Mermaid diagrams (context, containers, agent graph, indexing flow), ports, chunking defaults
+2. **[Architecture](architecture.md)** — C4-style Mermaid diagrams (context, containers, retrieval, agent graph, indexing), ports, chunking defaults
 3. **[Compliance readiness](compliance.md)** — GDPR / NIS2 / EU AI Act extension points (preparation layer, not certification)
 4. **ADRs** — recorded decisions:
    - [001 — Retrieval domain boundary](adr/001-why-mcp-boundary.md)
@@ -25,8 +25,9 @@ Entry point for **Squint** docs. Start here if you are reviewing the repo or onb
 |-------|----------|
 | Run locally | Root [README](../README.md) — `make up-ui`, `make up-auth` |
 | System diagram | [architecture.md](architecture.md) — L2 container diagram |
+| Retrieval read path | [architecture.md § L3b](architecture.md#l3b--retrieval-read-path) |
 | Chat agent nodes | [architecture.md § L3a](architecture.md#l3a--chat-agent-graph) |
-| Indexing pipeline | [architecture.md § L3b](architecture.md#l3b--document-indexing-flow) |
+| Indexing pipeline | [architecture.md § L3c](architecture.md#l3c--document-indexing-flow) |
 | Sample PDFs for demo | [resources/README.md](../resources/README.md) |
 | Eval goldens | [tests/eval/README.md](../tests/eval/README.md) — live: [dataset-investigation.json](../tests/eval/dataset-investigation.json) |
 | Ops / infra configs | [operations/README.md](../operations/README.md) |
