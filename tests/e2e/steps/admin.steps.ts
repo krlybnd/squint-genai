@@ -1,20 +1,9 @@
 import { createBdd } from "playwright-bdd";
 import { humanClick, humanFill } from "../support/human";
+import { scenarioState } from "../support/scenario-state";
 import { expect, test } from "../support/fixtures";
 
 const { When, Then } = createBdd(test);
-
-/** Per-scenario tenant created in membership flow (workers: 1). */
-let e2eTenantAlias = "";
-let e2eTenantName = "";
-
-const saveButton = /^(save|mentés|speichern)$/i;
-const cancelButton = /^(cancel|mégse|abbrechen)$/i;
-const newTenantButton = /new tenant|új bérlő|neuer mandant/i;
-const addMemberButton = /^(add|hozzáadás|hinzufügen)$/i;
-const assignTenantSelect = /assign tenant|bérlő hozzárendelés|mandant zuweisen/i;
-const editUserHeading = /edit user|felhasználó szerkesztése|benutzer bearbeiten/i;
-const editTenantHeading = /edit tenant|bérlő szerkesztése|mandant bearbeiten/i;
 
 function adminModal(page: import("@playwright/test").Page) {
   return page.locator(".app-modal");
@@ -31,121 +20,86 @@ function roleCheckbox(row: import("@playwright/test").Locator, role: string) {
 async function selectUiOption(
   page: import("@playwright/test").Page,
   scope: import("@playwright/test").Locator,
-  triggerName: RegExp,
-  optionPattern: RegExp | string,
+  triggerName: string,
+  optionText: string,
 ) {
-  await humanClick(page, scope.getByRole("button", { name: triggerName }));
-  const option =
-    typeof optionPattern === "string"
-      ? scope.getByRole("option", { name: optionPattern, exact: true })
-      : scope.getByRole("option", { name: optionPattern });
-  await humanClick(page, option);
+  await humanClick(page, scope.getByRole("button", { name: triggerName, exact: true }));
+  await humanClick(page, scope.getByRole("option", { name: optionText }));
 }
 
-Then("I should see admin section {string}", async ({ page }, section: string) => {
-  await expect(page.getByRole("button", { name: section })).toBeVisible();
-});
-
-When("I select admin section {string}", async ({ page }, section: string) => {
-  await humanClick(page, page.getByRole("button", { name: section }));
-});
-
-Then("the admin users table or list should be visible", async ({ page }) => {
-  await expect(page.locator(".admin-resource-panel").first()).toBeVisible();
-});
-
-Then("I should not see the admin tenants management UI", async ({ page }) => {
-  await expect(page.locator(".admin-nav-panel")).toHaveCount(0);
-});
-
-Then("I should be redirected to the main chat view or see access denied", async ({ page }) => {
-  await expect(page).toHaveURL(/\/(\?|$)/);
-  await expect(page.locator(".chat-panel")).toBeVisible();
-});
-
-Then("the admin tenants list should be visible", async ({ page }) => {
-  await expect(page.locator(".admin-resource-panel")).toBeVisible();
-});
-
-When("I create a unique tenant for membership testing", async ({ page }) => {
-  e2eTenantAlias = `e2e-${Date.now()}`;
-  e2eTenantName = `E2E ${e2eTenantAlias}`;
-
-  await humanClick(page, page.getByRole("button", { name: newTenantButton }));
-  const modal = adminModal(page);
-  await expect(modal).toBeVisible();
-
-  await humanFill(page, modal.locator("#tenant-alias"), e2eTenantAlias);
-  await humanFill(page, modal.locator("#tenant-name"), e2eTenantName);
-  await humanClick(page, modal.getByRole("button", { name: saveButton }));
-
-  await expect(modal).toHaveCount(0);
-  await expect(page.locator(".admin-resource-row").filter({ hasText: e2eTenantAlias })).toBeVisible();
-});
-
-When("I open the admin user editor for {string}", async ({ page }, username: string) => {
-  const row = page.locator(".admin-resource-row").filter({ hasText: username });
-  await expect(row).toBeVisible();
-  await row.dblclick();
-  await expect(adminModal(page)).toBeVisible();
-  await expect(page.getByRole("heading", { name: editUserHeading })).toBeVisible();
-});
-
-When("I assign the e2e tenant to the current user", async ({ page }) => {
-  const modal = adminModal(page);
-  await selectUiOption(page, modal, assignTenantSelect, new RegExp(e2eTenantAlias));
-  await humanClick(page, modal.getByRole("button", { name: addMemberButton }));
-  await expect(membershipRow(page, e2eTenantAlias)).toBeVisible({ timeout: 30_000 });
-});
-
 When(
-  "I set roles {string} and {string} for the e2e tenant on the user membership",
-  async ({ page }, role1: string, role2: string) => {
-    const row = membershipRow(page, e2eTenantAlias);
-    for (const role of [role1, role2]) {
-      const checkbox = roleCheckbox(row, role);
-      if (!(await checkbox.isChecked())) {
-        const roleSave = page.waitForResponse(
-          (resp) =>
-            resp.request().method() === "PUT" &&
-            resp.url().includes("/roles") &&
-            resp.ok(),
-        );
-        await humanClick(page, row.locator("label.ui-checkbox").filter({ hasText: new RegExp(`^${role}$`, "i") }));
-        await roleSave;
-      }
-      await expect(checkbox).toBeChecked({ timeout: 30_000 });
-    }
+  "I create a unique tenant with alias prefix {string} and name prefix {string}",
+  async ({ page }, aliasPrefix: string, namePrefix: string) => {
+    scenarioState.tenantAlias = `${aliasPrefix}-${Date.now()}`;
+    scenarioState.tenantName = `${namePrefix} ${scenarioState.tenantAlias}`;
+
+    await humanClick(page, page.getByRole("button", { name: "New tenant", exact: true }));
+    const modal = adminModal(page);
+    await expect(modal).toBeVisible();
+    await humanFill(page, modal.getByLabel("Alias", { exact: true }), scenarioState.tenantAlias);
+    await humanFill(page, modal.getByLabel("Display name", { exact: true }), scenarioState.tenantName);
+    await humanClick(page, modal.getByRole("button", { name: "Save", exact: true }));
+    await expect(modal).toHaveCount(0);
+    await expect(page.locator(".admin-resource-row").filter({ hasText: scenarioState.tenantAlias })).toBeVisible();
   },
 );
 
-When("I close the admin modal", async ({ page }) => {
+When("I open the row {string}", async ({ page }, text: string) => {
+  const row = page.locator(".admin-resource-row").filter({ hasText: text });
+  await expect(row).toBeVisible();
+  await row.dblclick();
+  await expect(adminModal(page)).toBeVisible();
+});
+
+When("I assign the last created tenant", async ({ page }) => {
+  const modal = adminModal(page);
+  await selectUiOption(page, modal, "Assign tenant", scenarioState.tenantAlias);
+  await humanClick(page, modal.getByRole("button", { name: "Add", exact: true }));
+  await expect(membershipRow(page, scenarioState.tenantAlias)).toBeVisible({ timeout: 30_000 });
+});
+
+When("I set membership roles {string}", async ({ page }, rolesCsv: string) => {
+  const row = membershipRow(page, scenarioState.tenantAlias);
+  for (const role of rolesCsv.split(",").map((r) => r.trim()).filter(Boolean)) {
+    const checkbox = roleCheckbox(row, role);
+    if (!(await checkbox.isChecked())) {
+      const roleSave = page.waitForResponse(
+        (resp) => resp.request().method() === "PUT" && resp.url().includes("/roles") && resp.ok(),
+      );
+      await humanClick(page, row.locator("label.ui-checkbox").filter({ hasText: new RegExp(`^${role}$`, "i") }));
+      await roleSave;
+    }
+    await expect(checkbox).toBeChecked({ timeout: 30_000 });
+  }
+});
+
+When("I close the dialog", async ({ page }) => {
   const modal = adminModal(page);
   if (await modal.isVisible()) {
-    await humanClick(page, modal.getByRole("button", { name: cancelButton }));
+    await humanClick(page, modal.getByRole("button", { name: "Cancel", exact: true }));
   }
   await expect(modal).toHaveCount(0);
 });
 
-When("I open the e2e tenant for editing", async ({ page }) => {
+When("I open the last created tenant", async ({ page }) => {
   const membersLoad = page.waitForResponse(
     (resp) => resp.request().method() === "GET" && resp.url().includes("/members") && resp.ok(),
   );
-  const row = page.locator(".admin-resource-row").filter({ hasText: e2eTenantAlias });
+  const row = page.locator(".admin-resource-row").filter({ hasText: scenarioState.tenantAlias });
   await expect(row).toBeVisible();
   await row.dblclick();
   await expect(adminModal(page)).toBeVisible();
-  await expect(page.getByRole("heading", { name: editTenantHeading })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Edit tenant", exact: true })).toBeVisible();
   await membersLoad;
 });
 
 Then(
-  "the tenant members should include {string} with roles {string} and {string}",
-  async ({ page }, username: string, role1: string, role2: string) => {
-    const modal = adminModal(page);
+  "the member {string} should have roles {string}",
+  async ({ page }, username: string, rolesCsv: string) => {
     const row = membershipRow(page, username);
     await expect(row).toBeVisible({ timeout: 30_000 });
-    await expect(roleCheckbox(row, role1)).toBeChecked();
-    await expect(roleCheckbox(row, role2)).toBeChecked();
+    for (const role of rolesCsv.split(",").map((r) => r.trim()).filter(Boolean)) {
+      await expect(roleCheckbox(row, role)).toBeChecked();
+    }
   },
 );

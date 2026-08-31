@@ -5,31 +5,34 @@ Feature: Chat sessions and messaging
   So that I can converse with my document knowledge base
 
   Background:
-    Given the application is running with authentication enabled
-    And I am signed in as a user with write access
+    Given I am signed in as "admin"
 
   @smoke
   Scenario: New chat shows empty state and input
-    When I start a new chat from the toolbar
-    Then the chat empty title should be visible
-    And the chat input placeholder should be "Ask a question…"
+    When I click the button "New chat"
+    Then I should see "Ask anything about your documents"
+    And I should see the placeholder "Ask a question…"
 
+  @regression @slow
   Scenario: Send a message and receive an assistant reply
-    When I start a new chat from the toolbar
-    And I send the chat message "What documents are available?"
-    Then I should see my message "What documents are available?" in the thread
-    And I should receive an assistant reply within 90 seconds
+    Given the document "sample_1.pdf" is in the sidebar
+    And document "sample_1.pdf" shows "Indexed"
+    When I click the button "New chat"
+    And I type "Who won the Pineford pie contest?" into "Ask a question…" and press Enter
+    Then I should see "Who won the Pineford pie contest?"
+    And I should see an assistant reply within 90 seconds
 
+  @regression
   Scenario: Session drawer lists and deletes a conversation
-    Given the chat sessions list is empty
-    When I open the sessions drawer
-    And I start a new chat from the toolbar
-    And I send the chat message "Hello E2E session"
-    And I wait until chat is not streaming
-    And I wait until the session title is updated from default
-    And I open the sessions drawer
-    Then the sessions list should contain the active session title
-    When I wait until the active session can be deleted
-    And I delete the current chat session from the drawer
-    Then no chat error should be visible
-    And the current chat session should not appear in the sessions list
+    Given the sessions list is empty
+    When I click the button "Open sessions"
+    And I click the button "New chat"
+    And I type "Hello E2E session" into "Ask a question…" and press Enter
+    And I wait until generation has stopped
+    And I wait until the session title is not "New chat"
+    And I click the button "Open sessions"
+    Then the sessions list should contain the current session
+    When I wait until the current session can be deleted
+    And I delete the current session
+    Then I should not see a chat error
+    And the current session should not be in the sessions list

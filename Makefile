@@ -160,7 +160,7 @@ eval-live: ## Investigation retrieval IR (live stack, no judge LLM)
 eval-live-generation: ## Investigation DeepEval generation gate (slow; live stack)
 	$(MAKE) -C tests/eval run-generation-suite
 
-e2e: ## Playwright BDD UI (needs make up-ui; not in default CI)
+e2e: ## Playwright BDD UI — smoke then regression (needs make up-auth)
 	$(MAKE) -C tests/e2e run
 
 test-api: ## Playwright BDD HTTP (needs make up; not in default CI)

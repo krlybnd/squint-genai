@@ -1,22 +1,19 @@
-@e2e @ui @admin
+@e2e @ui @admin @regression
 Feature: Admin tenant membership and per-tenant roles
   As a tenant administrator
   I want to assign users to tenants with roles from the user editor
   And see the same membership reflected on the tenant members panel
 
-  Background:
-    Given the application is running with authentication enabled
-
   Scenario: Assign new tenant to alice with read and write roles
-    Given I am signed in as an administrator
-    When I navigate to "/admin"
-    And I select admin section "Tenants"
-    And I create a unique tenant for membership testing
-    When I select admin section "Users"
-    And I open the admin user editor for "alice@tenant-a.local"
-    And I assign the e2e tenant to the current user
-    And I set roles "read" and "write" for the e2e tenant on the user membership
-    And I close the admin modal
-    When I select admin section "Tenants"
-    And I open the e2e tenant for editing
-    Then the tenant members should include "alice@tenant-a.local" with roles "read" and "write"
+    Given I am signed in as "admin"
+    When I go to "/admin"
+    And I click the button "Tenants"
+    And I create a unique tenant with alias prefix "e2e" and name prefix "E2E membership"
+    When I click the button "Users"
+    And I open the row "alice@tenant-a.local"
+    And I assign the last created tenant
+    And I set membership roles "read, write"
+    And I close the dialog
+    When I click the button "Tenants"
+    And I open the last created tenant
+    Then the member "alice@tenant-a.local" should have roles "read, write"

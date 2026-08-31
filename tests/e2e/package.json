@@ -6,6 +6,7 @@
     "bddgen": "bddgen",
     "test": "bddgen && playwright test",
     "test:smoke": "bddgen && playwright test --grep @smoke",
+    "test:regression": "bddgen && playwright test --grep @regression",
     "test:demo": "E2E_HUMAN=1 E2E_VIDEO=1 E2E_MIN_SCENARIO_MS=20000 E2E_SLOW_MO=500 E2E_MOUSE_STEPS=40 E2E_PAUSE_MS=450 E2E_TYPING_DELAY_MS=55 bddgen && playwright test",
     "test:headed": "E2E_HEADED=1 bddgen && playwright test",
     "test:ui": "bddgen && playwright test --ui",
