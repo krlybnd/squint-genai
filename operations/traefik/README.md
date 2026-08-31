@@ -3,7 +3,7 @@
 API gateway — **JWT auth** for `/api` and `/chat` when using `--profile auth`.
 
 - Entrypoint: `:80` (override with `TRAEFIK_HTTP_PORT`)
-- Dashboard (insecure): `:8088`
+- Dashboard (insecure): `:8088` — **lab** (`make up-auth`) only; unpublished in `make up-demo`
 
 ## Auth flow
 
@@ -19,7 +19,10 @@ API gateway — **JWT auth** for `/api` and `/chat` when using `--profile auth`.
 Public routes (no JWT): `/`, `/realms/*`, `/resources/*` (Keycloak OIDC). App admin UI: `/admin` (React SPA).
 
 ```bash
-docker compose --profile auth --profile ui up -d
+# Lab (host ports published, including Traefik dashboard :8088):
+make up-auth
+# Demo (Traefik :80 only — see operations/compose.ingress.yaml):
+make up-demo
 # API via gateway:
 curl -H "Authorization: Bearer $TOKEN" http://localhost/api/v1/documents
 ```

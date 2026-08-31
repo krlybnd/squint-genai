@@ -99,6 +99,8 @@ flowchart TB
 
 **Traefik** routes `/` → frontend, `/api` → api, `/chat` → chat, `/admin-api` → admin, `/admin` → admin-ui, `/realms` → Keycloak. JWT middleware sits on `/api`, `/chat`, and `/admin-api`.
 
+`make up-auth` is the **lab** path: app ports (`:8000` / `:8002` / `:8003`), data stores, LiteLLM, Keycloak `:8080`, and the Traefik dashboard stay published for curl/eval. `make up-demo` applies [`operations/compose.ingress.yaml`](../operations/compose.ingress.yaml) so **only Traefik `:80`** is published; the browser talks to the gateway, and services stay on the Docker network. App-side JWT validation is unchanged.
+
 **Data stores:** api/chat/indexing persist in **Postgres**; api/indexing use **Redis** (Celery) and **MinIO** (PDF bytes). Chat SSE is direct — no broker.
 
 **LiteLLM** is the only outbound LLM/embed/rerank client. Apps never call OpenAI or TEI directly. Alias `rerank` forwards to TEI (`cross-encoder/ms-marco-MiniLM-L-6-v2`). Retrieval fail-opens to hybrid RRF if TEI is down.
@@ -209,7 +211,7 @@ Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api
 | Zone | Components |
 |------|------------|
 | **Client** | app-ui (React + SSE), admin-ui |
-| **Edge** | Traefik, Keycloak (`--profile auth`) — inbound HTTP only |
+| **Edge** | Traefik, Keycloak (`--profile auth`) — inbound HTTP only (`make up-demo`); lab `make up-auth` still publishes host ports |
 | **Application** | ops, api, chat, admin, indexing (Celery) |
 | **Platform** | LiteLLM (`:4000`); TEI rerank (`:8090`, `--profile rerank`); llm-guard + Presidio (`--profile guardrails`) |
 | **Data stores** | Postgres, Redis, MinIO, Qdrant |

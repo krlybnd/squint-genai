@@ -178,7 +178,7 @@ licenses: licenses-check ## SBOM for all projects + merge + Grant policy gate
 
 # ── Docker Compose ─────────────────────────────────────────────────────────────
 
-.PHONY: build up up-ui up-auth up-guardrails up-rerank down index ops-bootstrap
+.PHONY: build up up-ui up-auth up-demo up-guardrails up-rerank down index ops-bootstrap
 build: ## docker compose build
 	docker compose --profile auth --profile ui build
 
@@ -189,9 +189,14 @@ up-ui: ## Backend + UI (no Keycloak)
 	AUTH_MODE=none INTERNAL_SERVICE_KEY=dev-internal-service-key-change-me \
 		VITE_AUTH_ENABLED=false docker compose --profile ui up -d --build
 
-up-auth: ## Full stack + Keycloak + Traefik + UI
+up-auth: ## Full stack + Keycloak + Traefik + UI (lab: host ports still published)
 	AUTH_MODE=jwt VITE_AUTH_ENABLED=true VITE_KEYCLOAK_URL=$${VITE_KEYCLOAK_URL:-http://localhost} \
 		docker compose --profile auth --profile ui up -d --build
+
+up-demo: ## Auth+UI with Traefik :80 as the only published ingress
+	AUTH_MODE=jwt VITE_AUTH_ENABLED=true VITE_KEYCLOAK_URL=$${VITE_KEYCLOAK_URL:-http://localhost} \
+		docker compose --profile auth --profile ui \
+		-f docker-compose.yml -f operations/compose.ingress.yaml up -d --build
 
 up-guardrails: ## Presidio + llm-guard (profile guardrails) for chat/api Guard clients
 	docker compose --profile guardrails up -d

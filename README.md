@@ -171,7 +171,8 @@ cp .env.example .env
 
 make resources   # download demo PDFs into resources/ (not committed)
 make up-ui       # stack + frontend (no Keycloak) on http://localhost:5173
-make up-auth     # full stack + Keycloak + Traefik on http://localhost
+make up-auth     # full stack + Keycloak + Traefik on http://localhost (lab ports)
+make up-demo     # same, Traefik :80 only (data stores unpublished)
 ```
 
 1. Open the UI → upload a PDF from [`resources/`](resources/) (presigned URL → MinIO → Celery indexes it)
@@ -266,7 +267,8 @@ make dev-ui                 # :5173
 | `make hooks` | Install git pre-commit hooks |
 | `make up` | Start backend stack |
 | `make up-ui` | Start stack + frontend |
-| `make up-auth` | Full stack + Keycloak + Traefik + UI |
+| `make up-auth` | Full stack + Keycloak + Traefik + UI (host ports published for lab/eval) |
+| `make up-demo` | Same stack; only Traefik `:80` is published |
 | `make down` | Stop all containers |
 | `make ops-bootstrap` | Run migrate + MinIO bootstrap container |
 | `make index` | Trigger reindex for all documents |
