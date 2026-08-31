@@ -8,7 +8,11 @@ from agentic_shared.domains.pii_vault.providers import PiiVaultProvider
 from agentic_shared.frameworks.fastapi.dishka import make_service_container
 from agentic_shared.frameworks.fastapi.framework import FastAPIAppBuilder
 from agentic_shared.frameworks.fastapi.health import router as health_router
+from agentic_shared.frameworks.fastapi.middlewares.audit_unauthorized import (
+    AuditUnauthorizedMiddleware,
+)
 from agentic_shared.frameworks.fastapi.providers.auth import AuthProvider
+from agentic_shared.frameworks.fastapi.providers.compliance import ComplianceProvider
 from agentic_shared.infrastructure.cache.redis.providers import RedisProvider
 from agentic_shared.infrastructure.sql.postgres.providers import DatabaseProvider
 from agentic_shared.infrastructure.storage.minio.providers import MinioProvider
@@ -22,6 +26,8 @@ from agentic_shared.integrations.litellm.rerank.providers import RerankProvider
 from dishka import AsyncContainer
 from fastapi import FastAPI
 
+from agentic_api.modules.ai.providers import AiProvider
+from agentic_api.modules.ai.router import router as ai_router
 from agentic_api.modules.annotations.providers import AnnotationsProvider
 from agentic_api.modules.annotations.router import router as annotations_router
 from agentic_api.modules.documents.providers import DocumentsProvider
@@ -49,6 +55,7 @@ def create_app() -> FastAPI:
     settings = load_settings()
     container = make_service_container(
         AuthProvider(settings.auth, settings.role),
+        ComplianceProvider(settings.compliance, settings.database),
         KeycloakUserTenancyProvider(settings.keycloak_integration),
         DatabaseProvider(settings.database),
         LLMProvider(settings.llm),
@@ -68,8 +75,9 @@ def create_app() -> FastAPI:
         PiiVaultProvider(settings.crypto, settings.pii_vault),
         VaultApiProvider(),
         MeProvider(),
+        AiProvider(),
     )
-    return (
+    app = (
         FastAPIAppBuilder(
             settings.defaults.package,
             settings=settings.fastapi,
@@ -81,6 +89,7 @@ def create_app() -> FastAPI:
         .with_dishka(container)
         .include_router(health_router)
         .include_router(me_router, prefix="/v1")
+        .include_router(ai_router, prefix="/v1")
         .include_router(documents_router, prefix="/v1")
         .include_router(jobs_router, prefix="/v1")
         .include_router(retrieval_router, prefix="/v1")
@@ -88,6 +97,8 @@ def create_app() -> FastAPI:
         .include_router(annotations_router, prefix="/v1")
         .build()
     )
+    app.add_middleware(AuditUnauthorizedMiddleware)
+    return app
 
 
 app = create_app()

@@ -6,7 +6,11 @@ from contextlib import asynccontextmanager
 from agentic_shared.frameworks.fastapi.dishka import make_service_container
 from agentic_shared.frameworks.fastapi.framework import FastAPIAppBuilder
 from agentic_shared.frameworks.fastapi.health import router as health_router
+from agentic_shared.frameworks.fastapi.middlewares.audit_unauthorized import (
+    AuditUnauthorizedMiddleware,
+)
 from agentic_shared.frameworks.fastapi.providers.auth import AuthProvider
+from agentic_shared.frameworks.fastapi.providers.compliance import ComplianceProvider
 from agentic_shared.integrations.idp.keycloak.providers import KeycloakAdminProvider
 from dishka import AsyncContainer
 from fastapi import FastAPI
@@ -29,11 +33,12 @@ def create_app() -> FastAPI:
     settings = load_settings()
     container = make_service_container(
         AuthProvider(settings.auth, settings.role),
+        ComplianceProvider(settings.compliance, settings.database),
         KeycloakAdminProvider(settings.keycloak_integration),
         TenantsProvider(),
         UsersProvider(),
     )
-    return (
+    app = (
         FastAPIAppBuilder(
             settings.defaults.package,
             settings=settings.fastapi,
@@ -47,6 +52,8 @@ def create_app() -> FastAPI:
         .include_router(users_router, prefix="/v1")
         .build()
     )
+    app.add_middleware(AuditUnauthorizedMiddleware)
+    return app
 
 
 app = create_app()

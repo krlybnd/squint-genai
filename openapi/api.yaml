@@ -73,6 +73,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/ai/system-card:
+    get:
+      tags:
+      - ai
+      summary: Get System Card
+      operationId: get_system_card_v1_ai_system_card_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiSystemCardOut'
   /v1/documents:
     get:
       tags:
@@ -485,6 +498,44 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    AiSystemCardOut:
+      properties:
+        system_name:
+          type: string
+          title: System Name
+        purpose:
+          type: string
+          title: Purpose
+        risk_tier:
+          type: string
+          title: Risk Tier
+        model_id:
+          type: string
+          title: Model Id
+        provider:
+          type: string
+          title: Provider
+        human_oversight:
+          type: boolean
+          title: Human Oversight
+        logging_enabled:
+          type: boolean
+          title: Logging Enabled
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+          title: Metadata
+      type: object
+      required:
+      - system_name
+      - purpose
+      - risk_tier
+      - model_id
+      - provider
+      - human_oversight
+      - logging_enabled
+      title: AiSystemCardOut
     ChunkComment:
       properties:
         point_type:

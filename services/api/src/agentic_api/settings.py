@@ -1,5 +1,6 @@
 """API service settings."""
 
+from agentic_shared.core.compliance.settings import ComplianceSettings
 from agentic_shared.core.settings.app import AppSettings, load_app_settings
 from agentic_shared.crosscut.auth.settings import AuthSettings, RoleSettings
 from agentic_shared.crosscut.crypto.settings import CryptoSettings
@@ -81,6 +82,10 @@ class ApiSettings(AppSettings):
     pii_vault: PiiVaultSettings = Field(
         default_factory=PiiVaultSettings,
         description="Vault query tokenization for retrieval API.",
+    )
+    compliance: ComplianceSettings = Field(
+        default_factory=ComplianceSettings,
+        description="Audit log and AI system-card toggles.",
     )
     keycloak_integration: KeycloakAdminSettings = Field(
         default_factory=KeycloakAdminSettings,
