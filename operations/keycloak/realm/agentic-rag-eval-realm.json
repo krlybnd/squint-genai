@@ -303,6 +303,9 @@
       "attributes": {
         "tenant_id": [
           "tenant-a"
+        ],
+        "tenant_roles": [
+          "{\"tenant-a\":[\"read\",\"write\"]}"
         ]
       },
       "realmRoles": [

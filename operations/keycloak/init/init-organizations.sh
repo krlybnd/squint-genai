@@ -326,6 +326,11 @@ repair_demo_user_tenant_persona \
   '{"tenant-a":["admin","write","read"],"tenant-b":["admin","write","read"]}' \
   '["admin","read","write"]'
 repair_demo_user_tenant_persona \
+  "alice@tenant-a.local" \
+  "tenant-a" \
+  '{"tenant-a":["read","write"]}' \
+  '["read","write"]'
+repair_demo_user_tenant_persona \
   "bob@tenant-b.local" \
   "tenant-b" \
   '{"tenant-b":["read"]}' \

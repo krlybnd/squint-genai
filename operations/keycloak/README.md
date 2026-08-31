@@ -70,7 +70,7 @@ The **admin** service (`services/admin`, port 8003, Traefik `/admin-api`) manage
 
 The **api** service uses a **separate secret** (`agentic-rag-eval-api`) for tenancy read (`GET /v1/me`) and a narrow write (`PUT /v1/me/active-tenant` → user attributes). That service account has `view-users`, `view-realm`, and `manage-users`. It does **not** have `manage-realm`. Chat and indexing do not receive either client secret.
 
-Keycloak 26 Organizations `GET /organizations` requires `manage-realm` (there is no `view-organizations` role). The api therefore must **not** list orgs; membership comes from the user record (`tenant_ids`). Admin keeps `manage-realm` so it can list/create orgs.
+Keycloak 26 Organizations `GET /organizations` requires `manage-realm` (there is no `view-organizations` role). The api therefore must **not** list the org catalog. Membership for `GET /v1/me` uses `GET /organizations/members/{id}/organizations` (allowed with `view-users`) plus user attributes. Admin keeps `manage-realm` so it can list/create orgs.
 
 The realm export grants:
 

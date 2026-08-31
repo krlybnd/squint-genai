@@ -140,3 +140,26 @@ class TestTenantGateway(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(members[0].username, "bob@tenant-b.local")
         self.assertEqual(members[0].roles, ["read", "write"])
         self.gateway._fetch_user_tenant_roles.assert_awaited_once_with("u1")
+
+    async def test_list_tenant_aliases_for_user_uses_member_orgs_not_catalog(self) -> None:
+        import agentic_shared.integrations.idp.keycloak as kc
+
+        self.gateway.list_tenants = AsyncMock(  # type: ignore[method-assign]
+            side_effect=AssertionError("must not GET /organizations"),
+        )
+
+        with patch.object(
+            kc.get_admin_realms_realm_organizations_members_member_id_organizations,
+            "asyncio_detailed",
+            new=AsyncMock(
+                return_value=http_response(
+                    parsed=[
+                        org(alias="tenant-b", name="Tenant B"),
+                        org(org_id="org-2", alias="tenant-a", name="Tenant A"),
+                    ]
+                )
+            ),
+        ):
+            aliases = await self.gateway.list_tenant_aliases_for_user("u1")
+
+        self.assertEqual(aliases, ["tenant-a", "tenant-b"])
