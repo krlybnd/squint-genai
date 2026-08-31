@@ -94,6 +94,32 @@ class TestPiiTokenizer(unittest.TestCase):
         self.assertNotIn("Jane", result.text)
         self.assertTrue(result.text.startswith("<PERSON_"))
 
+    def test_iter_candidates_does_not_collapse_overlaps(self) -> None:
+        text = "Esther Szabo"
+        entities = [
+            AnalyzerEntity(entity_type="PERSON", start=7, end=12, score=0.9),
+            AnalyzerEntity(entity_type="PERSON", start=0, end=12, score=0.91),
+        ]
+        candidates = self.tokenizer.iter_candidates(text, entities, tenant_id="tenant-a")
+        self.assertEqual(len(candidates), 2)
+
+    def test_apply_vault_hits_keeps_longest_span(self) -> None:
+        text = "Ask Esther Szabo today"
+        full = make_deterministic_token("PERSON", "Esther Szabo", tenant_id="t", token_salt="salt")
+        last = make_deterministic_token("PERSON", "Szabo", tenant_id="t", token_salt="salt")
+        from agentic_shared.domains.pii_vault.models import TokenCandidate
+
+        replaced = self.tokenizer.apply_vault_hits(
+            text,
+            [
+                TokenCandidate(start=11, end=16, token=last, entity_type="PERSON"),
+                TokenCandidate(start=4, end=16, token=full, entity_type="PERSON"),
+            ],
+        )
+        self.assertIn(full, replaced)
+        self.assertNotIn("Esther", replaced)
+        self.assertNotIn(last, replaced)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -108,6 +108,28 @@ class TestRetrieveNode(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(update["search_meta"]["search_query"], "find info")
         self.assertEqual(update["search_meta"]["results_count"], 1)
 
+    async def test_prefers_original_query_over_tokenized_search_query(self) -> None:
+        node, retrieval = self._node()
+        retrieval.search_documents_with_meta.return_value = SearchDocumentsResult(
+            chunks=[],
+            meta=SearchMeta(),
+        )
+
+        await node(
+            {
+                "needs_retrieval": True,
+                "query": "kicsoda Dr. Varga Levente?",
+                "search_query": "kicsoda Dr. <PERSON_A870C779> Levente?",
+                "locale": "en",
+            },
+        )
+
+        retrieval.search_documents_with_meta.assert_awaited_once_with(
+            "kicsoda Dr. Varga Levente?",
+            top_k=5,
+            tenant_id="default",
+        )
+
     async def test_falls_back_to_query_when_search_query_missing(self) -> None:
         # Arrange
         node, retrieval = self._node()

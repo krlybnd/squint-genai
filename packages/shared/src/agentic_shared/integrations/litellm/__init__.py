@@ -11,6 +11,8 @@ from agentic_shared.integrations.litellm.guard.client import GuardClient
 from agentic_shared.integrations.litellm.guard.settings import GuardSettings
 from agentic_shared.integrations.litellm.llm.client import LiteLLMChatClient
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
+from agentic_shared.integrations.litellm.rerank.client import LiteLLMRerankClient
+from agentic_shared.integrations.litellm.rerank.settings import LiteLLMRerankSettings
 
 __all__ = [
     "AnalyzerClient",
@@ -23,5 +25,7 @@ __all__ = [
     "LiteLLMChatSettings",
     "LiteLLMEmbeddingClient",
     "LiteLLMEmbeddingSettings",
+    "LiteLLMRerankClient",
+    "LiteLLMRerankSettings",
     "LiteLLMSettings",
 ]

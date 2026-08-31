@@ -99,7 +99,7 @@ folders: {
 		path:    "packages/generated"
 		stack:   "python"
 		phase:   1
-		purpose: "Generated clients (Keycloak Admin OpenAPI). Regenerate via make generate-keycloak-client — do not hand-edit."
+		purpose: "Generated clients (Keycloak Admin, api.yaml, chat.yaml). Regenerate via make generate-keycloak-client / make generate-openapi-clients — do not hand-edit."
 		mustNot: ["manual feature code"]
 	}
 
@@ -198,16 +198,18 @@ folders: {
 		phase:   1
 		adr:     ["002", "007"]
 		purpose: """
-			DeepEval generation (`evaluate()` script, TTY progress bar) plus Pydantic Evals
-			retrieval IR. Generic core (goldendata, judge_model, HostStack) plus
-			modules/retrieval and modules/generation. Live stack wiring is tests/suit
-			(SutSettings, EVAL_SUT_*). Own .env / .env.example (not repo-root).
-			make eval-live / eval-live-generation against running stack. Not in CI.
-			Committed snapshots: reports/eval/.
+			Offline unittest plus two live entries. Suite scripts call
+			pydantic-evals / DeepEval next to their own settings.py.
+			src/core is a light shared settings abstraction (OpenAI-compatible
+			key) plus HTTP wrappers that compose generated OpenAPI clients.
+			Custom DeepEval BaseMetric extensions live under core/deepeval/.
+			Custom pydantic-evals Evaluator extensions live under core/pydantic_evals/.
+			core/golden owns typed goldens (LabeledGolden, AbstentionGolden, GoldenDataset).
+			Own .env. Not in CI.
 			"""
-		contains: ["src/agentic_eval/core/", "src/agentic_eval/modules/", "tests/unittest/", "tests/suit/", "dataset.json", ".env.example"]
-		mustNot: ["hand-rolled .env parsers", "eval config on LLMSettings", "os.environ host rewrites", "src importing tests/", "DeepEval SDK calls from modules without the judge adapter"]
-		related: ["resources/", "services/chat", "reports"]
+		contains: ["src/agentic_eval/core/", "src/agentic_eval/core/clients/", "src/agentic_eval/core/deepeval/", "src/agentic_eval/core/pydantic_evals/", "src/agentic_eval/core/golden/", "tests/unittest/", "tests/retrieval/", "tests/generation/", "dataset-investigation.json", ".env.example"]
+		mustNot: ["hand-rolled .env parsers", "eval config on LLMSettings", "os.environ host rewrites", "src importing tests/", "eval modules package under src/", "suite-specific eval gates in src/agentic_eval/", "custom markdown report writers wrapping DeepEval / pydantic-evals", "ad-hoc httpx URL clients for api/chat", "in-process Qdrant or LangGraph as the live eval SUT"]
+		related: ["resources/", "services/chat", "reports", "packages/generated"]
 	}
 
 	"openapi": #Folder & {
@@ -217,11 +219,11 @@ folders: {
 		adr:     ["004"]
 		purpose: """
 			Committed OpenAPI YAML (api.yaml, chat.yaml, admin.yaml). Source for UI
-			client generation and tests/api contract. YAML only — regenerate with
-			make generate-openapi.
+			client generation, tests/api, and Python generate-openapi-clients.
+			YAML only — regenerate with make generate-openapi.
 			"""
 		mustNot: ["duplicate JSON specs (api.json / chat.json / admin.json)"]
-		related: ["make generate-openapi", "tests/api"]
+		related: ["make generate-openapi", "make generate-openapi-clients", "tests/api", "tests/eval"]
 	}
 
 	"locales": #Folder & {
@@ -244,7 +246,7 @@ folders: {
 		stack:   "infra"
 		phase:   1
 		purpose: "Infra-side configs: Keycloak realm, LiteLLM, local classifiers, Postgres/Redis/MinIO/Qdrant/Traefik snippets for docker-compose."
-		contains: ["postgres/", "redis/", "minio/", "qdrant/", "litellm/", "llm-guard/", "presidio-analyzer/", "presidio-anonymizer/", "keycloak/", "traefik/"]
+		contains: ["postgres/", "redis/", "minio/", "qdrant/", "litellm/", "llm-guard/", "presidio-analyzer/", "presidio-anonymizer/", "rerank/", "keycloak/", "traefik/"]
 		related: ["docker-compose.yml", "tools/ops/bootstrap"]
 	}
 
@@ -275,13 +277,22 @@ folders: {
 		related: ["operations/presidio-analyzer", "operations/litellm"]
 	}
 
+	"operations/rerank": #Folder & {
+		path:    "operations/rerank"
+		stack:   "infra"
+		phase:   1
+		purpose: "HuggingFace TEI CPU reranker (ms-marco-MiniLM). Compose profile `rerank`; LiteLLM alias `rerank`."
+		contains: ["compose.yaml", "README.md"]
+		related: ["operations/litellm"]
+	}
+
 	"operations/litellm": #Folder & {
 		path:    "operations/litellm"
 		stack:   "infra"
 		phase:   1
 		purpose: "LiteLLM proxy config + compose; role aliases and optional built-in Presidio guardrail."
 		contains: ["compose.yaml", "litellm.config.yaml", "README.md"]
-		related: ["operations/llm-guard", "operations/presidio-analyzer", "operations/presidio-anonymizer"]
+		related: ["operations/llm-guard", "operations/presidio-analyzer", "operations/presidio-anonymizer", "operations/rerank"]
 	}
 
 	"pocs": #Folder & {

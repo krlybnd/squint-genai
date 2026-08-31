@@ -37,7 +37,7 @@ class AnalyzerClient(IntegrationClient[AnalyzerSettings]):
         try:
             response = await self._http.post(
                 "/analyze",
-                json={"text": text, "language": language},
+                json=self._settings.analyze_payload(text, language=language),
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:

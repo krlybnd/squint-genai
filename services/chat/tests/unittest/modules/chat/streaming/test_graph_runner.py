@@ -196,9 +196,58 @@ class TestChatGraphRunner(unittest.IsolatedAsyncioTestCase):
             for event in events
             if parse_sse_chunk(event)["event"] == SseEventType.DONE.value
         )
-        self.assertEqual("".join(token_pieces), "Contact Jane VaultTest today.")
-        self.assertEqual(done["answer"], "Contact Jane VaultTest today.")
+        marked = "Contact [[vault:<PERSON_AABBCCDD>]]Jane VaultTest[[/vault]] today."
+        self.assertEqual("".join(token_pieces), marked)
+        self.assertEqual(done["answer"], marked)
         messages_write.add.assert_awaited_once()
+
+    async def test_done_marks_plaintext_copied_from_query_when_chunk_has_token(self) -> None:
+        class _FakeVault:
+            async def resolve_tokens(self, tokens):
+                from agentic_shared.core.settings.secrets import SecuredStr
+
+                return {"<PERSON_AABBCCDD>": SecuredStr("Jane VaultTest")}
+
+        vault_reveal = VaultRevealService(_FakeVault())
+        pii_vault = PiiVaultSettings(_env_file=None, enabled=True, sse_detokenize_enabled=True)
+        runner, graph, _messages_write = self._runner(
+            vault_reveal=vault_reveal, pii_vault=pii_vault
+        )
+        session_id = uuid.uuid4()
+        plaintext_answer = "Contact Jane VaultTest today."
+
+        async def astream(_input, config=None, stream_mode=None):
+            yield (
+                "updates",
+                {
+                    AgentGraphNode.RETRIEVE.value: {
+                        "search_meta": {
+                            "final_chunks": [
+                                {"excerpt": "CEO <PERSON_AABBCCDD> signed the appeal."}
+                            ]
+                        },
+                    }
+                },
+            )
+            yield ("custom", plaintext_answer)
+            yield (
+                "updates",
+                {AgentGraphNode.GENERATE.value: {"answer": plaintext_answer, "citations": []}},
+            )
+
+        graph.astream = astream
+        graph.aget_state = AsyncMock(return_value=MagicMock(config={"configurable": {}}))
+
+        events = await _collect(runner.stream_execute(session_id, {}, input_state={"query": "hi"}))
+        done = next(
+            json.loads(parse_sse_chunk(event)["data"])
+            for event in events
+            if parse_sse_chunk(event)["event"] == SseEventType.DONE.value
+        )
+        self.assertEqual(
+            done["answer"],
+            "Contact [[vault:<PERSON_AABBCCDD>]]Jane VaultTest[[/vault]] today.",
+        )
 
     async def test_block_node_also_finishes_early(self) -> None:
         # Arrange

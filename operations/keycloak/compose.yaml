@@ -27,7 +27,9 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./realm:/opt/keycloak/data/import:ro
+      # Only the realm export — Keycloak 26 --import-realm treats every *.json
+      # in this directory as a realm. user-profile.json is REST payload for init.
+      - ./realm/agentic-rag-eval-realm.json:/opt/keycloak/data/import/agentic-rag-eval-realm.json:ro
 
   keycloak-init:
     profiles: [auth]

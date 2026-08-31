@@ -3,7 +3,10 @@ from unittest.mock import MagicMock
 
 import httpx
 
-from agentic_shared.integrations.litellm.analyzer.settings import AnalyzerSettings
+from agentic_shared.integrations.litellm.analyzer.settings import (
+    DEFAULT_ANALYZER_ENTITIES,
+    AnalyzerSettings,
+)
 from agentic_shared.integrations.litellm.analyzer.sync_client import AnalyzerSyncClient
 
 
@@ -29,7 +32,13 @@ class TestAnalyzerSyncClient(unittest.TestCase):
         self.assertEqual(len(entities), 1)
         self.assertEqual(entities[0].entity_type, "EMAIL_ADDRESS")
         http.post.assert_called_once_with(
-            "/analyze", json={"text": "Contact a@b.com", "language": "en"}
+            "/analyze",
+            json={
+                "text": "Contact a@b.com",
+                "language": "en",
+                "entities": list(DEFAULT_ANALYZER_ENTITIES),
+                "score_threshold": 0.3,
+            },
         )
         client.close()
 

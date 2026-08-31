@@ -3,10 +3,11 @@ name = "agentic-eval"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "agentic-chat",
+    "agentic-api-client",
+    "agentic-chat-client",
     "agentic-shared",
     "deepeval>=4.1.5",
-    "langgraph>=0.2",
+    "httpx>=0.28",
     "pydantic-evals>=2.35.1",
     "pydantic-settings>=2.6",
     "pytest>=8.0",
@@ -15,7 +16,8 @@ dependencies = [
 
 [tool.uv.sources]
 agentic-shared = { path = "../../packages/shared", editable = true }
-agentic-chat = { path = "../../services/chat", editable = true }
+agentic-api-client = { path = "../../packages/generated/agentic-api-client", editable = true }
+agentic-chat-client = { path = "../../packages/generated/agentic-chat-client", editable = true }
 
 [dependency-groups]
 dev = [
@@ -28,10 +30,18 @@ extend = "../../ruff.toml"
 src = ["src", "tests"]
 exclude = [".venv"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["agentic_eval", "generation", "retrieval"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/generation/main.py" = ["E402"]
+"tests/retrieval/main.py" = ["E402"]
+"src/agentic_eval/core/clients/chat.py" = ["E501"]
+"src/agentic_eval/core/clients/api.py" = ["E501"]
+
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["tests"]
-markers = ["eval: live RAG evaluation", "integration: needs running stack"]
+testpaths = ["tests/unittest"]
+pythonpath = ["src", "tests"]
 addopts = "--import-mode=importlib"
 
 [build-system]

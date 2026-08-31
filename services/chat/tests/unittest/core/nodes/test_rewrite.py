@@ -117,6 +117,31 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(update["needs_retrieval"])
         self.assertEqual(update["search_query"], "user question")
 
+    async def test_search_keeps_original_query_when_safe_query_is_tokenized(self) -> None:
+        node, retrieval, chat_client = self._node()
+        retrieval.list_indexed_documents.return_value = []
+        chat_client.chat_completion.return_value = {
+            "choices": [
+                {
+                    "message": {
+                        "content": (
+                            '{"needs_document_search": true, "search_query": "", "reason": ""}'
+                        ),
+                    },
+                },
+            ],
+        }
+
+        update = await node(
+            {
+                "query": "kicsoda Dr. Varga Levente?",
+                "safe_query": "kicsoda Dr. <PERSON_A870C779> Levente?",
+                "locale": "en",
+            }
+        )
+
+        self.assertEqual(update["search_query"], "kicsoda Dr. Varga Levente?")
+
     async def test_llm_error_uses_fallback(self) -> None:
         # Arrange
         node, retrieval, chat_client = self._node()

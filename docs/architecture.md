@@ -49,6 +49,7 @@ flowchart TB
     subgraph platform [Platform — operations/]
         litellm["LiteLLM :4000"]
         guard["llm-guard · Presidio"]
+        rerank["TEI rerank :8090"]
     end
 
     subgraph data [Data stores]
@@ -67,6 +68,7 @@ flowchart TB
     chat --> litellm
     chat --> qdrant
     litellm --> ext
+    litellm -.->|profile rerank| rerank
 
     api -.->|index jobs| indexing
 ```
@@ -78,6 +80,8 @@ Solid arrows show the main request path (Client → Edge → **chat** → Platfo
 **Traefik** also routes to **api** and **admin**; **api** and **indexing** enqueue work via Redis and call **LiteLLM** / **guard** / **MinIO** / **Postgres** as needed.
 
 **Guardrails profile:** `llm-guard` and Presidio sidecars are optional (`make up-guardrails`). Chat uses all three; API and indexing call Presidio when vault/query tokenization is enabled; `llm-guard` serves prompt-injection checks on the chat path.
+
+**Rerank profile:** HuggingFace TEI (`make up-rerank`) serves the LiteLLM `rerank` alias. Retrieval fail-opens to hybrid RRF if TEI is down.
 
 **LiteLLM** is an internal AI gateway (chat + embeddings proxy to the external provider) — not user-facing edge; Traefik/Keycloak terminate inbound HTTP.
 
@@ -155,7 +159,8 @@ sequenceDiagram
 | **admin-ui** | 5174 | React admin UI (`--profile ui`) |
 | **Traefik** | 80 | API gateway (`--profile auth`) |
 | **Keycloak** | 8080 | Identity provider (`--profile auth`) |
-| **LiteLLM** | 4000 | Internal chat + embedding proxy to external LLM |
+| **LiteLLM** | 4000 | Internal chat + embedding + rerank proxy |
+| **tei-rerank** | 8090 | Cross-encoder rerank (`--profile rerank`) |
 | **llm-guard** | 8010 | Prompt-injection classifier (`--profile guardrails`) |
 | **presidio-analyzer** | — | PII detect sidecar (`--profile guardrails`) |
 | **presidio-anonymizer** | — | PII redact sidecar (`--profile guardrails`) |
@@ -171,7 +176,7 @@ Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api
 | **Client** | app-ui (React + SSE), admin-ui |
 | **Edge** | Traefik, Keycloak (`--profile auth`) — inbound HTTP only |
 | **Application** | ops, api, chat, admin, indexing (Celery) |
-| **Platform** | LiteLLM; llm-guard + Presidio (`--profile guardrails`) |
+| **Platform** | LiteLLM; TEI rerank (`--profile rerank`); llm-guard + Presidio (`--profile guardrails`) |
 | **Data stores** | Postgres, Redis, MinIO, Qdrant |
 | **External** | LLM provider (OpenAI / Ollama / …) |
 
@@ -221,7 +226,7 @@ Retrieval read path ([QdrantSettings](../packages/shared/src/agentic_shared/infr
 | `top_k` | `5` | Final results after RRF fusion |
 | Collection | `agentic_rag_eval_hybrid` | Dense + sparse (BM25) vectors |
 
-Live eval goldens ([dataset.json](../tests/eval/dataset.json)) are questions against the PDFs in `resources/` (`make resources`). Retrieval IR is Pydantic Evals (`make eval-live`). Generation is DeepEval `evaluate()` (`make eval-live-generation` → `python tests/suit/run_generation_eval.py`), judged by the LiteLLM `judge` alias (not `generate`). Live stack wiring is `tests/eval/tests/suit` (`SutSettings`, `EVAL_SUT_*` localhost defaults). Config is `tests/eval/.env`. Snapshots: [`reports/eval/`](../reports/eval/). Not in default CI.
+Live eval goldens ([dataset-investigation.json](../tests/eval/dataset-investigation.json)) are questions against the synthetic dossiers in [`resources/eval/`](../resources/eval/). Retrieval IR is Pydantic Evals against `POST /v1/retrieval/search` (`make eval-live` → `python tests/retrieval/main.py`, stdout print). Generation is DeepEval `evaluate()` against the running chat SSE API (`make eval-live-generation` → `python tests/generation/main.py`), judged by the LiteLLM `judge` alias (not `generate`). Shared knobs are `CoreSettings` (OpenAI-compatible key + api/chat URLs); suite gates sit in `tests/*/settings.py`. Config is `tests/eval/.env`. Native DeepEval markdown: [`reports/eval/`](../reports/eval/). Not in default CI.
 
 ---
 
@@ -250,7 +255,7 @@ frontend/app-ui/        React chat + documents UI
 frontend/admin-app-ui/  React admin UI
 
 tests/api/              Playwright BDD HTTP against live services (OpenAPI clients)
-tests/eval/             retrieval IR (Pydantic Evals) + generation (DeepEval test run)
+tests/eval/             retrieval IR + generation DeepEval + guardrails (investigation corpus)
 tests/e2e/              Playwright BDD UI (needs running stack)
 
 openapi/                committed OpenAPI YAML (api, chat, admin)

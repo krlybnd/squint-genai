@@ -44,8 +44,12 @@ sync-frozen: ## Frozen sync (CI) — requires committed lockfiles
 KEYCLOAK_OPENAPI     := $(ROOT)/operations/keycloak/openapi/admin-rest.openapi.yaml
 KEYCLOAK_CLIENT_DIR  := $(ROOT)/packages/generated/keycloak-admin-client
 KEYCLOAK_CLIENT_CONFIG := $(ROOT)/operations/keycloak/openapi/openapi-python-client.yaml
+API_CLIENT_DIR       := $(ROOT)/packages/generated/agentic-api-client
+CHAT_CLIENT_DIR      := $(ROOT)/packages/generated/agentic-chat-client
+API_CLIENT_CONFIG    := $(ROOT)/openapi/python-client-api.yaml
+CHAT_CLIENT_CONFIG   := $(ROOT)/openapi/python-client-chat.yaml
 
-.PHONY: generate-openapi generate-keycloak-client openapi
+.PHONY: generate-openapi generate-keycloak-client generate-openapi-clients openapi
 generate-openapi: ## Export OpenAPI specs → openapi/
 	@mkdir -p $(ROOT)/openapi
 	@cd $(ROOT)/services/api && $(UV) run python -c 'import yaml; from pathlib import Path; from agentic_api.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("api.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); print("Wrote openapi/api.yaml")'
@@ -61,6 +65,24 @@ generate-keycloak-client: ## Keycloak Admin OpenAPI → packages/generated/
 		--config "$(KEYCLOAK_CLIENT_CONFIG)" \
 		--meta uv \
 		--output-path "$(KEYCLOAK_CLIENT_DIR)" \
+		--overwrite \
+		--no-fail-on-warning
+
+generate-openapi-clients: ## api.yaml + chat.yaml → packages/generated/ (eval / HTTP callers)
+	@mkdir -p "$(ROOT)/packages/generated"
+	@rm -rf "$(API_CLIENT_DIR)" "$(CHAT_CLIENT_DIR)"
+	$(UVX) openapi-python-client generate \
+		--path "$(ROOT)/openapi/api.yaml" \
+		--config "$(API_CLIENT_CONFIG)" \
+		--meta uv \
+		--output-path "$(API_CLIENT_DIR)" \
+		--overwrite \
+		--no-fail-on-warning
+	$(UVX) openapi-python-client generate \
+		--path "$(ROOT)/openapi/chat.yaml" \
+		--config "$(CHAT_CLIENT_CONFIG)" \
+		--meta uv \
+		--output-path "$(CHAT_CLIENT_DIR)" \
 		--overwrite \
 		--no-fail-on-warning
 
@@ -122,30 +144,21 @@ lint: ## Lint libs, services, and UI
 	@set -e; for p in $(PYTHON_PROJECTS); do $(MAKE) -C $$p lint; done
 	@set -e; for p in $(NODE_PROJECTS); do $(MAKE) -C $$p lint; done
 
-format: ## Auto-format Python (libs, services, suites)
-	@set -e; for p in $(PYTHON_PROJECTS) $(PYTHON_SUITES); do $(MAKE) -C $$p format; done
+format: ## Auto-format Python (libs, services)
+	@set -e; for p in $(PYTHON_PROJECTS); do $(MAKE) -C $$p format; done
 
 hooks: ## Install pre-commit
 	$(UVX) pre-commit install
 
-.PHONY: eval eval-live eval-live-generation eval-live-investigation eval-live-investigation-generation eval-live-guardrails e2e test-api
+.PHONY: eval eval-live eval-live-generation e2e test-api
 eval: ## Offline eval checks (dataset + metrics)
 	$(MAKE) -C tests/eval run
 
-eval-live: ## Retrieval IR gate (live stack, no judge LLM)
-	$(MAKE) -C tests/eval run-live
+eval-live: ## Investigation retrieval IR (live stack, no judge LLM)
+	$(MAKE) -C tests/eval run-retrieval-suite
 
-eval-live-generation: ## DeepEval generation gate (slow; live stack)
-	$(MAKE) -C tests/eval run-live-generation
-
-eval-live-investigation: ## Investigation retrieval IR (indexed resources/eval/)
-	$(MAKE) -C tests/eval run-live-investigation
-
-eval-live-investigation-generation: ## Investigation DeepEval gate (LLM judge)
-	$(MAKE) -C tests/eval run-live-investigation-generation
-
-eval-live-guardrails: ## Live llm-guard metrics (make up-guardrails)
-	$(MAKE) -C tests/eval run-live-guardrails
+eval-live-generation: ## Investigation DeepEval generation gate (slow; live stack)
+	$(MAKE) -C tests/eval run-generation-suite
 
 e2e: ## Playwright BDD UI (needs make up-ui; not in default CI)
 	$(MAKE) -C tests/e2e run
@@ -165,7 +178,7 @@ licenses: licenses-check ## SBOM for all projects + merge + Grant policy gate
 
 # ── Docker Compose ─────────────────────────────────────────────────────────────
 
-.PHONY: build up up-ui up-auth up-guardrails down index ops-bootstrap
+.PHONY: build up up-ui up-auth up-guardrails up-rerank down index ops-bootstrap
 build: ## docker compose build
 	docker compose --profile auth --profile ui build
 
@@ -183,6 +196,11 @@ up-auth: ## Full stack + Keycloak + Traefik + UI
 up-guardrails: ## Presidio + llm-guard (profile guardrails) for chat/api Guard clients
 	docker compose --profile guardrails up -d
 	docker compose up -d litellm
+
+up-rerank: ## Local TEI reranker (profile rerank) + recreate LiteLLM alias
+	-docker rm -f tei-rerank
+	docker compose --profile rerank up -d tei-rerank
+	docker compose up -d --force-recreate litellm
 
 down: ## Stop containers
 	docker compose down

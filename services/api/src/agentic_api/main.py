@@ -17,6 +17,7 @@ from agentic_shared.integrations.litellm.analyzer.providers import AnalyzerProvi
 from agentic_shared.integrations.litellm.embedding.providers import EmbeddingProvider
 from agentic_shared.integrations.litellm.guard.providers import GuardProvider
 from agentic_shared.integrations.litellm.llm.providers import LLMProvider
+from agentic_shared.integrations.litellm.rerank.providers import RerankProvider
 from dishka import AsyncContainer
 from fastapi import FastAPI
 
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
         AnalyzerProvider(settings.analyzer),
         EmbeddingProvider(settings.llm, settings.embedding),
         GuardProvider(settings.guard),
+        RerankProvider(settings.llm, settings.rerank),
         MinioProvider(settings.minio),
         RedisProvider(settings.redis),
         QdrantProvider(settings.qdrant),

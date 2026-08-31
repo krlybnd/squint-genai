@@ -39,7 +39,7 @@ class RetrieveNode(GraphNode):
                 ),
             )
 
-        search_query = (state.get("search_query") or state.get("query") or "").strip()
+        search_query = (state.get("query") or state.get("search_query") or "").strip()
         if not search_query:
             logger.debug("retrieve skipped empty query")
             return retrieve_result_update(

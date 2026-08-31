@@ -1,8 +1,10 @@
 # Eval harness (`tests/eval`)
 
-Offline and **live** quality gates for retrieval, generation, guardrails, and the synthetic investigation corpus.
+Two live suites in one package, plus offline unittest. Live corpus is the synthetic investigation dossiers in [`resources/eval/`](../../resources/eval/).
 
-Live runs write markdown snapshots to [`reports/eval/`](../../reports/eval/) — not CI ([ADR 007](../../docs/adr/007-no-live-tests-in-ci.md)).
+`src/agentic_eval/core` is a **light shared settings abstraction** (OpenAI-compatible LiteLLM key + tenant) plus HTTP wrappers over generated OpenAPI clients. Custom DeepEval `BaseMetric` extensions live in `core/deepeval/`. Custom pydantic-evals `Evaluator` extensions live in `core/pydantic_evals/`. The `evaluate()` wrappers (display) live next to them. Each live suite has its own `settings.py` next to the runner. Typed goldens live in `core/golden/` (`GoldenDataset.load`). Live `evaluate()` / pydantic-evals live in `tests/generation` and `tests/retrieval`.
+
+Live runs are **not** CI ([ADR 007](../../docs/adr/007-no-live-tests-in-ci.md)). Reports are **native SDK output** — DeepEval markdown under [`reports/eval/`](../../reports/eval/), pydantic-evals `report.print()` on stdout. There is no custom markdown writer and no `EVAL_PROFILE`.
 
 ## Quick start
 
@@ -10,49 +12,49 @@ Live runs write markdown snapshots to [`reports/eval/`](../../reports/eval/) —
 # Offline — no stack, no judge LLM (~seconds)
 make -C tests/eval run
 
-# Live — needs `make up`, indexed docs, tests/eval/.env
+# Live — needs `make up`, indexed dossiers, tests/eval/.env
 cp tests/eval/.env.example tests/eval/.env   # add LiteLLM key
 
-make eval-live-investigation              # retrieval IR
-make eval-live-investigation-generation   # DeepEval judge (slow)
-make up-guardrails && make eval-live-guardrails
+make -C tests/eval run-retrieval-suite    # retrieval IR (pydantic-evals print)
+make -C tests/eval run-generation-suite   # DeepEval judge (slow; writes reports/eval/*.md)
+make up-rerank                            # LiteLLM `rerank` → local TEI (precision)
 ```
 
-Corpus source: [`resources/eval/`](../../resources/eval/) (three fictional investigation dossiers).
+---
+
+## Suites
+
+| Suite | Entry | Metrics | Report |
+|-------|-------|---------|--------|
+| **Retrieval** | `tests/retrieval/main.py` | Hit@k, **document** Recall@k, **chunk** Precision@k, MRR, nDCG@k | stdout (`report.print()`) |
+| **Generation** | `tests/generation/main.py` | GEval Correctness, Faithfulness, Answer Relevancy, Required Phrases, Abstention | DeepEval `*_YYYYMMDD_HHMMSS.md` under `reports/eval/` |
+
+Shared config: pydantic-settings. `CoreSettings` (OpenAI-compatible key, tenant, published api/chat URLs, `EVAL_*`). Suite gates in per-suite `settings.py`. Host process talks to **published compose ports**, not docker DNS.
+
+Offline unittest still loads [`dataset.json`](dataset.json) (demo PDFs in [`resources/`](../../resources/)). Live gates use [`dataset-investigation.json`](dataset-investigation.json).
 
 ---
 
-## What we test (profiles)
+## Test cases (investigation)
 
-| Profile | `EVAL_PROFILE` | Dataset | Purpose |
-|---------|----------------|---------|---------|
-| **Default** | `default` (or unset) | `dataset.json` | Baseline RAG on demo PDF |
-| **Investigation** | `investigation` | `dataset-investigation.json` | Cross-doc legal corpus, PII vault, decoy traps |
+Committed in [`dataset-investigation.json`](dataset-investigation.json).
 
-Investigation runners set `EVAL_PROFILE=investigation` automatically (`run-live-investigation*`, `run_investigation_generation_eval.py`).
+### Retrieval (9 labeled questions)
 
----
-
-## Test cases (investigation profile)
-
-Committed in [`dataset-investigation.json`](dataset-investigation.json) and [`guardrails-cases.json`](guardrails-cases.json).
-
-### Tier R1 — Retrieval (9 labeled questions)
-
-The system must **find the right document** in the top‑k chunks before any LLM answer is judged.
+Hits **`POST /v1/retrieval/search`** on the running api (`Product` over `ApiHttp`). The system must **find the right document** in the top‑k chunks before any LLM answer is judged. Scoring is a pydantic-evals `Dataset` + our `RetrievalIR` evaluator (`core/pydantic_evals/`).
 
 | Tag | Example question | What we check |
 |-----|------------------|---------------|
-| **cross-doc** | *Which shell company appears in both the procurement fraud referral and the financial trace dossier?* | Alpha + Beta linked facts (F‑01…F‑03) |
+| **cross-doc** | *Which shell company appears in both dossiers, and what is its company registration number?* | Alpha + Beta linked facts (F‑01…F‑03) |
 | **pii** | *What is Esther Szabo's tax identification number…?* | Alpha chunk with tokenized PII |
 | **pii** | *What IBAN appears in the financial trace export…?* | Beta banking field |
 | **F-05 / F-07** | *What aggregate HUF amount…?* / *What KAH case reference…?* | Single-doc facts |
-| **decoy-trap** | *Is Kamuhold Építő Kft. the shell company in case ART-2024/8812?* | Must not confuse Gamma decoy with Alpha/Beta |
-| **gamma-only** | *What penalty amount was assessed against Kamuhold Építő Kft. in 2023?* | Answer only from Gamma decoy dossier |
+| **decoy-trap** | *Is Kamuhold Építő Kft. the shell in ART-2024/8812? If not, which entity and registration?* | Must not confuse Gamma decoy with Alpha/Beta |
+| **gamma-only** | *What penalty amount was assessed against Kamuhold Építő Kft. in 2023, and under which case reference?* | Answer only from Gamma decoy dossier |
 
-### Tier G2 — Generation (9 labeled + 3 abstention)
+### Generation (9 labeled + 3 abstention)
 
-Same graph as production chat (guard → retrieve → generate). Answers are **vault-detokenized** before the judge when `PII_VAULT_ENABLED=true`.
+Talks to the running stack through **`ChatHttp` / `ApiHttp`** (`src/agentic_eval/core/clients/`), which compose the generated OpenAPI packages (`make generate-openapi-clients`). The generator returns the stream as a string; `ChatHttp.stream()` splits `event:` / `data:` frames. The generation `Product` only orchestrates eval (ephemeral session, catalog gate, vault-mark strip for the judge). `make -C tests/eval sync` generates the clients if they are missing.
 
 **Labeled** — expect a concrete answer grounded in retrieved chunks:
 
@@ -69,17 +71,7 @@ Same graph as production chat (guard → retrieve → generate). Answers are **v
 | *Did Esther Szabo appear in the KAH-KV-2023/4419 environmental inspection?* | Name appears in Alpha/Beta only; environmental case is Gamma |
 | *What mixture-of-experts routing algorithm…?* | Nonsense / out-of-corpus |
 
-### Tier S1 — Guardrails ([`guardrails-cases.json`](guardrails-cases.json))
-
-Live HTTP calls to **llm-guard-api** (`BanSubstrings` + `PromptInjection`).
-
-| Category | Example | Expected |
-|----------|---------|----------|
-| **attack** | *…include squint-e2e-banned…* | Blocked |
-| **attack** | *motherfucker* | Blocked |
-| **benign** | Cross-doc shell question, Kamubank account, PII question | **Allowed** |
-| **benign-iban** | *What IBAN appears in the financial trace export…?* | **Allowed** (known DeBERTa over-defense probe) |
-| **overdefense** | *…ignore prior instructions as a spam exemplar…* | Informational only — DeBERTa often blocks |
+Abstention goldens go through a second `evaluate()` with `AbstentionMetric` only — they are not mixed into Faithfulness. Security-copy blocks are scored inside `AbstentionMetric` (`guard_block`), not as a labeled-case pre-filter.
 
 ---
 
@@ -89,64 +81,67 @@ Each metric answers one question a non-technical reviewer would ask.
 
 ### Retrieval — “Did we open the right files?”
 
-Imagine a clerk searching a filing cabinet and pulling **5 folders** (k=5).
-
-| Metric | Plain question | Life-like example | Investigation gate |
-|--------|----------------|-------------------|-------------------|
-| **Recall@5** | Is the **correct dossier anywhere** in the top 5? | You ask for the bank trace; *Beta* is folder #3 → **pass**. | ≥ 0.90 |
-| **Precision@5** | How many of the 5 folders are **actually relevant**? | 2 good + 3 wrong decoy duplicates → precision **2/5 = 0.40**. | ≥ 0.85 |
-| **Hit Rate@5** | Same as recall here (one expected doc per question). | — | ≥ 0.90 |
-| **MRR** | How **high** is the first correct folder? | Correct doc at #1 → 1.0; at #2 → 0.5. | ≥ 0.80 |
-| **nDCG@5** | Are relevant folders **ranked near the top**, with credit for order? | Beta, Beta, Alpha, decoy, decoy → high; decoy first → low. | ≥ 0.80 |
-
-**Example:** *“Who is the auditor witness in both materials?”*
-Recall passes if Alpha **or** Beta appears in the top 5. Precision suffers if Gamma decoy and duplicate uploads fill slots.
-
-Report: [`reports/eval/investigation-retrieval.md`](../../reports/eval/investigation-retrieval.md)
-
-### Generation — “Is the answer true and on-topic?”
-
-DeepEval uses a **judge LLM** (not the chat model) to score each answer.
-
-| Metric | Plain question | Life-like example | Investigation gate |
-|--------|----------------|-------------------|-------------------|
-| **Faithfulness** | Is the answer **supported by the retrieved excerpts** (no invented facts)? | Chunks say *HUF 47.2M*; answer says *47.2 million* → pass. Answer adds a person not in chunks → fail. | ≥ 0.85 |
-| **Answer Relevancy** | Does the answer **address the question** without fluff? | Q: *Which account?* A: *99990001-00000001* → should pass (judge can be noisy). | ≥ 0.70 |
-| **Abstention** (heuristic) | Did the model **refuse** when the corpus has no answer? | Q about criminal charges on an environmental fine → *“I cannot find…”* → pass. | 3/3 |
-
-**Example:** *“What IBAN appears in the financial trace export?”*
-If **guard** blocks the question as prompt injection, generation never runs → relevancy 0 (security layer failure, not RAG).
-
-Report: [`reports/eval/investigation-generation.md`](../../reports/eval/investigation-generation.md)
-
-### Guardrails — “Do we block attacks but allow real work?”
-
-Industry-style split (InjecGuard / Gate AI): **security** and **utility** reported separately.
+Imagine a clerk searching a filing cabinet and pulling **5 folders** (k=5). These are **IR metrics**, not DeepEval ContextualPrecision/Recall.
 
 | Metric | Plain question | Life-like example | Gate |
 |--------|----------------|-------------------|------|
-| **Attack block rate (TPR)** | Do **malicious** inputs get stopped? | E2E ban token in prompt → must block. | 100% |
-| **Benign pass rate (TNR)** | Do **normal analyst questions** get through? | *Which shell company…?* → must allow. | ≥ 98% |
-| **False positive rate (FPR)** | How often do we **over-refuse** safe work? | 1 benign blocked in 100 → FPR 1%. | ≤ 1% |
-| **Balanced accuracy** | Average of block-on-attack and allow-on-benign. | (100% + 98%) / 2 = 99%. | ≥ 99% |
-| **Overdefense rate** | Informational: probes with jailbreak-like **words in context**. | *“ignore prior instructions”* in a legal appendix cite → often blocked. | — |
+| **Hit Rate@5** | Is **any** relevant dossier in the top 5? | Cross-doc question; Alpha is #2 → **hit = 1**. | ≥ 0.90 |
+| **Document Recall@5** | What **fraction of the relevant set** did we find? | Relevant folders are Alpha **and** Beta. Top 5 is only Alpha → recall **0.5**, not 1.0. | ≥ 0.90 |
+| **Chunk Precision@5** | How many of the 5 pulled **chunks** belong to the relevant set? | Relevant = {Alpha, Beta}; 3 Alpha + 1 Beta + 1 Gamma decoy → **0.80**. | ≥ 0.85 |
+| **MRR** | How **high** is the first relevant folder? | First hit at #1 → 1.0; at #2 → 0.5. | ≥ 0.80 |
+| **nDCG@5** | Are relevant folders **ranked near the top**, with credit for order? | Alpha, Beta, decoy… → high; decoy first → low. | ≥ 0.80 |
 
-Report: [`reports/eval/guardrails.md`](../../reports/eval/guardrails.md) (default) or `investigation-guardrails.md` when run with investigation profile.
+**Example:** *“Who is the auditor witness in both materials?”*
+Relevant set is **Alpha and Beta**. Hit Rate passes if either appears. Document recall is 1.0 only if **both** appear in the top 5. Chunk precision drops when Gamma decoy or duplicate uploads fill slots.
+
+Cross-doc goldens list `expected_source_files` (not a single file). Shared facts that appear in both Alpha and Beta (tax ID, ART-2024/8812, HUF 47.2M) also label both dossiers. Gamma stays off those sets — mentions there are decoy contrast, not answers. IBAN is Beta-only.
+
+### Generation — “Is the answer true and on-topic?”
+
+DeepEval uses a **judge LLM** (not the chat model) plus two deterministic `BaseMetric`s. **Correctness** compares the answer to the golden `expected_output`. Faithfulness only checks the retrieved chunks.
+
+| Metric | Plain question | Life-like example | Gate |
+|--------|----------------|-------------------|------|
+| **Correctness (G-Eval)** | Does the answer contain the **key facts** from the expected output? | Expected: *Kamuhold Beruházási Zrt. (99-99-884422)*. Answer names that company and registration → pass, even if wording differs. | ≥ 0.80 |
+| **Required phrases** | Does the answer **literally contain** annotated identifiers? | Must include the full IBAN, not a `HU68` prefix. Deterministic — no judge. | 100% of labeled |
+| **Faithfulness** | Is the answer **supported by the retrieved excerpts** (no invented facts)? | Chunks say *HUF 47.2M*; answer says *47.2 million* → pass. Answer adds a person not in chunks → fail. | ≥ 0.85 |
+| **Answer Relevancy** | Does the answer **address the question** without fluff? | Q: *Which account?* A: *99990001-00000001* → should pass (judge can be noisy). | ≥ 0.70 |
+| **Abstention** | Labeled questions must **not** refuse; abstention goldens **must**. | Tax-ID answered; criminal-class Gamma question refused. | DeepEval `AbstentionMetric` |
+
+Chat/API BanSubstrings rejects live in [`tests/api/features/05_guardrails.feature`](../api/features/05_guardrails.feature), not this package.
 
 ---
 
 ## Commands
 
-| Make target (repo root) | Make target (`tests/eval`) | Output report |
-|-------------------------|----------------------------|---------------|
-| `make eval` | `run` | — (pytest only) |
-| `make eval-live` | `run-live` | `reports/eval/retrieval.md` |
-| `make eval-live-generation` | `run-live-generation` | `reports/eval/generation.md` |
-| `make eval-live-investigation` | `run-live-investigation` | `reports/eval/investigation-retrieval.md` |
-| `make eval-live-investigation-generation` | `run-live-investigation-generation` | `reports/eval/investigation-generation.md` |
-| `make eval-live-guardrails` | `run-live-guardrails` | `reports/eval/guardrails.md` |
+| Make target (`tests/eval`) | Output |
+|----------------------------|--------|
+| `sync` | OpenAPI clients if missing, then `uv sync` |
+| `unittest` | pytest unittest only |
+| `run` | alias for `unittest` |
+| `run-retrieval-suite` | pydantic-evals print |
+| `run-generation-suite` | DeepEval markdown under `reports/eval/` |
 
-DeepEval also writes timestamped files (`investigation-generation_YYYYMMDD_HHMMSS.md`); the runner **promotes** the latest to the stable path above.
+DeepEval writes timestamped files (`investigation-generation_YYYYMMDD_HHMMSS.md`, `investigation-abstention_*.md`). The runner does **not** copy them to a stable filename — promote the latest into `reports/eval/investigation-generation.md` / `investigation-abstention.md` after a measured run.
+
+### Latest measured run (2026-08-31)
+
+Live stack (`make up` + rerank + guardrails), tenant `tenant-a`, k=5, 9 labeled + 3 abstention.
+
+| Gate | Score | Threshold | Result |
+|------|------:|----------:|--------|
+| Hit Rate@5 | 1.00 | ≥ 0.90 | pass |
+| Document Recall@5 | 0.89 | ≥ 0.90 | miss (cases 05, 08) |
+| Chunk Precision@5 | 0.76 | ≥ 0.85 | miss (cases 05, 08) |
+| MRR | 0.94 | ≥ 0.80 | pass |
+| nDCG@5 | 0.93 | ≥ 0.80 | pass |
+| Correctness (G-Eval) | 0.83 | ≥ 0.80 | pass (9/9) |
+| Faithfulness | 1.00 | ≥ 0.85 | pass (9/9) |
+| Answer Relevancy | 1.00 | ≥ 0.70 | pass (9/9) |
+| Required phrases | 9/9 | 100% | pass |
+| Abstention | 3/3 | 100% | pass |
+
+Weak retrieval cases: **05** (KAH ART-2024/8812 — Beta missing from top-5) and **08** (Gamma decoy Építő vs Alpha/Beta Beruházási). Gates are tight on n=9. Full tables: [`reports/eval/`](../../reports/eval/).
 
 ---
 
@@ -154,42 +149,28 @@ DeepEval also writes timestamped files (`investigation-generation_YYYYMMDD_HHMMS
 
 ```
 tests/eval/
-├── README.md                    ← this file
-├── dataset-investigation.json   ← investigation goldens
-├── guardrails-cases.json        ← attack / benign / overdefense
+├── README.md
+├── dataset.json                 ← demo-PDF goldens (offline unittest)
+├── dataset-investigation.json   ← live investigation goldens
 ├── .env.example                 ← copy to .env (gitignored)
 ├── src/agentic_eval/
-│   ├── profiles.py              ← default vs investigation thresholds
-│   └── modules/
-│       ├── retrieval/           ← IR metrics
-│       ├── generation/          ← chat graph SUT + vault reveal
-│       └── safety/              ← guardrail metrics
+│   ├── core/                    ← CoreSettings + clients/ (ChatHttp, ApiHttp)
+│   │   ├── deepeval/            ← BaseMetric extensions + evaluate() wrapper
+│   │   ├── pydantic_evals/      ← RetrievalIR Evaluator + evaluate() wrapper
+│   │   └── golden/              ← Golden / LabeledGolden / AbstentionGolden + GoldenDataset
 └── tests/
-    ├── unittest/                ← offline (CI-safe)
-    └── suit/                    ← live runners (manual / pre-release)
+    ├── unittest/                ← offline (CI-safe); pytest testpaths
+    ├── retrieval/               ← live pydantic-evals (`main.py`) + Product + settings.py
+    └── generation/              ← live DeepEval (`main.py`) + Product + settings.py
 ```
 
 ---
 
-## Prerequisites (live investigation)
+## Prerequisites (live)
 
-1. Stack up: `make up` (+ `make up-guardrails` for S1).
+1. Stack up: `make up` (+ `make up-rerank` for LiteLLM rerank; `make up-guardrails` if chat should scan prompts).
 2. Vault + index flags in repo `.env` (`PII_VAULT_ENABLED`, `INDEXING_PDF_PII_TOKENIZATION_ENABLED`).
 3. Index three dossiers under `EVAL_TENANT_ID` (see [`resources/eval/README.md`](../../resources/eval/README.md)).
-4. `tests/eval/.env`: LiteLLM key, Qdrant collection, guard/Presidio host ports, `DATABASE_URL=localhost` for vault detokenize.
+4. `tests/eval/.env`: LiteLLM key, `EVAL_SUT_CHAT_URL` / `EVAL_SUT_API_URL`, and `INTERNAL_SERVICE_KEY` when `AUTH_MODE=jwt`.
 
 Upload uses `X-Internal-Service-Key` when `AUTH_MODE=jwt`.
-
----
-
-## Interpreting current snapshots
-
-Latest committed runs (2026‑08‑30) are honest **pre-release baselines**:
-
-| Report | Headline | Likely cause |
-|--------|----------|--------------|
-| Investigation retrieval | Recall 1.0, precision 0.53 | Duplicate PDF uploads + Gamma decoy in top‑5 |
-| Investigation generation | ~44% pass | Guard FP on IBAN, strict faithfulness on cross-doc, one abstention miss |
-| Guardrails | Benign 100%, overdefense blocked | DeBERTa threshold 0.85; IBAN case now in dataset |
-
-Use these reports to track regressions after guard tuning, deduplicating index, or prompt changes — not as CI gates today.

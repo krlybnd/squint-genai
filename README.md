@@ -6,9 +6,9 @@
 
 **Squint** is an eval-driven **agentic RAG** platform for asking questions about your own documents — built on the premise that a generated answer is worthless unless you can check it. Every response carries citations back to the exact source chunk; you can select a passage and leave a comment on it, so expert review lives on the same text the answer came from. The agent's reasoning steps are visible while it works, and answer quality is measured by an automated eval gate instead of gut feeling. Sensitive documents stay usable without leaving your infrastructure: an optional PII vault replaces names and identifiers with deterministic tokens before anything reaches an embedding or chat model.
 
-[![Recall@5](https://img.shields.io/badge/Recall%405-1.00-brightgreen)](reports/eval/retrieval.md)
-[![Faithfulness](https://img.shields.io/badge/Faithfulness-0.95-green)](reports/eval/generation.md)
-[![Answer%20Relevancy](https://img.shields.io/badge/Answer%20Relevancy-0.90-green)](reports/eval/generation.md)
+[![Hit@5](https://img.shields.io/badge/Hit%405-1.00-brightgreen)](reports/eval/investigation-retrieval.md)
+[![Faithfulness](https://img.shields.io/badge/Faithfulness-1.00-brightgreen)](reports/eval/investigation-generation.md)
+[![Answer%20Relevancy](https://img.shields.io/badge/Answer%20Relevancy-1.00-brightgreen)](reports/eval/investigation-generation.md)
 
 Answer quality is measured, not asserted — golden dataset, DeepEval gate, numbers refreshed from real runs. [Details](#evaluation).
 
@@ -177,44 +177,36 @@ OpenAPI: [API docs](http://localhost:8000/docs) · [Chat docs](http://localhost:
 
 ## Evaluation
 
-Goldens live in [`tests/eval/dataset.json`](tests/eval/dataset.json) and are written against the PDFs in [`resources/`](resources/) (Transformer paper, RAG paper, US Constitution, NASA fact sheets, NIST AI RMF) — not against this repository. Run `make resources` first if the PDFs are missing.
+Live goldens live in [`tests/eval/dataset-investigation.json`](tests/eval/dataset-investigation.json) against the synthetic dossiers in [`resources/eval/`](resources/eval/). Offline unittest still checks [`dataset.json`](tests/eval/dataset.json) (demo PDFs in [`resources/`](resources/)). Full metric glossary: [`tests/eval/README.md`](tests/eval/README.md).
 
-Index those documents, then:
+Index the three investigation dossiers, then:
 
 ```bash
-cd tests/eval && cp .env.example .env   # set OPENAI_API_KEY to the stack LiteLLM bearer token
-make eval-live                          # Tier 1 — seconds
-make eval-live-generation               # Tier 2 — many LLM calls, minutes
+cd tests/eval && cp .env.example .env   # LiteLLM bearer = stack LITELLM_MASTER_KEY
+make eval-live                          # retrieval IR — seconds, stdout print
+make eval-live-generation               # DeepEval judge — minutes, native markdown
 ```
 
-The gate loads `tests/eval/.env` via the pytest `suit` fixture into `EvalSettings` + suite `SutSettings` (`EVAL_SUT_*`, localhost defaults). Same LiteLLM/Qdrant roles as the stack. Package layout: `src/agentic_eval` core (goldens, DeepEval judge model) + `modules/retrieval` (Pydantic Evals IR) / `modules/generation` (chat-graph SUT); live wiring in `tests/suit`. Generation runs `python tests/suit/run_generation_eval.py` (`evaluate()` on a TTY).
+The gate loads `tests/eval/.env` into `CoreSettings` + per-suite `settings.py` (`EVAL_*`, localhost defaults). Live entries: `tests/retrieval/main.py`, `tests/generation/main.py`.
 
 | Tier | Target | Metrics |
 |------|--------|---------|
-| **1 — Retrieval IR** | `make eval-live` | Recall@k, Precision@k, Hit Rate@k, MRR, nDCG@k on labeled `expected_source_file` (no judge LLM) |
-| **2 — Generation** | `make eval-live-generation` (`run_generation_eval.py`) | Labeled goldens: parallel chat-graph SUT, then one DeepEval `evaluate()` (Faithfulness + Answer Relevancy, single TTY progress bar). Judge: LiteLLM **`judge`** alias (`EVAL_JUDGE_MODEL`). Abstention goldens check refusal markers. Retrieval ranking is Tier 1, not DeepEval contextual precision/recall. |
+| **1 — Retrieval IR** | `make eval-live` | Hit@k, document Recall@k, chunk Precision@k, MRR, nDCG@k on the relevant source **set** (API search, no judge LLM) |
+| **2 — Generation** | `make eval-live-generation` | Labeled goldens: generated OpenAPI clients against running chat/api, then one DeepEval `evaluate()` (GEval Correctness, Faithfulness, Answer Relevancy, Required Phrases). Abstention goldens: second `evaluate()` with `AbstentionMetric` only. Judge: LiteLLM **`judge`** alias. Retrieval ranking is Tier 1, not DeepEval contextual precision/recall. |
 
-Needs indexed `resources/` PDFs, Qdrant, and LiteLLM. `EVAL_SUT_QDRANT_COLLECTION` must match the stack's `QDRANT_COLLECTION`. With `AUTH_MODE=jwt`, set `EVAL_TENANT_ID` in `tests/eval/.env` to the tenant that owns the vectors (often `tenant-a`), not `default`.
+Needs indexed `resources/eval/` dossiers, a running **api** (`:8000`), **chat** (`:8002`), and LiteLLM. With `AUTH_MODE=jwt`, set `EVAL_TENANT_ID` and `INTERNAL_SERVICE_KEY` in `tests/eval/.env` to the tenant that owns the vectors (often `tenant-a`), not `default`.
 
 Live eval is **not** in default CI ([ADR 007](docs/adr/007-no-live-tests-in-ci.md)). Unit/lint CI: [![CI](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/krlybnd/agentic-rag-eval/actions/workflows/ci.yml)
 
 ### Quality snapshot
 
-GitHub renders this table in the README. Full case lists are markdown files in the repo (click through — tables and `<details>` work there). Refresh locally, then commit; numbers do not update from Actions.
+Latest committed investigation runs. Full tables: [`reports/eval/`](reports/eval/). Numbers do not update from Actions.
 
-[![Recall@5](https://img.shields.io/badge/Recall%405-1.00-brightgreen)](reports/eval/retrieval.md)
-[![Faithfulness](https://img.shields.io/badge/Faithfulness-0.95-green)](reports/eval/generation.md)
-[![Answer%20Relevancy](https://img.shields.io/badge/Answer%20Relevancy-0.90-green)](reports/eval/generation.md)
-[![Labeled%20pass](https://img.shields.io/badge/Labeled%20pass-17%2F20-yellow)](reports/eval/generation.md)
-
-| Gate | Score | Pass | Run |
-|------|------:|-----:|-----|
-| Retrieval IR (Recall / Prec / Hit / MRR / nDCG @5) | 1.00 / 1.00 / 1.00 / 1.00 / 1.00 | 20/20 | [2026-08-27 21:05](reports/eval/retrieval.md) |
-| Faithfulness (threshold 0.70) | 0.95 | 18/20 | [2026-08-27 21:12](reports/eval/generation.md) |
-| Answer Relevancy (threshold 0.55) | 0.90 | 19/20 | [2026-08-27 21:12](reports/eval/generation.md) |
-| Abstention | — | 3/3 | [generation.md](reports/eval/generation.md) |
-
-Index: [`reports/eval/`](reports/eval/).
+| Gate | Score | Notes | Run |
+|------|------:|-------|-----|
+| Retrieval IR (Hit / doc Recall / chunk Prec / MRR / nDCG @5) | 1.00 / 0.89 / 0.76 / 0.94 / 0.93 | Recall gate 0.90 miss; Prec gate 0.85 miss (cases 05, 08) | [investigation-retrieval.md](reports/eval/investigation-retrieval.md) |
+| Generation (Correctness / Faithfulness / Relevancy / phrases) | 0.83 / 1.00 / 1.00 / 9/9 | 9/9 labeled pass | [investigation-generation.md](reports/eval/investigation-generation.md) |
+| Abstention | 3/3 | Clean refusal on out-of-corpus / decoy-trap questions | [investigation-abstention.md](reports/eval/investigation-abstention.md) |
 
 ## Local development
 
@@ -303,7 +295,7 @@ make sync   # sync every project + export openapi/*.yaml
 make -C frontend/app-ui install   # alias: npm ci at repo root; postinstall → generate:api
 ```
 
-Edit routes/schemas in `services/api`, `services/chat`, or `services/admin`, then re-run `make generate-openapi`. Specs are **committed** under `openapi/`.
+Edit routes/schemas in `services/api`, `services/chat`, or `services/admin`, then re-run `make generate-openapi`. Specs are **committed** under `openapi/`. Python callers (eval, Keycloak) regenerate with `make generate-openapi-clients` / `make generate-keycloak-client` into gitignored `packages/generated/`.
 
 ## Project structure
 

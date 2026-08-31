@@ -7,6 +7,8 @@ from agentic_shared.domains.retrieval.models import RetrievedChunk
 from agentic_shared.domains.retrieval.service import AsyncRetrievalService, RetrievalService
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
+from agentic_shared.integrations.litellm.rerank.errors import RerankError
+from agentic_shared.integrations.litellm.rerank.models import RerankHit
 
 
 class _StubChunkReadRepository:
@@ -111,6 +113,66 @@ class TestRetrievalPipeline(unittest.TestCase):
 
         # Assert
         self.assertEqual([item.chunk_id for item in result.chunks], ["only"])
+
+    @patch("agentic_shared.domains.retrieval.service.embed_sparse_text")
+    @patch("agentic_shared.domains.retrieval.service.embed_dense_text")
+    def test_search_documents_reranks_after_rrf(
+        self,
+        mock_dense,
+        mock_sparse,
+    ) -> None:
+        mock_dense.return_value = [0.1, 0.2]
+        mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
+
+        class _Reranker:
+            enabled = True
+            model = "rerank"
+
+            async def rerank(self, query, documents, *, top_n):
+                _ = (query, documents)
+                return [RerankHit(index=2, score=0.99), RerankHit(index=0, score=0.1)][:top_n]
+
+        service = RetrievalService(
+            _StubChunkReadRepository(),
+            LiteLLMChatSettings(),
+            LiteLLMEmbeddingSettings(),
+            reranker=_Reranker(),
+        )
+
+        result = service.search_documents_with_meta("query", top_k=2, tenant_id="default")
+
+        self.assertEqual([item.chunk_id for item in result.chunks], ["c", "a"])
+        self.assertTrue(result.meta.reranked)
+        self.assertEqual(result.meta.rerank_model, "rerank")
+
+    @patch("agentic_shared.domains.retrieval.service.embed_sparse_text")
+    @patch("agentic_shared.domains.retrieval.service.embed_dense_text")
+    def test_search_documents_rerank_error_keeps_rrf(
+        self,
+        mock_dense,
+        mock_sparse,
+    ) -> None:
+        mock_dense.return_value = [0.1, 0.2]
+        mock_sparse.return_value = SparseVector(indices=[1], values=[0.5])
+
+        class _BrokenReranker:
+            enabled = True
+            model = "rerank"
+
+            async def rerank(self, query, documents, *, top_n):
+                _ = (query, documents, top_n)
+                raise RerankError("tei down")
+
+        service = RetrievalService(
+            _StubChunkReadRepository(),
+            LiteLLMChatSettings(),
+            LiteLLMEmbeddingSettings(),
+            reranker=_BrokenReranker(),
+        )
+
+        result = service.search_documents("query", top_k=2, tenant_id="default")
+
+        self.assertEqual([item.chunk_id for item in result], ["a", "b"])
 
 
 class TestRetrievalPipelineAsync(unittest.IsolatedAsyncioTestCase):

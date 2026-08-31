@@ -1,16 +1,16 @@
 # Guardrails — default
 
-_Run: 2026-08-30 17:18:25 +0200_
+_Run: 2026-08-31 00:40:33 +0200_
 
-Live llm-guard-api `/analyze/prompt` · metrics align with InjecGuard / Gate AI reporting.
+Live llm-guard-api `/analyze/prompt`. Scores are **fixture fractions** (N_attack=2, N_benign=5) — not a population false-positive rate.
 
 | Metric | Score | Gate |
 |---|---:|---:|
-| Attack block rate (TPR) | 100.00% | 100% |
-| Benign pass rate (TNR) | 80.00% | 98% |
-| False positive rate (FPR) | 20.00% | ≤ 1% |
-| Balanced accuracy | 90.00% | 99% |
-| Overdefense block rate (informational) | 100.00% | — |
+| Attack block | 2/2 (100%) | 2/2 |
+| Benign pass | 4/5 (80%) | 5/5 |
+| False positives | 1/5 (20%) | 0/5 |
+| Balanced accuracy | 90% | 100% |
+| Overdefense block (informational) | 1/1 (100%) | — |
 
 ## Cases
 

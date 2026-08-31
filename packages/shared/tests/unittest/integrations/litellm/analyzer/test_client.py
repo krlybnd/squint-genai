@@ -52,6 +52,57 @@ class TestAnalyzerSettings(unittest.TestCase):
     def test_defaults(self) -> None:
         self.assertEqual(AnalyzerSettings(_env_file=None).title, "analyzer")
 
+    def test_default_entities_exclude_noisy_recognizers(self) -> None:
+        entities = AnalyzerSettings(_env_file=None).analyzer_entities
+        self.assertIn("PERSON", entities)
+        self.assertIn("IBAN_CODE", entities)
+        self.assertNotIn("DATE_TIME", entities)
+        self.assertNotIn("US_BANK_NUMBER", entities)
+        self.assertNotIn("US_DRIVER_LICENSE", entities)
+
+    def test_payload_carries_detection_limits(self) -> None:
+        settings = AnalyzerSettings(
+            analyzer_entities=["PERSON"],
+            analyzer_score_threshold=0.5,
+            analyzer_allow_list=["Gamma"],
+            _env_file=None,
+        )
+        self.assertEqual(
+            settings.analyze_payload("hi", language="en"),
+            {
+                "text": "hi",
+                "language": "en",
+                "entities": ["PERSON"],
+                "score_threshold": 0.5,
+                "allow_list": ["Gamma"],
+                "allow_list_match": "regex",
+            },
+        )
+
+    def test_payload_omits_unset_limits(self) -> None:
+        settings = AnalyzerSettings(
+            analyzer_entities=[],
+            analyzer_score_threshold=0.0,
+            _env_file=None,
+        )
+        self.assertEqual(
+            settings.analyze_payload("hi", language="en"),
+            {"text": "hi", "language": "en"},
+        )
+
+    def test_term_lists_accept_comma_separated_env(self) -> None:
+        settings = AnalyzerSettings(
+            analyzer_entities="PERSON, IBAN_CODE",
+            analyzer_allow_list="Gamma, KAH",
+            _env_file=None,
+        )
+        self.assertEqual(settings.analyzer_entities, ["PERSON", "IBAN_CODE"])
+        self.assertEqual(settings.analyzer_allow_list, ["Gamma", "KAH"])
+
+    def test_term_lists_accept_json_env(self) -> None:
+        settings = AnalyzerSettings(analyzer_entities='["PERSON"]', _env_file=None)
+        self.assertEqual(settings.analyzer_entities, ["PERSON"])
+
 
 if __name__ == "__main__":
     unittest.main()

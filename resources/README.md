@@ -6,7 +6,7 @@ Text-based PDFs for local RAG demos (upload in the UI or via the API). They are 
 make resources
 ```
 
-The live eval suite (`make eval-live`) uses goldens in [`tests/eval/dataset.json`](../tests/eval/dataset.json) written against these files — index them before running the gate. All files are redistributable; see sources below.
+Offline eval unittest still loads [`tests/eval/dataset.json`](../tests/eval/dataset.json) against these demo PDFs. Live eval (`make eval-live`) uses the investigation dossiers in [`eval/`](eval/) — see [`tests/eval/README.md`](../tests/eval/README.md). All files are redistributable; see sources below.
 
 | File | Pages | What to ask |
 |------|------:|-------------|

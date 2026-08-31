@@ -8,7 +8,11 @@ import re
 from collections.abc import Sequence
 
 from agentic_shared.core.settings.secrets import SecuredStr
-from agentic_shared.domains.pii_vault.models import PiiVaultEntryDraft, TokenizedText
+from agentic_shared.domains.pii_vault.models import (
+    PiiVaultEntryDraft,
+    TokenCandidate,
+    TokenizedText,
+)
 from agentic_shared.integrations.litellm.analyzer.models import AnalyzerEntity
 
 _TOKEN_PATTERN = re.compile(r"^[A-Z0-9_]+$")
@@ -113,6 +117,68 @@ class PiiTokenizer:
             entity_count=len(selected),
             unique_token_count=len(entries),
         )
+
+    def iter_candidates(
+        self,
+        text: str,
+        entities: Sequence[AnalyzerEntity],
+        *,
+        tenant_id: str,
+    ) -> list[TokenCandidate]:
+        """Hash every valid span (no overlap filter) for a vault existence check."""
+        candidates: list[TokenCandidate] = []
+        seen: set[tuple[int, int, str]] = set()
+        for entity in entities:
+            if entity.start < 0 or entity.end <= entity.start or entity.end > len(text):
+                continue
+            value = text[entity.start : entity.end]
+            if not value.strip():
+                continue
+            token = make_deterministic_token(
+                entity.entity_type,
+                value,
+                tenant_id=tenant_id,
+                token_salt=self._token_salt,
+            )
+            key = (entity.start, entity.end, token)
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(
+                TokenCandidate(
+                    start=entity.start,
+                    end=entity.end,
+                    token=token,
+                    entity_type=_normalize_entity_type(entity.entity_type),
+                )
+            )
+        return candidates
+
+    def apply_vault_hits(self, text: str, hits: Sequence[TokenCandidate]) -> str:
+        """Replace longest non-overlapping vault-confirmed spans."""
+        if not hits:
+            return text
+        entities = [
+            AnalyzerEntity(
+                entity_type=hit.entity_type,
+                start=hit.start,
+                end=hit.end,
+                score=float(hit.end - hit.start),
+            )
+            for hit in hits
+        ]
+        token_by_span = {(hit.start, hit.end): hit.token for hit in hits}
+        parts: list[str] = []
+        cursor = 0
+        for entity in _select_non_overlapping(entities):
+            token = token_by_span.get((entity.start, entity.end))
+            if token is None:
+                continue
+            parts.append(text[cursor : entity.start])
+            parts.append(token)
+            cursor = entity.end
+        parts.append(text[cursor:])
+        return "".join(parts)
 
 
 __all__ = ["PiiTokenizer", "make_deterministic_token"]

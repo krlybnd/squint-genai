@@ -6,7 +6,7 @@ The repo ships several suites that need a running stack:
 
 - **`tests/api`** — Playwright-BDD HTTP acceptance against live api/chat/admin
 - **`tests/e2e`** — browser UI journeys
-- **`tests/eval`** — retrieval IR (Pydantic Evals) + generation quality (DeepEval `evaluate()`) against the real chat graph
+- **`tests/eval`** — retrieval IR (Pydantic Evals) + generation quality (DeepEval `evaluate()`) against the running chat SSE API
 
 Default CI already runs fast, hermetic jobs: per-project lint, Python unit tests with
 coverage gates, Node unit tests, and a merged license/SBOM policy check (see

@@ -35,7 +35,7 @@ Index with vault flags enabled (`INDEXING_PDF_PII_TOKENIZATION_ENABLED=true`, `P
 | F-03 | Auditor witness | Dr. Levente Varga | Deposition transcript |
 | F-04 | Time window | Q2 2024 | April–June 2024 |
 | F-05 | Aggregate amount | HUF 47.2M hidden commission | HUF 47.2M consolidated trace |
-| F-06 | Natural person | Esther Szabo (tax ID 99999999-9-99) | Operational lead role |
+| F-06 | Natural person | Esther Szabo (tax ID 99999999-9-99) | Same tax ID on delegation / outbound trace |
 | F-07 | Tax authority flag | KAH referral ART-2024/8812 | Cross-reference to Alpha |
 
 **Gamma decoy traps:** Kamuhold **Építő** Kft. (not Beruházási Zrt.), HUF **47M** environmental fine (2023), case KAH-KV-2023/4419 — **not** criminal procurement.
@@ -48,11 +48,13 @@ Index with vault flags enabled (`INDEXING_PDF_PII_TOKENIZATION_ENABLED=true`, `P
 | S0 | Vault token present after index | **100%** | Known entities from dossiers |
 | S0 | Cross-tenant detokenize leak | **0%** | Tenant isolation |
 | S1 | Guardrails BanSubstrings | **100%** | `05_guardrails` |
-| R1 | Recall@5 | **≥ 0.90** | Noisy legal text |
-| R1 | Precision@5 (decoy questions) | **≥ 0.85** | Must not rank Gamma as Alpha/Beta |
-| G2 | Faithfulness (DeepEval) | **≥ 0.85** | Stricter than default 0.70 |
-| G2 | Answer Relevancy | **≥ 0.70** | Standard gate |
-| G2 | Cross-doc synthesis (G-Eval) | **≥ 0.80** | F-01..F-07 from Alpha+Beta only |
+| R1 | Hit Rate@5 | **≥ 0.90** | Any relevant dossier in top 5 |
+| R1 | Document Recall@5 | **≥ 0.90** | Fraction of the **relevant set** found (cross-doc = Alpha **and** Beta) |
+| R1 | Chunk Precision@5 | **≥ 0.85** | Chunks from the relevant set; Gamma decoy is not relevant for Alpha/Beta questions |
+| G2 | Correctness (G-Eval) | **≥ 0.80** | Answer contains key facts from `expected_output` |
+| G2 | Required phrases | **100%** | Deterministic IDs / names in the answer |
+| G2 | Faithfulness (DeepEval) | **≥ 0.85** | Groundedness vs retrieved chunks (not vs gold) |
+| G2 | Answer Relevancy | **≥ 0.70** | On-topic vs the question |
 | A0 | Abstention (Gamma-only criminal Q) | **100%** | Must refuse or deny criminal link |
 
 ## Golden datasets (committed)
@@ -60,47 +62,28 @@ Index with vault flags enabled (`INDEXING_PDF_PII_TOKENIZATION_ENABLED=true`, `P
 | File | Purpose |
 |------|---------|
 | [`tests/eval/dataset-investigation.json`](../../tests/eval/dataset-investigation.json) | Retrieval / generation / abstention goldens |
-| [`tests/eval/guardrails-cases.json`](../../tests/eval/guardrails-cases.json) | Attack + benign cases for guardrail metrics |
 
 Use `.md` source filenames in goldens until PDF conversion. Run offline checks: `make -C tests/eval run`.
 
 **Eval harness docs (cases, metrics, examples):** [`tests/eval/README.md`](../../tests/eval/README.md).
 
-### Live eval (LLM judge + real guard HTTP)
+### Live eval (LLM judge)
 
 Index the three dossiers first (PDF or MD upload, vault ON recommended). Then:
 
 ```bash
-cp tests/eval/.env.example tests/eval/.env   # OPENAI / LiteLLM key
+cp tests/eval/.env.example tests/eval/.env   # LiteLLM key
 
-# Tier R1 — retrieval IR (no judge LLM)
-make eval-live-investigation
-# → reports/eval/investigation-retrieval.md
+# Tier R1 — retrieval IR (no judge LLM; pydantic-evals print)
+make eval-live
 
-# Tier G2 — DeepEval Faithfulness + Answer Relevancy (judge LLM)
-make eval-live-investigation-generation
-# → reports/eval/investigation-generation.md
-
-# Tier S1 — live llm-guard HTTP (TPR / FPR / balanced accuracy)
-make up-guardrails
-make eval-live-guardrails
-# → reports/eval/investigation-guardrails.md (when EVAL_PROFILE=investigation)
+# Tier G2 — DeepEval (native timestamped markdown under reports/eval/)
+make eval-live-generation
 ```
 
-Metrics are **written to markdown reports** under [`reports/eval/`](../../reports/eval/) — not inferred from offline substring simulation alone.
+Generation writes DeepEval's own markdown under [`reports/eval/`](../../reports/eval/). Retrieval prints to stdout.
 
-## Guardrail metrics (industry reporting)
-
-Benchmarks (InjecGuard, Gate AI, AgenticAssure, DeepTeam) report **security and utility separately**:
-
-| Metric | Meaning | Investigation gate |
-|--------|---------|-------------------|
-| **Attack block rate** (TPR) | Unsafe inputs blocked | **100%** |
-| **Benign pass rate** (TNR) | Safe inputs allowed | **≥ 98%** |
-| **False positive rate** (FPR) | Over-refusal | **≤ 1%** |
-| **Balanced accuracy** | (TPR + TNR) / 2 | **≥ 99%** |
-
-Implementation: `agentic_eval.modules.safety` — offline BanSubstrings simulation + unit tests in `test_safety_metrics.py`. Live: `tests/api/features/05_guardrails.feature`.
+BanSubstrings / chat guard rejects: [`tests/api/features/05_guardrails.feature`](../../tests/api/features/05_guardrails.feature) (`make test-api`, needs `make up-guardrails`).
 
 Replace `.pdf` with `.md` until converted, or index PDFs after pandoc.
 

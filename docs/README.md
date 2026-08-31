@@ -28,7 +28,7 @@ Entry point for **Squint** docs. Start here if you are reviewing the repo or onb
 | Chat agent nodes | [architecture.md § L3a](architecture.md#l3a--chat-agent-graph) |
 | Indexing pipeline | [architecture.md § L3b](architecture.md#l3b--document-indexing-flow) |
 | Sample PDFs for demo | [resources/README.md](../resources/README.md) |
-| Eval goldens | [tests/eval/dataset.json](../tests/eval/dataset.json) |
+| Eval goldens | [tests/eval/README.md](../tests/eval/README.md) — live: [dataset-investigation.json](../tests/eval/dataset-investigation.json) |
 | Ops / infra configs | [operations/README.md](../operations/README.md) |
 | Repo map (machine-readable) | [project.cue](../project.cue) — `make verify-repo-map` |
 

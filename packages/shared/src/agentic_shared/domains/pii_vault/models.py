@@ -30,4 +30,14 @@ class TokenizeStats:
     unique_token_count: int
 
 
-__all__ = ["PiiVaultEntryDraft", "TokenizeStats", "TokenizedText"]
+@dataclass(frozen=True, slots=True)
+class TokenCandidate:
+    """One query-time span → deterministic token, before vault existence filter."""
+
+    start: int
+    end: int
+    token: str
+    entity_type: str
+
+
+__all__ = ["PiiVaultEntryDraft", "TokenCandidate", "TokenizeStats", "TokenizedText"]

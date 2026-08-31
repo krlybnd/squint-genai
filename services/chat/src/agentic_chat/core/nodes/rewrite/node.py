@@ -67,7 +67,8 @@ class RewriteQueryNode(LlmCallNode[_RewriteContext]):
         needs = parsed.needs_document_search
         # Keep the original utterance (Elasticsearch / LangChain include_original):
         # LLM query rewrites drop rare terms and can change language.
-        search_query = ctx.query if needs else ""
+        original = (state.get("query") or ctx.query).strip()
+        search_query = original if needs else ""
         reason = parsed.rewrite_reason.strip()
         logger.debug(
             "rewrite routing needs_retrieval=%s indexed=%d",

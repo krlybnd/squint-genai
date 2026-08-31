@@ -19,6 +19,7 @@ from agentic_shared.integrations.litellm.anonymizer.providers import AnonymizerP
 from agentic_shared.integrations.litellm.guard.providers import GuardProvider
 from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 from agentic_shared.integrations.litellm.llm.providers import LLMProvider
+from agentic_shared.integrations.litellm.rerank.providers import RerankProvider
 from dishka import AsyncContainer
 from fastapi import FastAPI
 
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
         AnalyzerProvider(settings.analyzer),
         AnonymizerProvider(settings.anonymizer),
         GuardProvider(settings.guard),
+        RerankProvider(settings.llm, settings.rerank),
         make_resource_health_provider(DatabaseClient, ChatClient),
         QdrantProvider(settings.qdrant),
         AsyncDbProvider(settings.database),

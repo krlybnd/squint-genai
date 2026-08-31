@@ -7,6 +7,7 @@ include:
   - path: operations/llm-guard/compose.yaml
   - path: operations/presidio-analyzer/compose.yaml
   - path: operations/presidio-anonymizer/compose.yaml
+  - path: operations/rerank/compose.yaml
   - path: operations/keycloak/compose.yaml
   - path: operations/traefik/compose.yaml
 

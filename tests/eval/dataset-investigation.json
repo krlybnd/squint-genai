@@ -1,50 +1,86 @@
 [
   {
-    "input": "Which shell company appears in both the procurement fraud referral and the financial trace dossier?",
+    "input": "Which shell company appears in both the procurement fraud referral and the financial trace dossier, and what is its company registration number?",
     "expected_output": "Kamuhold Beruházási Zrt. (company registration 99-99-884422).",
     "expected_source_file": "investigation-dossier-alpha.md",
+    "expected_source_files": [
+      "investigation-dossier-alpha.md",
+      "investigation-dossier-beta.md"
+    ],
+    "required_phrases": ["Kamuhold Beruházási Zrt", "99-99-884422"],
     "tags": ["cross-doc", "F-01"]
   },
   {
-    "input": "What Kamubank account received the consolidated HUF 47.2M trace in April 2024?",
+    "input": "What Kamubank account received the consolidated HUF 47.2M trace in April 2024, and on what date did that transfer cluster occur?",
     "expected_output": "Kamubank account 99990001-00000001, with a transfer dated 2024-04-12.",
     "expected_source_file": "investigation-dossier-beta.md",
+    "expected_source_files": [
+      "investigation-dossier-alpha.md",
+      "investigation-dossier-beta.md"
+    ],
+    "required_phrases": ["99990001-00000001", "2024-04-12"],
     "tags": ["cross-doc", "F-02"]
   },
   {
     "input": "Who is the auditor witness named in both investigation materials?",
     "expected_output": "Dr. Levente Varga, external auditor.",
     "expected_source_file": "investigation-dossier-beta.md",
+    "expected_source_files": [
+      "investigation-dossier-alpha.md",
+      "investigation-dossier-beta.md"
+    ],
+    "required_phrases": ["Levente Varga"],
     "tags": ["cross-doc", "F-03"]
   },
   {
     "input": "What is Esther Szabo's tax identification number in the procurement investigation?",
     "expected_output": "99999999-9-99.",
     "expected_source_file": "investigation-dossier-alpha.md",
+    "expected_source_files": [
+      "investigation-dossier-alpha.md",
+      "investigation-dossier-beta.md"
+    ],
+    "required_phrases": ["99999999-9-99"],
     "tags": ["pii", "F-06"]
   },
   {
     "input": "What KAH case reference is logged for the procurement fraud referral?",
     "expected_output": "ART-2024/8812.",
     "expected_source_file": "investigation-dossier-alpha.md",
+    "expected_source_files": [
+      "investigation-dossier-alpha.md",
+      "investigation-dossier-beta.md"
+    ],
+    "required_phrases": ["ART-2024/8812"],
     "tags": ["F-07"]
   },
   {
     "input": "What aggregate HUF amount is traced as hidden commission in Q2 2024?",
     "expected_output": "HUF 47.2 million.",
     "expected_source_file": "investigation-dossier-alpha.md",
+    "expected_source_files": [
+      "investigation-dossier-alpha.md",
+      "investigation-dossier-beta.md"
+    ],
+    "required_phrases": ["47.2"],
     "tags": ["F-05"]
   },
   {
     "input": "What IBAN appears in the financial trace export for the intermediary account?",
     "expected_output": "HU68 KAMU 0001 2345 6789 0123 4567.",
     "expected_source_file": "investigation-dossier-beta.md",
+    "required_phrases": ["HU68 KAMU 0001 2345 6789 0123 4567"],
     "tags": ["pii", "F-02"]
   },
   {
-    "input": "Is Kamuhold Építő Kft. the shell company in case ART-2024/8812?",
+    "input": "Is Kamuhold Építő Kft. the shell company in case ART-2024/8812? If not, which entity and company registration is?",
     "expected_output": "No. The shell entity is Kamuhold Beruházási Zrt. (99-99-884422). Kamuhold Építő Kft. is a separate decoy entity in the environmental matter.",
     "expected_source_file": "investigation-dossier-alpha.md",
+    "expected_source_files": [
+      "investigation-dossier-alpha.md",
+      "investigation-dossier-beta.md"
+    ],
+    "required_phrases": ["Beruházási", "99-99-884422"],
     "tags": ["decoy-trap"]
   },
   {
@@ -60,9 +96,10 @@
     "tags": ["decoy-trap", "abstention"]
   },
   {
-    "input": "What penalty amount was assessed against Kamuhold Építő Kft. in 2023?",
+    "input": "What penalty amount was assessed against Kamuhold Építő Kft. in 2023, and under which case reference?",
     "expected_output": "HUF 47,000,000 (forty-seven million forints) under case KAH-KV-2023/4419.",
     "expected_source_file": "investigation-dossier-gamma-decoy.md",
+    "required_phrases": ["47,000,000", "KAH-KV-2023/4419"],
     "tags": ["gamma-only"]
   },
   {
