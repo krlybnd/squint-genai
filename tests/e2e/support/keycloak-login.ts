@@ -54,6 +54,22 @@ export function e2eCredentials(persona: E2ePersona = "default"): { username: str
   }
 }
 
+/** Map the username written in a feature file to Keycloak credentials. */
+export function credentialsForUser(who: string): { username: string; password: string } {
+  const key = who.trim().toLowerCase();
+  const admin = e2eCredentials("default");
+  const readonly = e2eCredentials("readonly");
+  const nonAdmin = e2eCredentials("nonAdmin");
+  if (key === "admin" || key === admin.username.toLowerCase()) return admin;
+  if (key === "readonly" || key === readonly.username.toLowerCase()) return readonly;
+  if (key === "nonadmin" || key === "non-admin" || key === nonAdmin.username.toLowerCase()) {
+    return nonAdmin;
+  }
+  throw new Error(
+    `Unknown e2e user "${who}". Use ${admin.username}, ${readonly.username}, or ${nonAdmin.username}.`,
+  );
+}
+
 export async function loginViaKeycloak(
   page: Page,
   username: string,
@@ -90,11 +106,8 @@ export async function signOutIfAuthenticated(page: Page): Promise<void> {
   );
 }
 
-export async function ensureLoggedInAs(
-  page: Page,
-  persona: E2ePersona = "default",
-): Promise<void> {
-  const { username, password } = e2eCredentials(persona);
+export async function ensureLoggedInUser(page: Page, who: string): Promise<void> {
+  const { username, password } = credentialsForUser(who);
   await humanGoto(page, "/");
   if (process.env.E2E_AUTH === "0") {
     return;
@@ -116,6 +129,13 @@ export async function ensureLoggedInAs(
   if (!(await isAppAuthenticated(page))) {
     await loginViaKeycloak(page, username, password);
   }
+}
+
+export async function ensureLoggedInAs(
+  page: Page,
+  persona: E2ePersona = "default",
+): Promise<void> {
+  await ensureLoggedInUser(page, e2eCredentials(persona).username);
 }
 
 export async function ensureLoggedIn(page: Page): Promise<void> {

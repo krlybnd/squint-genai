@@ -13,4 +13,4 @@ globs: tests/**/*
 - Eval config is `CoreSettings` (`EVAL_` prefix: tenant, OpenAI-compatible key/URL, `EVAL_CHAT_URL` / `EVAL_API_URL` with `EVAL_SUT_*` aliases). Live suites talk to api/chat over HTTP — not Qdrant, not in-process LangGraph. Suites load `tests/eval/.env` via pydantic-settings (copy `.env.example`; do not `source` it — bash mangles JSON). Proxy bearer aliases: `EVAL_OPENAI_API_KEY` / `EVAL_SUT_LITELLM_API_KEY` / `LITELLM_MASTER_KEY` / `OPENAI_API_KEY`; empty values are ignored.
 - **LangSmith** prod tracing: `LANGSMITH_ENABLED=true` on chat service (LangGraph auto-traces)
 - Test profiles: Dagger functions in `tools/ops` (`test-unit`, `test-all`); `make test-profiles`
-- E2E UI: `tests/e2e` (Playwright + Gherkin); not in default CI; `npm test` is fast by default, `npm run test:demo` for slow human-like video
+- E2E UI: `tests/e2e` (Playwright + Gherkin); not in default CI; `make -C tests/e2e run-smoke-suite` (`@smoke`), `run-regression-suite` (`@regression`), `run` = both. `npm run test:demo` for slow human-like video

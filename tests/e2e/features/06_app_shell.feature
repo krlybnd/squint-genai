@@ -5,25 +5,26 @@ Feature: Main application shell
   So that I can upload files and chat in one place
 
   Background:
-    Given the application is running with authentication enabled
-    And I am signed in as a user with write access
+    Given I am signed in as "admin"
 
   @smoke
   Scenario: Home layout shows documents sidebar and chat panel
-    When I navigate to "/"
-    Then the documents sidebar heading should be "Documents"
-    And the chat empty title should be visible
-    And the profile menu trigger should show my username
+    When I go to "/"
+    Then I should see the heading "Documents"
+    And I should see "Ask anything about your documents"
+    And I should see the username "admin"
 
+  @regression
   Scenario: Session drawer toggles without losing sidebar
-    When I open the sessions drawer
-    Then the sessions panel title should be "Sessions"
-    And the documents sidebar heading should be "Documents"
-    When I close the sessions drawer
-    Then the sessions panel should be hidden
+    When I click the button "Open sessions"
+    Then I should see the heading "Sessions"
+    And I should see the heading "Documents"
+    When I click the button "Close sessions"
+    Then the sessions drawer should be closed
 
+  @regression
   Scenario: App title and theme default on first visit
-    Given local storage is cleared for locale and theme
-    When I navigate to "/"
-    Then the document root should have theme "purple"
-    And the documents sidebar heading should be "Documents"
+    Given I clear local storage keys "app-locale, app-theme"
+    When I go to "/"
+    Then the page theme should be "purple"
+    And I should see the heading "Documents"
