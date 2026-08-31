@@ -1,20 +1,20 @@
 from agentic_shared.integrations.idp.core.errors import IdpForbiddenError, IdpNotFoundError
-from agentic_shared.integrations.idp.core.protocols import TenantAdmin, UserAdmin
+from agentic_shared.integrations.idp.core.protocols import UserAdmin
 from agentic_shared.integrations.idp.core.records import TenantRecord, UserTenancy
 
 
 class KeycloakUserTenancy:
-    def __init__(self, users: UserAdmin, tenants: TenantAdmin) -> None:
+    """Api tenancy: user record only — never list Organizations (needs manage-realm on KC 26)."""
+
+    def __init__(self, users: UserAdmin) -> None:
         self._users = users
-        self._tenants = tenants
 
     async def get(self, username: str) -> UserTenancy | None:
         record = await self._users.get_by_username(username)
         if record is None:
             return None
-        catalog = {org.alias: org for org in await self._tenants.list_tenants()}
         tenants = [
-            catalog.get(alias, TenantRecord(id=alias, alias=alias, name=alias, enabled=True))
+            TenantRecord(id=alias, alias=alias, name=alias, enabled=True)
             for alias in record.tenant_ids
         ]
         return UserTenancy(

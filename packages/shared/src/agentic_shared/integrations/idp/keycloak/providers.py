@@ -55,7 +55,4 @@ class KeycloakUserTenancyProvider(Provider):
         return self._tenancy(factory)
 
     def _tenancy(self, factory: KeycloakAdminClientFactory) -> KeycloakUserTenancy:
-        return KeycloakUserTenancy(
-            UserGateway(self._settings, factory),
-            TenantGateway(self._settings, factory),
-        )
+        return KeycloakUserTenancy(UserGateway(self._settings, factory))
