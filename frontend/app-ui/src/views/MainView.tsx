@@ -17,7 +17,10 @@ export default function MainView() {
   const adminPanelHref = getAppFeatures()?.adminPanelHref;
 
   return (
-    <AppShell sidebar={<DocumentsPanel />} profileMenu={adminPanelHref ? { adminPanelHref } : undefined}>
+    <AppShell
+      sidebar={<DocumentsPanel key={tenantId ?? "none"} />}
+      profileMenu={adminPanelHref ? { adminPanelHref } : undefined}
+    >
       <div className="chat-area">
         <ChatPanel key={tenantId ?? "none"} session={activeSession} onSessionCreated={setActiveSession} />
       </div>
