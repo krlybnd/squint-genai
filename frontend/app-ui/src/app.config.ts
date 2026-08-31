@@ -8,10 +8,12 @@ export const appDefinition: AppConfigDefinition = {
   endpoints: {
     api: "/api",
     chat: "/chat",
+    admin: "/admin-api",
   },
   devProxy: {
     "/api": { target: "http://localhost:8000", stripPrefix: "/api" },
     "/chat": { target: "http://localhost:8002", stripPrefix: "/chat" },
+    "/admin-api": { target: "http://localhost:8003", stripPrefix: "/admin-api" },
     "/admin": { target: "http://localhost:5174" },
     "/realms": { target: "http://localhost:8080" },
   },

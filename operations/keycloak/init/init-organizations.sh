@@ -231,6 +231,7 @@ ensure_tenant_roles_mapper
 ORG_A="$(create_org "Tenant A" "tenant-a")"
 ORG_B="$(create_org "Tenant B" "tenant-b")"
 add_member "${ORG_A}" "admin"
+add_member "${ORG_B}" "admin"
 add_member "${ORG_A}" "alice@tenant-a.local"
 add_member "${ORG_B}" "bob@tenant-b.local"
 

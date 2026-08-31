@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronUp, LogOut, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthProvider";
+import { useTenant } from "../auth/TenantProvider";
+import { Select } from "./Select";
 import { SUPPORTED_LOCALES } from "../i18n/locale";
 import { THEMES } from "../preferences/themes";
 import { usePreferences } from "../preferences/PreferencesProvider";
@@ -24,6 +26,7 @@ function initialsFromUsername(username: string | null): string {
 export function UserProfileMenu({ adminPanelHref }: UserProfileMenuProps = {}) {
   const { t } = useTranslation();
   const auth = useAuth();
+  const { tenantId, tenants, switching, switchTenant } = useTenant();
   const { locale, theme, setLocale, setTheme } = usePreferences();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -48,6 +51,27 @@ export function UserProfileMenu({ adminPanelHref }: UserProfileMenuProps = {}) {
     <div className={`profile-menu${open ? " open" : ""}`} ref={rootRef}>
       {open && (
         <div className="profile-menu-dropdown" role="menu" aria-label={t("prefs.accountMenu")}>
+          {tenants.length > 0 && tenantId && (
+            <div className="profile-menu-section">
+              <span className="profile-menu-section-label">{t("prefs.tenant")}</span>
+              <div
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Select
+                  value={tenantId}
+                  options={tenants.map((item) => ({ value: item.alias, label: item.name }))}
+                  onChange={(alias) => {
+                    void switchTenant(alias);
+                  }}
+                  ariaLabel={t("prefs.tenant")}
+                  variant="form"
+                  menuPlacement="up"
+                  disabled={switching || tenants.length < 2}
+                />
+              </div>
+            </div>
+          )}
           <div className="profile-menu-section">
             <span className="profile-menu-section-label">{t("prefs.language")}</span>
             <div className="profile-menu-options" role="group" aria-label={t("prefs.language")}>

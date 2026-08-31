@@ -8,7 +8,8 @@
     "theme": "Téma",
     "logout": "Kijelentkezés",
     "guest": "Vendég",
-    "accountMenu": "Fiók és beállítások"
+    "accountMenu": "Fiók és beállítások",
+    "tenant": "Tenant"
   },
   "lang": {
     "en": "English",

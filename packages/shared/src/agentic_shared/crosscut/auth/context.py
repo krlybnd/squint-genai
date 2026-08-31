@@ -8,6 +8,7 @@ class AuthContext:
     user_id: str | None
     tenant_id: str | None
     roles: frozenset[AppRole] = field(default_factory=frozenset)
+    username: str | None = None
 
     @classmethod
     def anonymous(cls) -> "AuthContext":

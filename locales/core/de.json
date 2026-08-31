@@ -8,7 +8,8 @@
     "theme": "Design",
     "logout": "Abmelden",
     "guest": "Gast",
-    "accountMenu": "Konto und Einstellungen"
+    "accountMenu": "Konto und Einstellungen",
+    "tenant": "Tenant"
   },
   "lang": {
     "en": "English",

@@ -10,6 +10,7 @@ export function createDevAuthClient(config: DevAuthConfig = {}): AuthClient {
     getUsername: () => username,
     getRoles: () => roles,
     getAccessToken: () => undefined,
+    getTenantId: () => "tenant-a",
     hasAnyRole(...required: string[]) {
       return rolePolicyHasAny(roles, ...required);
     },

@@ -5,6 +5,7 @@
     "empty": "Noch keine Dokumente",
     "emptyHintWrite": "PDF hochladen, um mit der Indexierung zu beginnen",
     "emptyHintRead": "Nur Lesezugriff",
+    "tenant": "Tenant",
     "indexed": "Indexiert",
     "indexing": "Indexierung…",
     "failed": "Fehlgeschlagen",

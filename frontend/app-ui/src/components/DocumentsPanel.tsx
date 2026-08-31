@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Document, deleteDocument, fetchDocuments, reindexDocument, uploadDocument } from "../api/client";
-import { useAuth } from "@are/ui-core";
+import { useAuth, useTenant } from "@are/ui-core";
 import type { ChunkViewerTarget } from "../shared/types/chunks";
 import { ChunkViewerModal } from "./ChunkViewerModal";
 import "./DocumentsPanel.css";
@@ -22,6 +22,7 @@ type IndexStatus = Document["index_status"];
 export function DocumentsPanel() {
   const { t } = useTranslation();
   const auth = useAuth();
+  const { tenantId, tenantLabel } = useTenant();
   const canWrite = auth.hasAnyRole("write", "admin");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,7 @@ export function DocumentsPanel() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
+    void tenantId;
     try {
       setDocuments(await fetchDocuments());
     } catch {
@@ -40,7 +42,7 @@ export function DocumentsPanel() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenantId]);
 
   useEffect(() => {
     load();
@@ -128,19 +130,30 @@ export function DocumentsPanel() {
         <h2>
           <FileText size={20} /> {t("documents.title")}
         </h2>
-        {canWrite && (
-          <>
-            <button
-              className="btn-upload"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
+        <div className="panel-header-actions">
+          {tenantLabel ? (
+            <span
+              className="panel-tenant"
+              title={tenantId ?? tenantLabel}
+              aria-label={`${t("documents.tenant")}: ${tenantLabel}`}
             >
-              {uploading ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}
-              {t("documents.upload")}
-            </button>
-            <input ref={fileRef} type="file" accept=".pdf" hidden onChange={handleUpload} />
-          </>
-        )}
+              {tenantLabel}
+            </span>
+          ) : null}
+          {canWrite && (
+            <>
+              <button
+                className="btn-upload"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}
+                {t("documents.upload")}
+              </button>
+              <input ref={fileRef} type="file" accept=".pdf" hidden onChange={handleUpload} />
+            </>
+          )}
+        </div>
       </div>
 
       <div className="doc-list">

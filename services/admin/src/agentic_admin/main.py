@@ -11,6 +11,8 @@ from agentic_shared.integrations.idp.keycloak.providers import KeycloakAdminProv
 from dishka import AsyncContainer
 from fastapi import FastAPI
 
+from agentic_admin.modules.me.providers import MeProvider
+from agentic_admin.modules.me.router import router as me_router
 from agentic_admin.modules.tenants.providers import TenantsProvider
 from agentic_admin.modules.tenants.router import router as tenants_router
 from agentic_admin.modules.users.providers import UsersProvider
@@ -32,6 +34,7 @@ def create_app() -> FastAPI:
         KeycloakAdminProvider(settings.keycloak_integration),
         TenantsProvider(),
         UsersProvider(),
+        MeProvider(),
     )
     return (
         FastAPIAppBuilder(
@@ -43,6 +46,7 @@ def create_app() -> FastAPI:
         .with_standard_middleware()
         .with_dishka(container)
         .include_router(health_router)
+        .include_router(me_router, prefix="/v1")
         .include_router(tenants_router, prefix="/v1")
         .include_router(users_router, prefix="/v1")
         .build()

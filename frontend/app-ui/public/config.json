@@ -1,7 +1,8 @@
 {
   "endpoints": {
     "api": "/api",
-    "chat": "/chat"
+    "chat": "/chat",
+    "admin": "/admin-api"
   },
   "features": {
     "adminPanelHref": "/admin/"

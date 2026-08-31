@@ -122,6 +122,11 @@
   box-shadow: var(--shadow-xl);
 }
 
+.ui-select.menu-up .ui-select-menu {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
 .ui-select-option {
   display: block;
   width: 100%;
