@@ -13,6 +13,7 @@ from agentic_shared.infrastructure.cache.redis.providers import RedisProvider
 from agentic_shared.infrastructure.sql.postgres.providers import DatabaseProvider
 from agentic_shared.infrastructure.storage.minio.providers import MinioProvider
 from agentic_shared.infrastructure.vector.qdrant.providers import QdrantProvider
+from agentic_shared.integrations.idp.keycloak.providers import KeycloakUserTenancyProvider
 from agentic_shared.integrations.litellm.analyzer.providers import AnalyzerProvider
 from agentic_shared.integrations.litellm.embedding.providers import EmbeddingProvider
 from agentic_shared.integrations.litellm.guard.providers import GuardProvider
@@ -27,6 +28,8 @@ from agentic_api.modules.documents.providers import DocumentsProvider
 from agentic_api.modules.documents.router import router as documents_router
 from agentic_api.modules.jobs.providers import JobsProvider
 from agentic_api.modules.jobs.router import router as jobs_router
+from agentic_api.modules.me.providers import MeProvider
+from agentic_api.modules.me.router import router as me_router
 from agentic_api.modules.retrieval.providers import RetrievalProvider
 from agentic_api.modules.retrieval.router import router as retrieval_router
 from agentic_api.modules.vault.providers import VaultApiProvider
@@ -46,6 +49,7 @@ def create_app() -> FastAPI:
     settings = load_settings()
     container = make_service_container(
         AuthProvider(settings.auth, settings.role),
+        KeycloakUserTenancyProvider(settings.keycloak_integration),
         DatabaseProvider(settings.database),
         LLMProvider(settings.llm),
         AnalyzerProvider(settings.analyzer),
@@ -63,6 +67,7 @@ def create_app() -> FastAPI:
         AnnotationsProvider(),
         PiiVaultProvider(settings.crypto, settings.pii_vault),
         VaultApiProvider(),
+        MeProvider(),
     )
     return (
         FastAPIAppBuilder(
@@ -75,6 +80,7 @@ def create_app() -> FastAPI:
         .with_domain_errors()
         .with_dishka(container)
         .include_router(health_router)
+        .include_router(me_router, prefix="/v1")
         .include_router(documents_router, prefix="/v1")
         .include_router(jobs_router, prefix="/v1")
         .include_router(retrieval_router, prefix="/v1")

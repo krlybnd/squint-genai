@@ -35,6 +35,7 @@ npm equivalents from the repo root: `npm run test:smoke -w agentic-rag-eval-e2e`
 | `05_admin_panel.feature` | `/admin` for admin vs redirect for non-admin |
 | `06_app_shell.feature` | Layout: sidebar + chat + drawer toggle |
 | `07_admin_tenant_membership.feature` | Create tenant, assign alice with read/write, verify on tenant members |
+| `08_tenant_switch.feature` | Avatar menu: switch admin between Tenant A / Tenant B; documents stay isolated |
 
 Tags: `@e2e`, `@ui`, `@smoke` / `@regression` (disjoint suites), `@slow` (indexing).
 
@@ -48,6 +49,7 @@ Features name **visible copy and paths**. Replay a scenario in the English UI wi
 | Go / reload | `When I go to "/"`, `When I reload the page` |
 | Click | `When I click the button "New chat"`, `When I click the menu item "Admin panel"` |
 | Choose (radio) | `When I choose "Magyar"` |
+| Choose (select) | `When I choose "Tenant B" from "Tenant"` |
 | Fill / type | `When I fill "Alias" with "tenant-a"`, `When I type "Hello" into "Ask a question…" and press Enter` |
 | See | `Then I should see "No documents yet"`, `Then I should see the heading "Documents"`, `Then I should see the button "Upload PDF"` |
 | Path | `Then I should be on "/admin"`, `Then I should be on a page matching "/realms/"` |

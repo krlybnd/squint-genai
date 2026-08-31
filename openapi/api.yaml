@@ -35,6 +35,44 @@ paths:
                   - type: boolean
                 type: object
                 title: Response Ready Ready Get
+  /v1/me:
+    get:
+      tags:
+      - me
+      summary: Get Me
+      operationId: get_me_v1_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeOut'
+  /v1/me/active-tenant:
+    put:
+      tags:
+      - me
+      summary: Set My Active Tenant
+      operationId: set_my_active_tenant_v1_me_active_tenant_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetMyActiveTenantRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/documents:
     get:
       tags:
@@ -868,6 +906,39 @@ components:
       - created_at
       - completed_at
       title: JobOut
+    MeOut:
+      properties:
+        username:
+          type: string
+          title: Username
+        tenant_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tenant Id
+        tenants:
+          items:
+            $ref: '#/components/schemas/MembershipTenantOut'
+          type: array
+          title: Tenants
+      type: object
+      required:
+      - username
+      - tenant_id
+      title: MeOut
+    MembershipTenantOut:
+      properties:
+        alias:
+          type: string
+          title: Alias
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+      - alias
+      - name
+      title: MembershipTenantOut
     PresignUploadRequest:
       properties:
         filename:
@@ -943,6 +1014,17 @@ components:
       required:
       - chunks
       title: SearchResponse
+    SetMyActiveTenantRequest:
+      properties:
+        alias:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Alias
+      type: object
+      required:
+      - alias
+      title: SetMyActiveTenantRequest
     ValidationError:
       properties:
         loc:

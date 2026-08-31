@@ -3,7 +3,6 @@
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
   readonly VITE_CHAT_URL?: string;
-  readonly VITE_ADMIN_URL?: string;
   readonly VITE_API_KEY?: string;
   readonly VITE_AUTH_ENABLED?: string;
   readonly VITE_KEYCLOAK_URL?: string;

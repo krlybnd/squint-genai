@@ -22,7 +22,7 @@ type IndexStatus = Document["index_status"];
 export function DocumentsPanel() {
   const { t } = useTranslation();
   const auth = useAuth();
-  const { tenantId, tenantLabel } = useTenant();
+  const { tenantId } = useTenant();
   const canWrite = auth.hasAnyRole("write", "admin");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,15 +131,6 @@ export function DocumentsPanel() {
           <FileText size={20} /> {t("documents.title")}
         </h2>
         <div className="panel-header-actions">
-          {tenantLabel ? (
-            <span
-              className="panel-tenant"
-              title={tenantId ?? tenantLabel}
-              aria-label={`${t("documents.tenant")}: ${tenantLabel}`}
-            >
-              {tenantLabel}
-            </span>
-          ) : null}
           {canWrite && (
             <>
               <button

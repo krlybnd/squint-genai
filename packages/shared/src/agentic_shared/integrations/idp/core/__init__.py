@@ -6,11 +6,17 @@ from agentic_shared.integrations.idp.core.errors import (
     IdpForbiddenError,
     IdpNotFoundError,
 )
-from agentic_shared.integrations.idp.core.protocols import TenantAdmin, UserAdmin
+from agentic_shared.integrations.idp.core.protocols import (
+    TenantAdmin,
+    UserAdmin,
+    UserTenancyRead,
+    UserTenancyWrite,
+)
 from agentic_shared.integrations.idp.core.records import (
     TenantMemberRecord,
     TenantRecord,
     UserRecord,
+    UserTenancy,
 )
 
 __all__ = [
@@ -23,4 +29,7 @@ __all__ = [
     "TenantRecord",
     "UserAdmin",
     "UserRecord",
+    "UserTenancy",
+    "UserTenancyRead",
+    "UserTenancyWrite",
 ]

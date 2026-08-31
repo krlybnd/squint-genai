@@ -10,8 +10,8 @@ from agentic_shared.integrations.idp.core.errors import (
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, HTTPException
 
-from agentic_admin.modules.me.schemas import MeOut, SetMyActiveTenantRequest
-from agentic_admin.modules.me.service import MeService
+from agentic_api.modules.me.schemas import MeOut, SetMyActiveTenantRequest
+from agentic_api.modules.me.service import MeService
 
 router = APIRouter(prefix="/me", tags=["me"])
 

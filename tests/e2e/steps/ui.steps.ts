@@ -13,10 +13,23 @@ When("I go to {string}", async ({ page }, path: string) => {
 When("I reload the page", async ({ page }) => {
   await page.reload();
   await humanPause(page);
+  if (process.env.E2E_AUTH !== "0") {
+    await page.locator(".profile-menu-name").waitFor({ timeout: 30_000 }).catch(() => {});
+  }
 });
 
 When("I click the button {string}", async ({ page }, name: string) => {
-  await humanClick(page, page.getByRole("button", { name, exact: true }));
+  const exact = page.getByRole("button", { name, exact: true });
+  if ((await exact.count()) > 0) {
+    await humanClick(page, exact.first());
+    return;
+  }
+  await humanClick(
+    page,
+    page.locator(".profile-menu-trigger").filter({
+      has: page.locator(".profile-menu-name", { hasText: new RegExp(`^${name}$`, "i") }),
+    }),
+  );
 });
 
 When("I click the menu item {string}", async ({ page }, name: string) => {
@@ -25,6 +38,13 @@ When("I click the menu item {string}", async ({ page }, name: string) => {
 
 When("I choose {string}", async ({ page }, name: string) => {
   await humanClick(page, page.getByRole("menuitemradio", { name, exact: true }));
+});
+
+When("I choose {string} from {string}", async ({ page }, option: string, trigger: string) => {
+  const triggerBtn = page.getByRole("button", { name: trigger, exact: true });
+  await humanClick(page, triggerBtn);
+  await humanClick(page, page.getByRole("option", { name: option, exact: true }));
+  await expect(triggerBtn).toContainText(option, { timeout: 30_000 });
 });
 
 When("I fill {string} with {string}", async ({ page }, label: string, value: string) => {

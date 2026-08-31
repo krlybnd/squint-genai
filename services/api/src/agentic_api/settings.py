@@ -10,6 +10,7 @@ from agentic_shared.infrastructure.cache.redis.settings import RedisSettings
 from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
 from agentic_shared.infrastructure.storage.minio.settings import MinioSettings
 from agentic_shared.infrastructure.vector.qdrant.settings import QdrantSettings
+from agentic_shared.integrations.idp.keycloak.settings import KeycloakAdminSettings
 from agentic_shared.integrations.litellm.analyzer.settings import AnalyzerSettings
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.guard.settings import GuardSettings
@@ -80,6 +81,10 @@ class ApiSettings(AppSettings):
     pii_vault: PiiVaultSettings = Field(
         default_factory=PiiVaultSettings,
         description="Vault query tokenization for retrieval API.",
+    )
+    keycloak_integration: KeycloakAdminSettings = Field(
+        default_factory=KeycloakAdminSettings,
+        description="Keycloak Admin API for the caller's tenant memberships.",
     )
 
 

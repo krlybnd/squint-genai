@@ -24,12 +24,12 @@ type TenantState = {
 
 const TenantContext = createContext<TenantState | null>(null);
 
-function adminBase(): string | undefined {
-  return getAppConfig().endpoints.admin;
+function apiBase(): string | undefined {
+  return getAppConfig().endpoints.api;
 }
 
 async function fetchMe(): Promise<MeResponse | null> {
-  const base = adminBase();
+  const base = apiBase();
   if (!base) return null;
   const res = await fetch(`${base}/v1/me`, { headers: await buildHeadersAsync(false) });
   if (!res.ok) return null;
@@ -62,7 +62,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
   const switchTenant = useCallback(
     async (alias: string) => {
-      const base = adminBase();
+      const base = apiBase();
       if (!base || alias === tenantId) return;
       setSwitching(true);
       try {

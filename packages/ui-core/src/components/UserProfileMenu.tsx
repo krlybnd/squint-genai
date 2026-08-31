@@ -26,7 +26,7 @@ function initialsFromUsername(username: string | null): string {
 export function UserProfileMenu({ adminPanelHref }: UserProfileMenuProps = {}) {
   const { t } = useTranslation();
   const auth = useAuth();
-  const { tenantId, tenants, switching, switchTenant } = useTenant();
+  const { tenantId, tenantLabel, tenants, switching, switchTenant } = useTenant();
   const { locale, theme, setLocale, setTheme } = usePreferences();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -149,7 +149,12 @@ export function UserProfileMenu({ adminPanelHref }: UserProfileMenuProps = {}) {
         <span className="profile-menu-avatar" aria-hidden>
           {initials}
         </span>
-        <span className="profile-menu-name">{displayName}</span>
+        <span className="profile-menu-identity">
+          <span className="profile-menu-name">{displayName}</span>
+          {tenantLabel ? (
+            <span className="profile-menu-tenant">{tenantLabel}</span>
+          ) : null}
+        </span>
         <ChevronUp size={16} className="profile-menu-chevron" aria-hidden />
       </button>
     </div>

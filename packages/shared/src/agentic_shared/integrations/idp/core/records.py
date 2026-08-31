@@ -29,3 +29,10 @@ class UserRecord:
     tenant_ids: list[str]
     realm_roles: list[str]
     tenant_roles: dict[str, list[str]]
+
+
+@dataclass(frozen=True, slots=True)
+class UserTenancy:
+    username: str
+    tenant_id: str | None
+    tenants: list[TenantRecord]

@@ -5,7 +5,6 @@
     "empty": "No documents yet",
     "emptyHintWrite": "Upload a PDF to start indexing",
     "emptyHintRead": "Read-only access",
-    "tenant": "Tenant",
     "indexed": "Indexed",
     "indexing": "Indexing…",
     "failed": "Failed",

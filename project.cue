@@ -112,7 +112,7 @@ folders: {
 			Vertical slices under modules/. Indexes via Celery enqueue only — never sync indexing.
 			"""
 		contains: ["src/agentic_api/modules/", "tests/unittest/"]
-		mustNot:  ["LangGraph agent graph", "semantic chunking in request path"]
+		mustNot:  ["LangGraph agent graph", "semantic chunking in request path", "direct keycloak-admin-client"]
 		related:  ["services/indexing", "packages/shared", "openapi/api.yaml"]
 	}
 
