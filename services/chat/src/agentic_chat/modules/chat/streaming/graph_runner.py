@@ -8,8 +8,6 @@ from agentic_shared.crosscut.i18n import DEFAULT_LOCALE, t
 from agentic_shared.domains.chat.roles import ChatMessageRole
 from agentic_shared.domains.persistence.entities import ChatMessage
 from agentic_shared.domains.persistence.protocols.chat import ChatMessageWriteRepository
-from agentic_shared.domains.pii_vault.reveal_service import StreamingVaultReveal, VaultRevealService
-from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from langchain_core.runnables import RunnableConfig
 
 from agentic_chat.core.graph.enums import AgentGraphNode
@@ -42,14 +40,9 @@ class ChatGraphRunner:
         self,
         graph: ChatCompiledGraph,
         messages_write: ChatMessageWriteRepository,
-        *,
-        vault_reveal: VaultRevealService | None = None,
-        pii_vault: PiiVaultSettings | None = None,
     ) -> None:
         self._graph = graph
         self._messages_write = messages_write
-        self._vault_reveal = vault_reveal
-        self._pii_vault = pii_vault or PiiVaultSettings()
 
     def _astream(
         self,
@@ -97,38 +90,8 @@ class ChatGraphRunner:
         answer: str,
         citations: list[dict[str, Any]],
     ) -> AsyncIterator[str]:
-        if (
-            self._pii_vault.enabled
-            and self._pii_vault.sse_detokenize_enabled
-            and self._vault_reveal is not None
-        ):
-            answer = await self._vault_reveal.reveal_text(answer)
-            citations = await self._vault_reveal.reveal_citations(citations)
         await self._persist_assistant(session_id, answer, citations)
         yield sse_done(DoneEventData(answer=answer, citations=citations))
-
-    async def _emit_stream_token(
-        self,
-        token: str,
-        stream_reveal: StreamingVaultReveal | None,
-    ) -> AsyncIterator[str]:
-        if stream_reveal is None:
-            if token:
-                yield sse_token(TokenEventData(content=token))
-            return
-        revealed = await stream_reveal.feed(token)
-        if revealed:
-            yield sse_token(TokenEventData(content=revealed))
-
-    async def _flush_stream_tokens(
-        self,
-        stream_reveal: StreamingVaultReveal | None,
-    ) -> AsyncIterator[str]:
-        if stream_reveal is None:
-            return
-        remainder = await stream_reveal.flush()
-        if remainder:
-            yield sse_token(TokenEventData(content=remainder))
 
     async def stream_execute(
         self,
@@ -139,19 +102,11 @@ class ChatGraphRunner:
         locale: str = DEFAULT_LOCALE,
     ) -> AsyncIterator[str]:
         final_state: AgentStateUpdate = {}
-        stream_reveal: StreamingVaultReveal | None = None
-        if (
-            self._pii_vault.enabled
-            and self._pii_vault.sse_detokenize_enabled
-            and self._vault_reveal is not None
-        ):
-            stream_reveal = StreamingVaultReveal(self._vault_reveal)
         try:
             async for item in self._astream(input_state, config):
                 match item:
                     case ("custom", token) if token != "":
-                        async for event in self._emit_stream_token(token, stream_reveal):
-                            yield event
+                        yield sse_token(TokenEventData(content=token))
                     case ("updates", updates):
                         for node, node_output in updates.items():
                             final_state.update(node_output)
@@ -170,8 +125,6 @@ class ChatGraphRunner:
                                 node,
                                 len(citations),
                             )
-                            async for event in self._flush_stream_tokens(stream_reveal):
-                                yield event
                             async for event in self._finish_with_answer(
                                 session_id, answer, citations
                             ):
@@ -187,7 +140,5 @@ class ChatGraphRunner:
         answer = str(final_state.get("answer", ""))
         if answer:
             citations = citation_states(citations_from_output(final_state))
-            async for event in self._flush_stream_tokens(stream_reveal):
-                yield event
             async for event in self._finish_with_answer(session_id, answer, citations):
                 yield event

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
-  title: agentic-api
-  description: Documents, indexing jobs, retrieval, and annotations REST API
+  title: Squint API
+  description: Documents, indexing jobs, retrieval, and admin endpoints
   version: 0.1.0
 paths:
   /health:
@@ -359,31 +359,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /v1/vault/detokenize:
-    post:
-      tags:
-      - vault
-      summary: Detokenize
-      operationId: detokenize_v1_vault_detokenize_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DetokenizeRequest'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetokenizeResponse'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /v1/annotations/chunks/{chunk_id}/comments:
     get:
       tags:
@@ -449,53 +424,6 @@ components:
   schemas:
     ChunkComment:
       properties:
-        point_type:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Point Type
-        tenant_id:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Tenant Id
-        text:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Text
-        doc_id:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Doc Id
-        source_file:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Source File
-        page:
-          anyOf:
-          - type: string
-          - type: integer
-          - type: 'null'
-          title: Page
-        page_label:
-          anyOf:
-          - type: string
-          - type: integer
-          - type: 'null'
-          title: Page Label
-        section:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Section
-        _node_content:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Node Content
         comment_id:
           type: string
           minLength: 1
@@ -673,26 +601,6 @@ components:
       - selected_text
       - comment_text
       title: CreateChunkCommentRequest
-    DetokenizeRequest:
-      properties:
-        tokens:
-          items:
-            type: string
-          type: array
-          title: Tokens
-          description: Vault tokens to resolve (e.g. '<PERSON_a1b2c3d4>').
-      type: object
-      title: DetokenizeRequest
-    DetokenizeResponse:
-      properties:
-        values:
-          additionalProperties:
-            type: string
-          type: object
-          title: Values
-          description: Resolved token → plaintext for the current tenant only.
-      type: object
-      title: DetokenizeResponse
     DocumentChunksResponse:
       properties:
         doc_id:

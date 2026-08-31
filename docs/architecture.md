@@ -43,47 +43,63 @@ flowchart TB
         api["api :8000"]
         chat["chat :8002"]
         admin["admin :8003"]
-        indexing["indexing worker"]
+        indexing["indexing Celery worker"]
     end
 
-    subgraph platform [Platform — operations/]
-        litellm["LiteLLM :4000"]
-        guard["llm-guard · Presidio"]
+    subgraph shared [packages/shared]
+        retrieval["domains/retrieval"]
     end
 
-    subgraph data [Data stores]
+    subgraph data [operations/]
         postgres[("PostgreSQL")]
         redis[("Redis")]
         minio[("MinIO :9000")]
         qdrant[("Qdrant :6333")]
+        litellm["LiteLLM :4000"]
     end
 
-    ext["LLM provider"]
+    llm["LLM provider"]
 
     frontend --> traefik
     admin_ui --> traefik
-    traefik --> chat
-    admin --> keycloak
-    chat --> litellm
+    keycloak --- traefik
+    traefik -->|"/api/*"| api
+    traefik -->|"/chat/*"| chat
+    traefik -->|"/admin-api/*"| admin
+    traefik -->|"/"| frontend
+    traefik -->|"/admin"| admin_ui
+
+    ops -->|"migrate + MinIO setup"| postgres
+    ops --> minio
+    api --> postgres
+    api --> redis
+    api --> minio
+    api --> qdrant
+    api --> retrieval
+    chat --> postgres
     chat --> qdrant
-    litellm --> ext
+    chat --> litellm
+    chat --> retrieval
+    admin --> keycloak
+    indexing --> redis
+    indexing --> minio
+    indexing --> qdrant
+    indexing --> litellm
+    indexing --> postgres
+    retrieval --> qdrant
+    litellm --> llm
 
-    api -.->|index jobs| indexing
+    api -.->|"enqueue job"| redis
+    redis -.->|"Celery task"| indexing
+    indexing -.->|"write vectors"| qdrant
+    chat -.->|"read vectors"| qdrant
+    api -.->|"read vectors"| qdrant
+    frontend -.->|"SSE stream"| chat
 ```
-
-Solid arrows show the main request path (Client → Edge → **chat** → Platform / Data → external LLM). Other boxes in each layer are real services; details below.
 
 **Bootstrap gate:** `ops` runs Alembic migrations and MinIO bucket setup, then exits. App services wait for `ops` with `service_completed_successfully` ([docker-compose.yml](../docker-compose.yml)).
 
-**Traefik** also routes to **api** and **admin**; **api** and **indexing** enqueue work via Redis and call **LiteLLM** / **guard** / **MinIO** / **Postgres** as needed.
-
-**Guardrails profile:** `llm-guard` and Presidio sidecars are optional (`make up-guardrails`). Chat uses all three; API and indexing call Presidio when vault/query tokenization is enabled; `llm-guard` serves prompt-injection checks on the chat path.
-
-**LiteLLM** is an internal AI gateway (chat + embeddings proxy to the external provider) — not user-facing edge; Traefik/Keycloak terminate inbound HTTP.
-
 **Real-time chat:** SSE between Frontend and Chat — no message broker.
-
-**Indexing path:** api enqueues jobs on Redis → indexing worker writes vectors to Qdrant; chat and api read Qdrant in-process.
 
 ---
 
@@ -155,10 +171,6 @@ sequenceDiagram
 | **admin-ui** | 5174 | React admin UI (`--profile ui`) |
 | **Traefik** | 80 | API gateway (`--profile auth`) |
 | **Keycloak** | 8080 | Identity provider (`--profile auth`) |
-| **LiteLLM** | 4000 | Internal chat + embedding proxy to external LLM |
-| **llm-guard** | 8010 | Prompt-injection classifier (`--profile guardrails`) |
-| **presidio-analyzer** | — | PII detect sidecar (`--profile guardrails`) |
-| **presidio-anonymizer** | — | PII redact sidecar (`--profile guardrails`) |
 
 Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api` → api, `/chat` → chat, `/admin-api` → admin, `/admin` → admin-ui, `/` → frontend.
 
@@ -169,13 +181,11 @@ Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api
 | Zone | Components |
 |------|------------|
 | **Client** | app-ui (React + SSE), admin-ui |
-| **Edge** | Traefik, Keycloak (`--profile auth`) — inbound HTTP only |
+| **Edge** | Traefik, Keycloak (`--profile auth`) |
 | **Application** | ops, api, chat, admin, indexing (Celery) |
-| **Platform** | LiteLLM; llm-guard + Presidio (`--profile guardrails`) |
-| **Data stores** | Postgres, Redis, MinIO, Qdrant |
-| **External** | LLM provider (OpenAI / Ollama / …) |
-
-Retrieval and persistence logic lives in `packages/shared` and runs **in-process** inside api/chat/indexing — not as separate containers.
+| **packages/shared** | `domains/retrieval`, `domains/persistence`, integrations |
+| **operations/** | Postgres, Redis, MinIO, Qdrant, LiteLLM |
+| **External** | LLM provider |
 
 ---
 

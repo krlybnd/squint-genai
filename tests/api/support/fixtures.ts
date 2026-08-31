@@ -28,11 +28,6 @@ export type ScenarioMemory = {
   sseEvents?: Array<{ event: string; data: Record<string, unknown> }>;
   commentStatus?: number;
   commentBody?: unknown;
-  piiDocId?: string;
-  piiSearchChunks?: Array<{ text: string; chunk_id?: string }>;
-  piiVaultToken?: string;
-  piiDetokenizeStatus?: number;
-  piiDetokenizeBody?: unknown;
 };
 
 export const test = bddTest.extend<{

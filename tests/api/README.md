@@ -37,17 +37,8 @@ npx playwright test --grep @guardrails
 | `03_chat_sessions.feature` | create session, then list includes it |
 | `04_admin.feature` | `GET /v1/tenants` and `GET /v1/users` envelopes |
 | `05_guardrails.feature` | BanSubstrings hard reject (chat SSE + comment 422) + clean pass |
-| `06_pii_vault.feature` | Index-time PII tokens in Qdrant + `/vault/detokenize` (@pii-vault) |
 
 Banned phrases are defined in `operations/llm-guard/config/scanners.yml` (`BanSubstrings`) and mirrored in `src/guardrails.ts`.
-
-PII vault feature additionally requires:
-
-- `make up-guardrails` (Presidio analyzer for index-time tokenization)
-- Indexing worker: `INDEXING_PDF_PII_TOKENIZATION_ENABLED=true` plus shared `VAULT_ENCRYPTION_KEY` / `VAULT_TOKEN_SALT` (same values as API)
-- Chat/API: `PII_VAULT_ENABLED=true` for query tokenization + SSE detokenize on chat `done` events
-- Alembic revision `003` applied (`make migrate` or ops bootstrap)
-- tests/api `.env`: `PII_VAULT_TESTS_ENABLED=true`
 
 ## Generated types
 

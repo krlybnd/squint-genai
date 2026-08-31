@@ -19,12 +19,7 @@ class GuardNode(GraphNode):
         if rules is not None:
             self._rules = rules
         elif deps is not None:
-            self._rules = default_guard_rules(
-                deps.guard,
-                deps.analyzer,
-                deps.anonymizer,
-                query_pii=deps.query_pii,
-            )
+            self._rules = default_guard_rules(deps.guard, deps.analyzer, deps.anonymizer)
         else:
             raise TypeError("GuardNode requires deps or rules")
 
@@ -35,9 +30,8 @@ class GuardNode(GraphNode):
     async def __call__(self, state: AgentState) -> AgentStateUpdate:
         query = (state.get("query") or "").strip()
         locale = locale_of(state)
-        tenant_id = state.get("tenant_id") or "default"
         for rule in self._rules:
-            result = await rule.evaluate(query, locale, tenant_id=tenant_id)
+            result = await rule.evaluate(query, locale)
             if result is not None:
                 if result.get("guard_blocked"):
                     logger.warning("guard blocked rule=%s", rule.__class__.__name__)

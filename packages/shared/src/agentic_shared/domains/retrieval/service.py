@@ -2,7 +2,6 @@ import asyncio
 import logging
 from collections.abc import Callable
 
-from agentic_shared.domains.pii_vault.protocols import QueryPiiTokenizationPort
 from agentic_shared.domains.retrieval.models import (
     ChunkPreview,
     IndexedDocumentEntry,
@@ -29,12 +28,10 @@ class RetrievalService:
         chunk_read: ChunkReadRepository,
         llm: LiteLLMChatSettings,
         embedding: LiteLLMEmbeddingSettings,
-        query_pii: QueryPiiTokenizationPort | None = None,
     ) -> None:
         self._chunk_read = chunk_read
         self._llm = llm
         self._embedding = embedding
-        self._query_pii = query_pii
 
     def search_documents(
         self, query: str, top_k: int | None = None, *, tenant_id: str
@@ -86,27 +83,10 @@ class RetrievalService:
         )
         return cleaned, final_k, candidate_k, meta
 
-    async def _prepare_query_async(self, query: str, *, tenant_id: str) -> str:
-        cleaned = query.strip()
-        if not cleaned or self._query_pii is None or not self._query_pii.enabled:
-            return cleaned
-        return await self._query_pii.tokenize_query(cleaned, tenant_id=tenant_id)
-
-    def _prepare_query_sync(self, query: str, *, tenant_id: str) -> str:
-        cleaned = query.strip()
-        if not cleaned or self._query_pii is None or not self._query_pii.enabled:
-            return cleaned
-        return asyncio.run(self._query_pii.tokenize_query(cleaned, tenant_id=tenant_id))
-
     def search_documents_with_meta(
         self, query: str, top_k: int | None = None, *, tenant_id: str
     ) -> SearchDocumentsResult:
         cleaned, final_k, candidate_k, meta = self._search_meta(query, top_k)
-        if not cleaned:
-            return SearchDocumentsResult(chunks=[], meta=meta)
-
-        cleaned = self._prepare_query_sync(cleaned, tenant_id=tenant_id)
-        meta = meta.model_copy(update={"query": cleaned})
         if not cleaned:
             return SearchDocumentsResult(chunks=[], meta=meta)
 
@@ -139,11 +119,6 @@ class RetrievalService:
         self, query: str, top_k: int | None = None, *, tenant_id: str
     ) -> SearchDocumentsResult:
         cleaned, final_k, candidate_k, meta = self._search_meta(query, top_k)
-        if not cleaned:
-            return SearchDocumentsResult(chunks=[], meta=meta)
-
-        cleaned = await self._prepare_query_async(cleaned, tenant_id=tenant_id)
-        meta = meta.model_copy(update={"query": cleaned})
         if not cleaned:
             return SearchDocumentsResult(chunks=[], meta=meta)
 

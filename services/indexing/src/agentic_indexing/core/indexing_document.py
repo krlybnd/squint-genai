@@ -6,7 +6,6 @@ from agentic_shared.domains.indexing.models import IndexDocumentTaskResult
 from agentic_shared.domains.persistence.entities import JobStatus
 from agentic_shared.domains.persistence.protocols.documents import DocumentWriteRepositorySync
 from agentic_shared.domains.persistence.protocols.index_jobs import IndexJobWriteRepositorySync
-from agentic_shared.domains.pii_vault.protocols import IndexTimePiiTokenizationPort
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
 from agentic_shared.infrastructure.storage.core.protocols import StorageReader
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
@@ -27,7 +26,6 @@ class IndexDocumentUseCase:
         chunk_write: ChunkWriteRepository,
         llm: LiteLLMChatSettings,
         embedding: LiteLLMEmbeddingSettings,
-        pii: IndexTimePiiTokenizationPort | None = None,
     ) -> None:
         self._jobs = jobs
         self._documents = documents
@@ -35,7 +33,6 @@ class IndexDocumentUseCase:
         self._chunk_write = chunk_write
         self._llm = llm
         self._embedding = embedding
-        self._pii = pii
 
     def run(
         self,
@@ -62,8 +59,6 @@ class IndexDocumentUseCase:
             chunk_write=self._chunk_write,
             llm=self._llm,
             embedding=self._embedding,
-            pii=self._pii,
-            doc_uuid=document_id,
         )
 
         document = self._documents.get_by_id(document_id)
@@ -80,7 +75,3 @@ class IndexDocumentUseCase:
             tenant_id,
         )
         return IndexDocumentTaskResult.from_run(document_id=document_id, chunk_count=chunk_count)
-
-    def close(self) -> None:
-        if self._pii is not None:
-            self._pii.close()

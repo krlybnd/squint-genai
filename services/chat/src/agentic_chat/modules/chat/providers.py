@@ -6,9 +6,6 @@ from agentic_shared.domains.persistence.protocols.chat import (
     ChatSessionReadRepository,
     ChatSessionWriteRepository,
 )
-from agentic_shared.domains.pii_vault.query_service import QueryPiiTokenizationService
-from agentic_shared.domains.pii_vault.reveal_service import VaultRevealService
-from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.domains.retrieval.protocols import AsyncRetrievalReader
 from agentic_shared.integrations.litellm.analyzer.protocols import Analyzer
 from agentic_shared.integrations.litellm.anonymizer.protocols import Anonymizer
@@ -40,8 +37,6 @@ class ChatProvider(Provider):
         guard: Guard,
         analyzer: Analyzer,
         anonymizer: Anonymizer,
-        query_pii: QueryPiiTokenizationService,
-        pii_vault: PiiVaultSettings,
     ) -> AgentGraphDeps:
         chat_module = get_chat_module_settings()
         return AgentGraphDeps(
@@ -51,8 +46,6 @@ class ChatProvider(Provider):
             guard=guard,
             analyzer=analyzer,
             anonymizer=anonymizer,
-            query_pii=query_pii,
-            pii_vault=pii_vault,
         )
 
     @provide(scope=Scope.APP)
@@ -69,15 +62,8 @@ class ChatProvider(Provider):
         self,
         chat_graph: ChatCompiledGraph,
         messages_write: ChatMessageWriteRepository,
-        vault_reveal: VaultRevealService,
-        pii_vault: PiiVaultSettings,
     ) -> ChatGraphRunner:
-        return ChatGraphRunner(
-            chat_graph,
-            messages_write,
-            vault_reveal=vault_reveal,
-            pii_vault=pii_vault,
-        )
+        return ChatGraphRunner(chat_graph, messages_write)
 
     @provide(scope=Scope.REQUEST)
     def chat_service(
@@ -104,10 +90,6 @@ class ChatProvider(Provider):
         messages_write: ChatMessageWriteRepository,
         graph_runner: ChatGraphRunner,
         title_generator: SessionTitleGenerator,
-        query_pii: QueryPiiTokenizationService,
-        vault_reveal: VaultRevealService,
-        analyzer: Analyzer,
-        anonymizer: Anonymizer,
     ) -> ChatStreamService:
         return ChatStreamService(
             sessions_read,
@@ -117,8 +99,4 @@ class ChatProvider(Provider):
             graph_runner,
             title_generator,
             tenant_id=resolve_tenant_id(auth),
-            query_pii=query_pii,
-            vault_reveal=vault_reveal,
-            analyzer=analyzer,
-            anonymizer=anonymizer,
         )

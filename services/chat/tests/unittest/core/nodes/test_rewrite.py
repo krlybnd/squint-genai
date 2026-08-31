@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import AsyncMock
 
-from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.domains.retrieval.models import IndexedDocumentEntry
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
@@ -15,8 +14,6 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
     def _node(self) -> tuple[RewriteQueryNode, AsyncMock, AsyncMock]:
         retrieval = AsyncMock()
         chat_client = AsyncMock()
-        query_pii = AsyncMock()
-        query_pii.enabled = False
         deps = AgentGraphDeps(
             chat_client=chat_client,
             retrieval=retrieval,
@@ -24,8 +21,6 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
             guard=AsyncMock(),
             analyzer=AsyncMock(),
             anonymizer=AsyncMock(),
-            query_pii=query_pii,
-            pii_vault=PiiVaultSettings(_env_file=None),
         )
         return RewriteQueryNode(deps), retrieval, chat_client
 

@@ -1,11 +1,8 @@
 import logging
 import sys
 import tempfile
-import uuid
 from pathlib import Path
-from uuid import UUID
 
-from agentic_shared.domains.pii_vault.protocols import IndexTimePiiTokenizationPort
 from agentic_shared.domains.retrieval.protocols.chunks import ChunkWriteRepository
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
@@ -104,24 +101,6 @@ def _attach_short_headings(nodes: list[BaseNode], *, max_heading_chars: int = 80
     return attached
 
 
-def _apply_pii_tokenization(
-    docs: list[Document],
-    *,
-    pii: IndexTimePiiTokenizationPort,
-    doc_id: UUID,
-    tenant_id: str,
-) -> list[Document]:
-    tokenized: list[Document] = []
-    for doc in docs:
-        text = doc.get_content()
-        if not text.strip():
-            continue
-        safe_text = pii.tokenize_and_store(text, doc_id=doc_id, tenant_id=tenant_id)
-        doc.set_content(safe_text)
-        tokenized.append(doc)
-    return tokenized
-
-
 def index_pdf_bytes(
     pdf_bytes: bytes,
     *,
@@ -131,8 +110,6 @@ def index_pdf_bytes(
     chunk_write: ChunkWriteRepository,
     llm: LiteLLMChatSettings,
     embedding: LiteLLMEmbeddingSettings,
-    pii: IndexTimePiiTokenizationPort | None = None,
-    doc_uuid: UUID | None = None,
 ) -> int:
     """Semantic chunk PDF and upsert into Qdrant. Returns chunk count."""
     materialize_nltk_cache()
@@ -161,14 +138,6 @@ def index_pdf_bytes(
             source_file=source_file,
             tenant_id=tenant_id,
         )
-        if pii and joined:
-            effective_doc_id = doc_uuid or uuid.UUID(doc_id)
-            joined = _apply_pii_tokenization(
-                joined,
-                pii=pii,
-                doc_id=effective_doc_id,
-                tenant_id=tenant_id,
-            )
         nodes = _non_empty_nodes(splitter.get_nodes_from_documents(joined)) if joined else []
         nodes = _attach_short_headings(nodes)
         if not nodes:

@@ -4,7 +4,6 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from agentic_shared.domains.persistence.providers import AsyncDbProvider
-from agentic_shared.domains.pii_vault.providers import PiiVaultProvider
 from agentic_shared.frameworks.fastapi.dishka import make_service_container
 from agentic_shared.frameworks.fastapi.framework import FastAPIAppBuilder
 from agentic_shared.frameworks.fastapi.health import router as health_router
@@ -13,7 +12,6 @@ from agentic_shared.infrastructure.cache.redis.providers import RedisProvider
 from agentic_shared.infrastructure.sql.postgres.providers import DatabaseProvider
 from agentic_shared.infrastructure.storage.minio.providers import MinioProvider
 from agentic_shared.infrastructure.vector.qdrant.providers import QdrantProvider
-from agentic_shared.integrations.litellm.analyzer.providers import AnalyzerProvider
 from agentic_shared.integrations.litellm.embedding.providers import EmbeddingProvider
 from agentic_shared.integrations.litellm.guard.providers import GuardProvider
 from agentic_shared.integrations.litellm.llm.providers import LLMProvider
@@ -28,8 +26,6 @@ from agentic_api.modules.jobs.providers import JobsProvider
 from agentic_api.modules.jobs.router import router as jobs_router
 from agentic_api.modules.retrieval.providers import RetrievalProvider
 from agentic_api.modules.retrieval.router import router as retrieval_router
-from agentic_api.modules.vault.providers import VaultApiProvider
-from agentic_api.modules.vault.router import router as vault_router
 from agentic_api.providers import resource_health_provider
 from agentic_api.settings import load_settings
 
@@ -47,7 +43,6 @@ def create_app() -> FastAPI:
         AuthProvider(settings.auth, settings.role),
         DatabaseProvider(settings.database),
         LLMProvider(settings.llm),
-        AnalyzerProvider(settings.analyzer),
         EmbeddingProvider(settings.llm, settings.embedding),
         GuardProvider(settings.guard),
         MinioProvider(settings.minio),
@@ -59,8 +54,6 @@ def create_app() -> FastAPI:
         JobsProvider(settings.redis),
         RetrievalProvider(settings),
         AnnotationsProvider(),
-        PiiVaultProvider(settings.crypto, settings.pii_vault),
-        VaultApiProvider(),
     )
     return (
         FastAPIAppBuilder(
@@ -76,7 +69,6 @@ def create_app() -> FastAPI:
         .include_router(documents_router, prefix="/v1")
         .include_router(jobs_router, prefix="/v1")
         .include_router(retrieval_router, prefix="/v1")
-        .include_router(vault_router, prefix="/v1")
         .include_router(annotations_router, prefix="/v1")
         .build()
     )

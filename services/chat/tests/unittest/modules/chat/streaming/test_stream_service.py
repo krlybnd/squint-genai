@@ -38,10 +38,6 @@ class TestChatStreamService(unittest.IsolatedAsyncioTestCase):
         session: ChatSession | None = None,
         messages: list[ChatMessage] | None = None,
         graph_events: list[str] | None = None,
-        query_pii=None,
-        vault_reveal=None,
-        analyzer=None,
-        anonymizer=None,
     ) -> tuple[ChatStreamService, dict[str, AsyncMock | _StreamExecuteMock]]:
         sessions_read = AsyncMock()
         sessions_write = AsyncMock()
@@ -66,10 +62,6 @@ class TestChatStreamService(unittest.IsolatedAsyncioTestCase):
             graph_runner=graph_runner,
             title_generator=title_generator,
             tenant_id="tenant-1",
-            query_pii=query_pii,
-            vault_reveal=vault_reveal,
-            analyzer=analyzer,
-            anonymizer=anonymizer,
         )
         mocks = {
             "sessions_read": sessions_read,
@@ -113,102 +105,6 @@ class TestChatStreamService(unittest.IsolatedAsyncioTestCase):
         self.assertIn(SseEventType.SESSION.value, types)
         mocks["messages_write"].add.assert_awaited()
         mocks["title_generator"].generate.assert_awaited_once()
-
-    async def test_title_llm_receives_tokenized_prompt_when_vault_enabled(self) -> None:
-        session_id = uuid.uuid4()
-        session = ChatSession(id=session_id, title=DEFAULT_SESSION_TITLE)
-        user_msg = ChatMessage(
-            id=uuid.uuid4(),
-            session_id=session_id,
-            role=ChatMessageRole.USER,
-            content="Ask about Jane VaultTest salary",
-            created_at=datetime.now(UTC),
-        )
-        query_pii = AsyncMock()
-        query_pii.enabled = True
-        query_pii.tokenize_query.return_value = "Ask about <PERSON_AABBCCDD> salary"
-        vault_reveal = AsyncMock()
-        vault_reveal.reveal_text.return_value = "Ask about Jane VaultTest salary"
-        service, mocks = self._service(
-            session=session,
-            messages=[user_msg],
-            graph_events=[],
-            query_pii=query_pii,
-            vault_reveal=vault_reveal,
-        )
-
-        await _collect(
-            service.stream_response(session_id, "Ask about Jane VaultTest salary", run_id="run-1"),
-        )
-
-        query_pii.tokenize_query.assert_awaited_once_with(
-            "Ask about Jane VaultTest salary",
-            tenant_id="tenant-1",
-        )
-        mocks["title_generator"].generate.assert_awaited_once()
-        prompt = mocks["title_generator"].generate.await_args.args[0]
-        self.assertEqual(prompt, "Ask about <PERSON_AABBCCDD> salary")
-        self.assertNotIn("Jane VaultTest", prompt)
-        vault_reveal.reveal_text.assert_awaited_once()
-        self.assertEqual(session.title, "Ask about Jane VaultTest salary")
-
-    async def test_title_llm_skipped_when_sanitization_fails(self) -> None:
-        session_id = uuid.uuid4()
-        session = ChatSession(id=session_id, title=DEFAULT_SESSION_TITLE)
-        user_msg = ChatMessage(
-            id=uuid.uuid4(),
-            session_id=session_id,
-            role=ChatMessageRole.USER,
-            content="secret name",
-            created_at=datetime.now(UTC),
-        )
-        query_pii = AsyncMock()
-        query_pii.enabled = True
-        query_pii.tokenize_query.side_effect = RuntimeError("analyzer down")
-        service, mocks = self._service(
-            session=session,
-            messages=[user_msg],
-            graph_events=[],
-            query_pii=query_pii,
-        )
-
-        await _collect(service.stream_response(session_id, "secret name", run_id="run-1"))
-
-        mocks["title_generator"].generate.assert_not_called()
-        self.assertEqual(session.title, "secret name")
-
-    async def test_title_llm_receives_masked_prompt_when_vault_disabled(self) -> None:
-        session_id = uuid.uuid4()
-        session = ChatSession(id=session_id, title=DEFAULT_SESSION_TITLE)
-        user_msg = ChatMessage(
-            id=uuid.uuid4(),
-            session_id=session_id,
-            role=ChatMessageRole.USER,
-            content="Call Jane at jane@example.com",
-            created_at=datetime.now(UTC),
-        )
-        analyzer = AsyncMock()
-        analyzer.analyze.return_value = [
-            MagicMock(entity_type="EMAIL_ADDRESS", start=14, end=30),
-        ]
-        anonymizer = AsyncMock()
-        anonymizer.anonymize.return_value = MagicMock(text="Call Jane at <EMAIL_ADDRESS>")
-        service, mocks = self._service(
-            session=session,
-            messages=[user_msg],
-            graph_events=[],
-            analyzer=analyzer,
-            anonymizer=anonymizer,
-        )
-
-        await _collect(
-            service.stream_response(session_id, "Call Jane at jane@example.com", run_id="run-1"),
-        )
-
-        mocks["title_generator"].generate.assert_awaited_once()
-        prompt = mocks["title_generator"].generate.await_args.args[0]
-        self.assertEqual(prompt, "Call Jane at <EMAIL_ADDRESS>")
-        self.assertNotIn("jane@example.com", prompt)
 
     async def test_stream_response_skips_title_on_subsequent_turn(self) -> None:
         # Arrange

@@ -1,12 +1,10 @@
 """Indexing worker settings."""
 
 from agentic_shared.core.settings.app import AppSettings, load_app_settings
-from agentic_shared.crosscut.crypto.settings import CryptoSettings
 from agentic_shared.infrastructure.cache.redis.settings import RedisSettings
 from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
 from agentic_shared.infrastructure.storage.minio.settings import MinioSettings
 from agentic_shared.infrastructure.vector.qdrant.settings import QdrantSettings
-from agentic_shared.integrations.litellm.analyzer.settings import AnalyzerSettings
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 from pydantic import Field
@@ -38,14 +36,6 @@ class IndexingSettings(AppSettings):
     embedding: LiteLLMEmbeddingSettings = Field(
         default_factory=LiteLLMEmbeddingSettings,
         description="Embedding model alias used during semantic chunking.",
-    )
-    analyzer: AnalyzerSettings = Field(
-        default_factory=AnalyzerSettings,
-        description="Presidio analyzer for index-time PII tokenization.",
-    )
-    crypto: CryptoSettings = Field(
-        default_factory=CryptoSettings,
-        description="Fernet key + token salt for PII vault.",
     )
     index_document_task_name: str = Field(
         default="indexing.index_document",
