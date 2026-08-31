@@ -11,6 +11,7 @@ describe("createDevAuthClient", () => {
     expect(client.getUsername()).toBe("dev");
     expect(client.hasAnyRole("admin")).toBe(true);
     expect(client.getAccessToken()).toBeUndefined();
+    expect(client.getTenantId()).toBe("tenant-a");
   });
 
   it("honours custom username and roles", () => {

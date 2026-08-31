@@ -26,7 +26,7 @@ export function parseKeycloakRoles(tokenParsed: Record<string, unknown> | undefi
   return resolveKeycloakRoles(tokenParsed);
 }
 
-function tenantIdFrom(value: unknown): string | undefined {
+export function tenantIdFrom(value: unknown): string | undefined {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }

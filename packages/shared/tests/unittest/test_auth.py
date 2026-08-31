@@ -35,6 +35,7 @@ def test_auth_service_maps_keycloak_roles() -> None:
 
     # Assert
     assert ctx.user_id == "user-1"
+    assert ctx.username == "alice"
     assert ctx.tenant_id == "tenant-a"
     assert ctx.has_role(AppRole.READ)
     assert ctx.has_role(AppRole.WRITE)
@@ -74,7 +75,12 @@ def test_parse_access_token_claims_flat_roles() -> None:
 
 class _FakeJwt:
     def decode(self, _token: str) -> dict[str, object]:
-        return {"sub": "user-1", "tenant_id": "tenant-a", "roles": ["read", "write"]}
+        return {
+            "sub": "user-1",
+            "preferred_username": "alice",
+            "tenant_id": "tenant-a",
+            "roles": ["read", "write"],
+        }
 
 
 class _FakeTenantJwt:

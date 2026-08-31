@@ -186,10 +186,13 @@ sync_active_tenant_realm_roles() {
 create_org() {
   name="$1"
   alias="$2"
-  existing="$(curl -sf "${API}/organizations?search=${alias}&exact=true" \
-    -H "Authorization: Bearer ${TOKEN}" | jq -r '.[0].id // empty')"
+  existing="$(
+    curl -sf "${API}/organizations?max=500" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      | jq -r --arg alias "${alias}" '.[] | select(.alias == $alias) | .id' | head -n 1
+  )"
   if [ -n "${existing}" ]; then
-    echo "Organization ${alias} already exists (${existing})"
+    echo "Organization ${alias} already exists (${existing})" >&2
     echo "${existing}"
     return
   fi
@@ -199,8 +202,11 @@ create_org() {
     -d "{\"name\":\"${name}\",\"alias\":\"${alias}\",\"enabled\":true,\"domains\":[{\"name\":\"${alias}.local\"}]}" \
     -D - -o /dev/null | tr -d '\r' | awk '/^[Ll]ocation:/ {print $2}' | awk -F/ '{print $NF}')"
   if [ -z "${org_id}" ]; then
-    org_id="$(curl -sf "${API}/organizations?search=${alias}&exact=true" \
-      -H "Authorization: Bearer ${TOKEN}" | jq -r '.[0].id // empty')"
+    org_id="$(
+      curl -sf "${API}/organizations?max=500" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        | jq -r --arg alias "${alias}" '.[] | select(.alias == $alias) | .id' | head -n 1
+    )"
   fi
   echo "${org_id}"
 }
@@ -208,6 +214,10 @@ create_org() {
 add_member() {
   org_id="$1"
   username="$2"
+  if [ -z "${org_id}" ]; then
+    echo "Skip add_member ${username}: empty org id" >&2
+    return
+  fi
   user_id="$(
     curl -sf "${API}/users?username=${username}&exact=true" \
       -H "Authorization: Bearer ${TOKEN}" | jq -r '.[0].id // empty'
@@ -231,6 +241,7 @@ ensure_tenant_roles_mapper
 ORG_A="$(create_org "Tenant A" "tenant-a")"
 ORG_B="$(create_org "Tenant B" "tenant-b")"
 add_member "${ORG_A}" "admin"
+add_member "${ORG_B}" "admin"
 add_member "${ORG_A}" "alice@tenant-a.local"
 add_member "${ORG_B}" "bob@tenant-b.local"
 
@@ -309,6 +320,11 @@ repair_demo_user_tenant_persona() {
 }
 
 echo "Ensuring demo persona realm roles..."
+repair_demo_user_tenant_persona \
+  "admin" \
+  "tenant-a" \
+  '{"tenant-a":["admin","write","read"],"tenant-b":["admin","write","read"]}' \
+  '["admin","read","write"]'
 repair_demo_user_tenant_persona \
   "bob@tenant-b.local" \
   "tenant-b" \

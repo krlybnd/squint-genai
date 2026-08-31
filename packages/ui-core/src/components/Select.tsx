@@ -18,6 +18,7 @@ export type SelectProps<T extends string = string> = {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  menuPlacement?: "up" | "down";
 };
 
 export function Select<T extends string = string>({
@@ -29,6 +30,7 @@ export function Select<T extends string = string>({
   disabled = false,
   placeholder,
   className,
+  menuPlacement = "down",
 }: SelectProps<T>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,6 +54,7 @@ export function Select<T extends string = string>({
     variant,
     disabled ? "disabled" : "",
     open ? "open" : "",
+    menuPlacement === "up" ? "menu-up" : "",
     className ?? "",
   ]
     .filter(Boolean)
