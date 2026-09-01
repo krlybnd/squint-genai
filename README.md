@@ -8,8 +8,6 @@
   </a>
 </p>
 
-> **If you have 10 minutes:** the LangGraph agent in [`services/chat/.../core/graph/`](services/chat/src/agentic_chat/core/graph/) (`plan → guard → rewrite → retrieve → generate`), the deterministic PII tokenizer in [`tokenizer.py`](packages/shared/src/agentic_shared/domains/pii_vault/tokenizer.py) — why tokens preserve retrieval where masking destroys it — and the measured quality gate in [`reports/eval/`](reports/eval/). For decision-making rather than code, [ADR 011](docs/adr/011-index-time-pii-tokenization.md) is the most representative.
-
 **Squint** is an eval-driven **agentic RAG** platform for asking questions about your own documents — built on the premise that a generated answer is worthless unless you can check it. Every response carries citations back to the exact source chunk; you can select a passage and leave a comment on it, so expert review lives on the same text the answer came from. The agent's reasoning steps are visible while it works, and answer quality is measured by an automated eval gate instead of gut feeling. Sensitive documents stay usable without leaving your infrastructure: the PII vault replaces names and identifiers with deterministic tokens before anything reaches an embedding or chat model.
 
 [![Hit@5](https://img.shields.io/badge/Hit%405-1.00-brightgreen)](reports/eval/investigation-retrieval.md)
