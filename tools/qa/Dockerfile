@@ -1,6 +1,6 @@
 # QA image: unit + API Gherkin + e2e + live eval. Host: docker compose --profile qa.
 # Does not call Docker. Build context: repository root.
-FROM mcr.microsoft.com/playwright:v1.52.0-noble
+FROM mcr.microsoft.com/playwright:v1.62.1-noble
 
 USER root
 
