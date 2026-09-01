@@ -3,7 +3,7 @@
 API gateway — **JWT auth** for `/api` and `/chat` when using `--profile auth`.
 
 - Entrypoint: `:80` (override with `TRAEFIK_HTTP_PORT`)
-- Dashboard (insecure): `:8088` — **lab** (`make up-auth`) only; unpublished in `make up-demo`
+- Dashboard is not published (`make up-auth` uses `compose.ingress.yaml`)
 
 ## Auth flow
 
@@ -16,13 +16,10 @@ API gateway — **JWT auth** for `/api` and `/chat` when using `--profile auth`.
    - `X-Tenant-Id` ← `tenant_id` claim
    - `X-User-Id` ← `sub`
 
-Public routes (no JWT): `/`, `/realms/*`, `/resources/*` (Keycloak OIDC). App admin UI: `/admin` (React SPA).
+Public routes (no JWT): `/`, `/realms/*`, `/resources/*` (Keycloak OIDC), `/api/health`, `/chat/health`, `/admin-api/health`. App admin UI: `/admin` (React SPA). Guardrails host-port stand-ins when `compose.ingress.yaml` unpublishes `:8010` / `:5002`: `/guard` → llm-guard, `/analyzer` → Presidio analyzer (own Bearer token, not Keycloak JWT).
 
 ```bash
-# Lab (host ports published, including Traefik dashboard :8088):
 make up-auth
-# Demo (Traefik :80 only — see operations/compose.ingress.yaml):
-make up-demo
 # API via gateway:
 curl -H "Authorization: Bearer $TOKEN" http://localhost/api/v1/documents
 ```

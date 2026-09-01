@@ -33,10 +33,10 @@ Given("JWT authentication is enforced", async () => {
     test.skip(true, `Keycloak token endpoint not reachable — make up-auth (${reason})`);
   }
   const result = await createApiClient(UNAUTH).GET("/v1/documents");
-  if (result.response.status !== 401) {
+  if (result.response.status !== 401 && result.response.status !== 403) {
     test.skip(
       true,
-      `expected 401 without bearer, got ${result.response.status} (AUTH_MODE is not jwt)`,
+      `expected 401/403 without bearer, got ${result.response.status} (AUTH_MODE is not jwt)`,
     );
   }
 });
@@ -106,4 +106,8 @@ When(
 
 Then("the HTTP status should be {int}", async ({ memory }, status: number) => {
   expect(memory.httpStatus).toBe(status);
+});
+
+Then("the HTTP status should be unauthorized", async ({ memory }) => {
+  expect([401, 403]).toContain(memory.httpStatus);
 });

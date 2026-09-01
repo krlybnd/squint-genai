@@ -171,8 +171,7 @@ cp .env.example .env
 
 make resources   # download demo PDFs into resources/ (not committed)
 make up-ui       # stack + frontend (no Keycloak) on http://localhost:5173
-make up-auth     # full stack + Keycloak + Traefik on http://localhost (lab ports)
-make up-demo     # same, Traefik :80 only (data stores unpublished)
+make up-auth     # full stack + Keycloak + Traefik on http://localhost (:80 only)
 ```
 
 1. Open the UI → upload a PDF from [`resources/`](resources/) (presigned URL → MinIO → Celery indexes it)
@@ -267,8 +266,7 @@ make dev-ui                 # :5173
 | `make hooks` | Install git pre-commit hooks |
 | `make up` | Start backend stack |
 | `make up-ui` | Start stack + frontend |
-| `make up-auth` | Full stack + Keycloak + Traefik + UI (host ports published for lab/eval) |
-| `make up-demo` | Same stack; only Traefik `:80` is published |
+| `make up-auth` | Full stack + Keycloak + Traefik + UI (only Traefik `:80` published) |
 | `make down` | Stop all containers |
 | `make ops-bootstrap` | Run migrate + MinIO bootstrap container |
 | `make index` | Trigger reindex for all documents |
@@ -311,7 +309,7 @@ Squint is a **reference architecture demo**, not a production deployment. The RE
 | **Chunk comments** | Comments persist on the chunk and have their own vectors, but generate does not attach comment text when answering |
 | **Frontend resilience** | No global React error boundary; chat state lives in a large `useChatController` hook with thin coverage ([#21](https://github.com/krlybnd/squint-genai/issues/21)) |
 
-Run live suites locally after `make up-auth` when validating end-to-end behavior before a demo or release.
+Run live suites locally after `make up` (API/eval host ports) or `make up-auth` (UI via Traefik) when validating end-to-end behavior before a demo or release.
 
 > **BanSubstrings testing trade-off:** [`operations/llm-guard/config/scanners.yml`](operations/llm-guard/config/scanners.yml) lists a few explicit phrases in the BanSubstrings scanner so API/e2e acceptance tests get deterministic hard rejects (`tests/api/features/05_guardrails.feature`) without waiting on the DeBERTa prompt-injection model. **These phrases are fixtures for e2e/API acceptance only** — they do not reflect the author's views or vocabulary; please do not draw conclusions about me from this list.
 

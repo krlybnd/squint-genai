@@ -1,7 +1,7 @@
 @api @auth
 Feature: Bound HTTP authentication and tenant isolation
   As a caller of the live API with AUTH_MODE=jwt
-  I want 401 without a token, 403 without the role, and tenant-scoped documents
+  I want missing bearer rejected, 403 without the role, and tenant-scoped documents
   So that access control is evidenced by HTTP, not a skipped regulation matrix
 
   Background:
@@ -9,7 +9,7 @@ Feature: Bound HTTP authentication and tenant isolation
 
   Scenario: Missing bearer is unauthorized
     When I GET "/v1/documents" without a bearer token
-    Then the HTTP status should be 401
+    Then the HTTP status should be unauthorized
 
   Scenario: Read-only user cannot presign an upload
     When I presign an upload as "reader@tenant-a.local"

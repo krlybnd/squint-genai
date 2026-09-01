@@ -8,6 +8,7 @@ import {
   type ApiClient,
   type ChatClient,
 } from "../src/clients";
+import { optionalAdminAccessToken } from "../src/keycloak";
 import type { AdminComponents, ApiComponents, ChatComponents } from "../src/generated";
 
 export { expect } from "@playwright/test";
@@ -46,13 +47,16 @@ export const test = bddTest.extend<{
   memory: ScenarioMemory;
 }>({
   api: async ({}, use) => {
-    await use(createApiClient());
+    const bearer = await optionalAdminAccessToken();
+    await use(createApiClient(bearer ? { bearer } : {}));
   },
   chat: async ({}, use) => {
-    await use(createChatClient());
+    const bearer = await optionalAdminAccessToken();
+    await use(createChatClient(bearer ? { bearer } : {}));
   },
   admin: async ({}, use) => {
-    await use(createAdminClient());
+    const bearer = await optionalAdminAccessToken();
+    await use(createAdminClient(bearer ? { bearer } : {}));
   },
   memory: async ({}, use) => {
     await use({});

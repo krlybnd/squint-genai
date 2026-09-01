@@ -163,7 +163,7 @@ eval-live-generation: ## Investigation DeepEval generation gate (slow; live stac
 e2e: ## Playwright BDD UI — smoke then regression (needs make up-auth)
 	$(MAKE) -C tests/e2e run
 
-test-api: ## Playwright BDD HTTP (needs make up; not in default CI)
+test-api: ## Playwright BDD HTTP (needs make up or make up-auth; not in default CI)
 	$(MAKE) -C tests/api run
 
 .PHONY: resources
@@ -178,7 +178,7 @@ licenses: licenses-check ## SBOM for all projects + merge + Grant policy gate
 
 # ── Docker Compose ─────────────────────────────────────────────────────────────
 
-.PHONY: build up up-ui up-auth up-demo up-guardrails up-rerank down index ops-bootstrap
+.PHONY: build up up-ui up-auth up-guardrails up-rerank down index ops-bootstrap
 build: ## docker compose build
 	docker compose --profile auth --profile ui build
 
@@ -189,11 +189,7 @@ up-ui: ## Backend + UI (no Keycloak)
 	AUTH_MODE=none INTERNAL_SERVICE_KEY=dev-internal-service-key-change-me \
 		VITE_AUTH_ENABLED=false docker compose --profile ui up -d --build
 
-up-auth: ## Full stack + Keycloak + Traefik + UI (lab: host ports still published)
-	AUTH_MODE=jwt VITE_AUTH_ENABLED=true VITE_KEYCLOAK_URL=$${VITE_KEYCLOAK_URL:-http://localhost} \
-		docker compose --profile auth --profile ui up -d --build
-
-up-demo: ## Auth+UI with Traefik :80 as the only published ingress
+up-auth: ## Full stack + Keycloak + Traefik + UI (Traefik :80 only)
 	AUTH_MODE=jwt VITE_AUTH_ENABLED=true VITE_KEYCLOAK_URL=$${VITE_KEYCLOAK_URL:-http://localhost} \
 		docker compose --profile auth --profile ui \
 		-f docker-compose.yml -f operations/compose.ingress.yaml up -d --build

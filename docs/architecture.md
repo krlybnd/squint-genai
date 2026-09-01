@@ -97,9 +97,9 @@ flowchart TB
 
 **Bootstrap:** `ops` runs Alembic + MinIO buckets, then exits. App services wait on `service_completed_successfully` ([docker-compose.yml](../docker-compose.yml)). It is not on the request path.
 
-**Traefik** routes `/` → frontend, `/api` → api, `/chat` → chat, `/admin-api` → admin, `/admin` → admin-ui, `/realms` → Keycloak. JWT middleware sits on `/api`, `/chat`, and `/admin-api`.
+**Traefik** routes `/` → frontend, `/api` → api, `/chat` → chat, `/admin-api` → admin, `/admin` → admin-ui, `/realms` → Keycloak. JWT middleware sits on `/api`, `/chat`, and `/admin-api` except `/health` and `/ready`. `/guard` and `/analyzer` proxy llm-guard / Presidio when those profiles are up (no Keycloak JWT).
 
-`make up-auth` is the **lab** path: app ports (`:8000` / `:8002` / `:8003`), data stores, LiteLLM, Keycloak `:8080`, and the Traefik dashboard stay published for curl/eval. `make up-demo` applies [`operations/compose.ingress.yaml`](../operations/compose.ingress.yaml) so **only Traefik `:80`** is published; the browser talks to the gateway, and services stay on the Docker network. App-side JWT validation is unchanged.
+`make up-auth` applies [`operations/compose.ingress.yaml`](../operations/compose.ingress.yaml) so **only Traefik `:80`** is published; the browser talks to the gateway, and services stay on the Docker network. App-side JWT validation is unchanged. `make up` / `make up-ui` omit the overlay so app ports (`:8000` / `:8002` / `:8003`) stay published for curl/eval.
 
 **Data stores:** api/chat/indexing persist in **Postgres**; api/indexing use **Redis** (Celery) and **MinIO** (PDF bytes). Chat SSE is direct — no broker.
 
@@ -202,7 +202,7 @@ sequenceDiagram
 | **presidio-analyzer** | — | PII detect sidecar (`--profile guardrails`) |
 | **presidio-anonymizer** | — | PII redact sidecar (`--profile guardrails`) |
 
-Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api` → api, `/chat` → chat, `/admin-api` → admin, `/admin` → admin-ui, `/` → frontend.
+Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api` → api, `/chat` → chat, `/admin-api` → admin, `/admin` → admin-ui, `/` → frontend; `/guard` and `/analyzer` when guardrails profile is up.
 
 ---
 
@@ -211,7 +211,7 @@ Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api
 | Zone | Components |
 |------|------------|
 | **Client** | app-ui (React + SSE), admin-ui |
-| **Edge** | Traefik, Keycloak (`--profile auth`) — inbound HTTP only (`make up-demo`); lab `make up-auth` still publishes host ports |
+| **Edge** | Traefik, Keycloak (`--profile auth`) — inbound HTTP only (`make up-auth`); `make up` / `make up-ui` still publish host ports |
 | **Application** | ops, api, chat, admin, indexing (Celery) |
 | **Platform** | LiteLLM (`:4000`); TEI rerank (`:8090`, `--profile rerank`); llm-guard + Presidio (`--profile guardrails`) |
 | **Data stores** | Postgres, Redis, MinIO, Qdrant |

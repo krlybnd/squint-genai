@@ -161,5 +161,10 @@ class TestTenantGateway(unittest.IsolatedAsyncioTestCase):
             ),
         ):
             aliases = await self.gateway.list_tenant_aliases_for_user("u1")
+            tenants = await self.gateway.list_tenants_for_user("u1")
 
         self.assertEqual(aliases, ["tenant-a", "tenant-b"])
+        self.assertEqual(
+            [(item.alias, item.name) for item in tenants],
+            [("tenant-a", "Tenant A"), ("tenant-b", "Tenant B")],
+        )

@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { requireData } from "../src/clients";
+import { optionalAdminAccessToken } from "../src/keycloak";
 import {
   PII_VAULT_EMAIL,
   PII_VAULT_NAME,
@@ -16,11 +17,15 @@ const { Given, When, Then } = createBdd(test);
 
 const FIXTURES_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "../fixtures");
 
-function apiHeaders(tenantId?: string): Record<string, string> {
+async function apiHeaders(tenantId?: string): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
   };
+  const bearer = await optionalAdminAccessToken();
+  if (bearer) {
+    headers.Authorization = `Bearer ${bearer}`;
+  }
   const apiKey = process.env.API_KEY?.trim();
   if (apiKey) {
     headers["X-API-Key"] = apiKey;
@@ -33,7 +38,7 @@ async function pollJobCompleted(apiBase: string, jobId: string): Promise<void> {
   const deadline = Date.now() + 120_000;
   while (Date.now() < deadline) {
     const response = await fetch(`${apiBase}/v1/admin/jobs/${jobId}`, {
-      headers: apiHeaders(),
+      headers: await apiHeaders(),
     });
     if (!response.ok) {
       throw new Error(`job poll failed: HTTP ${response.status}`);
@@ -52,14 +57,18 @@ async function pollJobCompleted(apiBase: string, jobId: string): Promise<void> {
 
 Given("index-time PII tokenization prerequisites are met", async () => {
   const analyzerBase = process.env.ANALYZER_API_BASE ?? "http://localhost:5002";
-  const health = await fetch(`${analyzerBase.replace(/\/$/, "")}/health`);
-  if (!health.ok) {
-    throw new Error(
-      `presidio-analyzer not reachable at ${analyzerBase}. Run: make up-guardrails`,
-    );
+  try {
+    const health = await fetch(`${analyzerBase.replace(/\/$/, "")}/health`);
+    if (!health.ok) {
+      test.skip(true, `presidio-analyzer not reachable at ${analyzerBase}. Run: make up-guardrails`);
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    test.skip(true, `presidio-analyzer not reachable at ${analyzerBase} (${reason}). Run: make up-guardrails`);
   }
   if (process.env.PII_VAULT_TESTS_ENABLED !== "true") {
-    throw new Error(
+    test.skip(
+      true,
       "Set PII_VAULT_TESTS_ENABLED=true, PII_VAULT_ENABLED=true, and INDEXING_PDF_PII_TOKENIZATION_ENABLED=true on indexing worker",
     );
   }
@@ -79,7 +88,7 @@ Given("a PDF with known PII is uploaded and indexed", async ({ api, memory }) =>
   const upload = await fetch(`${uploadBase}/v1/documents/${documentId}/upload`, {
     method: "PUT",
     headers: {
-      ...apiHeaders(),
+      ...(await apiHeaders()),
       "Content-Type": "application/pdf",
     },
     body: pdfBytes,
@@ -146,7 +155,7 @@ When("I detokenize the vault token", async ({ memory }) => {
   const base = process.env.API_BASE_URL ?? "http://localhost:8000";
   const response = await fetch(`${base}/v1/vault/detokenize`, {
     method: "POST",
-    headers: apiHeaders(),
+    headers: await apiHeaders(),
     body: JSON.stringify({ tokens: [memory.piiVaultToken] }),
   });
   memory.piiDetokenizeStatus = response.status;
@@ -157,7 +166,7 @@ When("I detokenize the vault token as tenant B", async ({ memory }) => {
   const base = process.env.API_BASE_URL ?? "http://localhost:8000";
   const response = await fetch(`${base}/v1/vault/detokenize`, {
     method: "POST",
-    headers: apiHeaders("tenant-b"),
+    headers: await apiHeaders("tenant-b"),
     body: JSON.stringify({ tokens: [memory.piiVaultToken] }),
   });
   memory.piiDetokenizeStatus = response.status;

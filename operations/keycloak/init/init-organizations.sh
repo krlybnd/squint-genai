@@ -192,7 +192,17 @@ create_org() {
       | jq -r --arg alias "${alias}" '.[] | select(.alias == $alias) | .id' | head -n 1
   )"
   if [ -n "${existing}" ]; then
-    echo "Organization ${alias} already exists (${existing})" >&2
+    echo "Organization ${alias} already exists (${existing}); syncing name '${name}'" >&2
+    body="$(
+      curl -sf "${API}/organizations/${existing}" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        | jq --arg name "${name}" '.name = $name'
+    )"
+    echo "${body}" | curl -sf -X PUT "${API}/organizations/${existing}" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      --data-binary @- >/dev/null \
+      || echo "Failed to sync organization ${alias} name" >&2
     echo "${existing}"
     return
   fi

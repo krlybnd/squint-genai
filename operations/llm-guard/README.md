@@ -14,4 +14,4 @@ Auth: Bearer `${LLM_GUARD_AUTH_TOKEN:-poc-local-classifier}`.
 HF cache default: `pocs/local_classifier/run/hf-cache` (override `LLM_GUARD_HF_CACHE`).
 ~1.7 GiB RSS after first PromptInjection model load. Upstream image is archived — demo only.
 
-Host port (acceptance tests): `:8010`.
+Host port (acceptance tests): `:8010`. With `make up-auth` Traefik-only ingress: `http://localhost/guard`.

@@ -12,7 +12,7 @@ from keycloak_admin_client.types import UNSET
 
 from agentic_shared.integrations.idp.keycloak.errors import KeycloakNotFoundError
 from agentic_shared.integrations.idp.keycloak.helpers import _check_response, _roles_for_tenant
-from agentic_shared.integrations.idp.keycloak.tenant.models import TenantMemberRecord
+from agentic_shared.integrations.idp.keycloak.tenant.models import TenantMemberRecord, TenantRecord
 
 if TYPE_CHECKING:
     from agentic_shared.integrations.idp.keycloak.tenant.gateway import TenantGateway
@@ -70,7 +70,7 @@ class TenantMembers:
         has_more = len(parsed) >= page_size
         return members, has_more
 
-    async def list_tenant_aliases_for_user(self, user_id: str) -> list[str]:
+    async def list_tenants_for_user(self, user_id: str) -> list[TenantRecord]:
         # Per-user orgs: view-users is enough. GET /organizations needs manage-realm on KC 26.
         client = await self._gateway._client()
         async with client:
@@ -84,9 +84,12 @@ class TenantMembers:
         parsed = response.parsed
         if not isinstance(parsed, list):
             return []
-        aliases: list[str] = []
+        records: list[TenantRecord] = []
         for item in parsed:
             record = self._gateway._to_record(item)
             if record:
-                aliases.append(record.alias)
-        return sorted(aliases)
+                records.append(record)
+        return sorted(records, key=lambda item: item.alias)
+
+    async def list_tenant_aliases_for_user(self, user_id: str) -> list[str]:
+        return [record.alias for record in await self.list_tenants_for_user(user_id)]

@@ -1,5 +1,5 @@
-# Overlay: Traefik :80 is the only published ingress.
-# Lab/eval keep host ports via `make up` / `make up-auth` (no overlay).
+# Overlay for `make up-auth`: Traefik :80 is the only published ingress.
+# Lab/eval keep host ports via `make up` / `make up-ui` (no overlay).
 #
 #   docker compose --profile auth --profile ui -f docker-compose.yml \
 #     -f operations/compose.ingress.yaml up -d

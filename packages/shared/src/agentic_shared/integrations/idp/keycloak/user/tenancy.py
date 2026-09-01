@@ -14,7 +14,12 @@ class KeycloakUserTenancy:
         if record is None:
             return None
         tenants = [
-            TenantRecord(id=alias, alias=alias, name=alias, enabled=True)
+            TenantRecord(
+                id=alias,
+                alias=alias,
+                name=record.tenant_labels.get(alias, alias),
+                enabled=True,
+            )
             for alias in record.tenant_ids
         ]
         return UserTenancy(

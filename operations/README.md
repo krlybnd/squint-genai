@@ -14,7 +14,7 @@ Docker Compose **include** fragments — one folder per dependency.
 | `presidio-anonymizer/` | PII redact (`--profile guardrails`) | internal |
 | `rerank/` | TEI MiniLM reranker (`--profile rerank`) | 8090 |
 | `keycloak/` | Keycloak + org bootstrap (`--profile auth`) | via Traefik `/realms` |
-| `traefik/` | API gateway + JWT auth (`--profile auth`) | 80 / 8088 |
+| `traefik/` | API gateway + JWT auth (`--profile auth`) | 80 |
 
 App Dockerfiles live under each project: `services/*/Dockerfile`, `frontend/app-ui/Dockerfile`, `frontend/admin-app-ui/Dockerfile`.
 
@@ -33,8 +33,7 @@ Post-start bootstrap (Alembic migrate + MinIO bucket/CORS): **`tools/ops`** — 
 make up              # infra + app services + ops bootstrap
 make up-guardrails   # optional: llm-guard + Presidio (profile guardrails) for chat/api Guard clients
 make up-rerank       # optional: TEI reranker (profile rerank) for LiteLLM alias `rerank`
-make up-auth         # + Traefik + Keycloak (profiles auth + ui); host ports still published
-make up-demo         # same stack, Traefik :80 is the only published ingress
-docker compose --profile auth --profile ui up -d
+make up-auth         # + Traefik + Keycloak (profiles auth + ui); Traefik :80 only
+docker compose --profile auth --profile ui -f docker-compose.yml -f operations/compose.ingress.yaml up -d
 make ops-bootstrap   # run bootstrap via Dagger (host env)
 ```

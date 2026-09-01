@@ -7,7 +7,7 @@ import { expect, test } from "../support/fixtures";
 const { Given, When, Then } = createBdd(test);
 
 When("I go to {string}", async ({ page }, path: string) => {
-  await humanGoto(page, path);
+  await humanGoto(page, path === "/admin" ? "/admin/" : path);
 });
 
 When("I reload the page", async ({ page }) => {
@@ -19,17 +19,14 @@ When("I reload the page", async ({ page }) => {
 });
 
 When("I click the button {string}", async ({ page }, name: string) => {
-  const exact = page.getByRole("button", { name, exact: true });
-  if ((await exact.count()) > 0) {
-    await humanClick(page, exact.first());
+  const profile = page.locator(".profile-menu-trigger").filter({
+    has: page.locator(".profile-menu-name", { hasText: new RegExp(`^${name}$`, "i") }),
+  });
+  if ((await profile.count()) > 0) {
+    await humanClick(page, profile);
     return;
   }
-  await humanClick(
-    page,
-    page.locator(".profile-menu-trigger").filter({
-      has: page.locator(".profile-menu-name", { hasText: new RegExp(`^${name}$`, "i") }),
-    }),
-  );
+  await humanClick(page, page.getByRole("button", { name, exact: true }).first());
 });
 
 When("I click the menu item {string}", async ({ page }, name: string) => {

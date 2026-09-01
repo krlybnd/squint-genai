@@ -12,6 +12,27 @@ http:
       priority: 100
       service: keycloak
 
+    api-health:
+      rule: Path(`/api/health`) || Path(`/api/ready`)
+      entryPoints: [web]
+      priority: 60
+      middlewares: [strip-api]
+      service: api
+
+    chat-health:
+      rule: Path(`/chat/health`) || Path(`/chat/ready`)
+      entryPoints: [web]
+      priority: 60
+      middlewares: [strip-chat]
+      service: chat
+
+    admin-api-health:
+      rule: Path(`/admin-api/health`) || Path(`/admin-api/ready`)
+      entryPoints: [web]
+      priority: 60
+      middlewares: [strip-admin-api]
+      service: admin
+
     api:
       rule: PathPrefix(`/api`)
       entryPoints: [web]
@@ -32,6 +53,21 @@ http:
       priority: 50
       middlewares: [strip-admin-api, keycloak-jwt]
       service: admin
+
+    # Host-port stand-ins when compose.ingress.yaml unpublishes :8010 / :5002.
+    llm-guard:
+      rule: PathPrefix(`/guard`)
+      entryPoints: [web]
+      priority: 50
+      middlewares: [strip-guard]
+      service: llm-guard
+
+    presidio-analyzer:
+      rule: PathPrefix(`/analyzer`)
+      entryPoints: [web]
+      priority: 50
+      middlewares: [strip-analyzer]
+      service: presidio-analyzer
 
     admin-ui:
       rule: PathPrefix(`/admin`)
@@ -57,6 +93,14 @@ http:
     strip-admin-api:
       stripPrefix:
         prefixes: ["/admin-api"]
+
+    strip-guard:
+      stripPrefix:
+        prefixes: ["/guard"]
+
+    strip-analyzer:
+      stripPrefix:
+        prefixes: ["/analyzer"]
 
     # Traefik validates Bearer JWT (Keycloak JWKS) and forwards tenant claim as header.
     keycloak-jwt:
@@ -104,3 +148,13 @@ http:
       loadBalancer:
         servers:
           - url: http://frontend:5173
+
+    llm-guard:
+      loadBalancer:
+        servers:
+          - url: http://llm-guard:8000
+
+    presidio-analyzer:
+      loadBalancer:
+        servers:
+          - url: http://presidio-analyzer:3000

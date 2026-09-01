@@ -60,13 +60,16 @@ async function streamChatMessage(
 Given("guardrails profile services are reachable", async () => {
   const base = process.env.GUARD_API_BASE ?? "http://localhost:8010";
   const token = process.env.GUARD_AUTH_TOKEN ?? "poc-local-classifier";
-  const health = await fetch(`${base.replace(/\/$/, "")}/healthz`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!health.ok) {
-    throw new Error(
-      `llm-guard not reachable at ${base} (HTTP ${health.status}). Run: make up-guardrails`,
-    );
+  try {
+    const health = await fetch(`${base.replace(/\/$/, "")}/healthz`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!health.ok) {
+      test.skip(true, `llm-guard not reachable at ${base} (HTTP ${health.status}). Run: make up-guardrails`);
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    test.skip(true, `llm-guard not reachable at ${base} (${reason}). Run: make up-guardrails`);
   }
 });
 

@@ -38,6 +38,24 @@ class TestKeycloakUserTenancy(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(got.tenants[0].name, "tenant-a")
         users.get_by_username.assert_awaited_once_with("alice")
 
+    async def test_get_uses_membership_display_names_when_present(self) -> None:
+        # Arrange
+        users = MagicMock()
+        users.get_by_username = AsyncMock(
+            return_value=_user(tenant_labels={"tenant-a": "Tenant A", "tenant-b": "Tenant B"})
+        )
+        tenancy = KeycloakUserTenancy(users)
+
+        # Act
+        got = await tenancy.get("alice")
+
+        # Assert
+        assert got is not None
+        self.assertEqual(
+            [(t.alias, t.name) for t in got.tenants],
+            [("tenant-a", "Tenant A"), ("tenant-b", "Tenant B")],
+        )
+
     async def test_set_active_rejects_unknown_membership(self) -> None:
         # Arrange
         users = MagicMock()
