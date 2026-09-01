@@ -69,7 +69,7 @@ See the root [README](../README.md):
 ```bash
 cp .env.example .env
 make up-ui      # dev without Keycloak
-make up-auth    # full stack with Keycloak + Traefik
+make up-auth    # full stack with Keycloak + Traefik (:80 only)
 ```
 
 ## Further reading

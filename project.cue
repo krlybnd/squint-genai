@@ -246,7 +246,7 @@ folders: {
 		stack:   "infra"
 		phase:   1
 		purpose: "Infra-side configs: Keycloak realm, LiteLLM, local classifiers, Postgres/Redis/MinIO/Qdrant/Traefik snippets for docker-compose."
-		contains: ["postgres/", "redis/", "minio/", "qdrant/", "litellm/", "llm-guard/", "presidio-analyzer/", "presidio-anonymizer/", "rerank/", "keycloak/", "traefik/"]
+		contains: ["postgres/", "redis/", "minio/", "qdrant/", "litellm/", "llm-guard/", "presidio-analyzer/", "presidio-anonymizer/", "rerank/", "keycloak/", "traefik/", "compose.ingress.yaml"]
 		related: ["docker-compose.yml", "tools/ops/bootstrap"]
 	}
 

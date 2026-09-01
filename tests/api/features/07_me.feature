@@ -20,4 +20,4 @@ Feature: Caller tenancy without org-catalog privileges
 
   Scenario: Missing bearer on my profile is unauthorized
     When I GET my profile without a bearer token
-    Then the HTTP status should be 401
+    Then the HTTP status should be unauthorized

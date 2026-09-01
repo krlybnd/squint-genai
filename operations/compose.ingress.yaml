@@ -1,0 +1,43 @@
+# Overlay for `make up-auth`: Traefik :80 is the only published ingress.
+# Lab/eval keep host ports via `make up` / `make up-ui` (no overlay).
+#
+#   docker compose --profile auth --profile ui -f docker-compose.yml \
+#     -f operations/compose.ingress.yaml up -d
+#
+# Requires Docker Compose v2.24+ (`!reset` / `!override`).
+# Pre-commit check-yaml skips this file (Compose tags are not core YAML).
+
+services:
+  postgres:
+    ports: !reset []
+  redis:
+    ports: !reset []
+  minio:
+    ports: !reset []
+  qdrant:
+    ports: !reset []
+  litellm:
+    ports: !reset []
+  keycloak:
+    ports: !reset []
+  llm-guard:
+    ports: !reset []
+  presidio-analyzer:
+    ports: !reset []
+  presidio-anonymizer:
+    ports: !reset []
+  tei-rerank:
+    ports: !reset []
+  api:
+    ports: !reset []
+  chat:
+    ports: !reset []
+  admin:
+    ports: !reset []
+  frontend:
+    ports: !reset []
+  admin-ui:
+    ports: !reset []
+  traefik:
+    ports: !override
+      - "${TRAEFIK_HTTP_PORT:-80}:80"

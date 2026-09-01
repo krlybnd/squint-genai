@@ -163,7 +163,7 @@ eval-live-generation: ## Investigation DeepEval generation gate (slow; live stac
 e2e: ## Playwright BDD UI — smoke then regression (needs make up-auth)
 	$(MAKE) -C tests/e2e run
 
-test-api: ## Playwright BDD HTTP (needs make up; not in default CI)
+test-api: ## Playwright BDD HTTP (needs make up or make up-auth; not in default CI)
 	$(MAKE) -C tests/api run
 
 .PHONY: resources
@@ -189,9 +189,10 @@ up-ui: ## Backend + UI (no Keycloak)
 	AUTH_MODE=none INTERNAL_SERVICE_KEY=dev-internal-service-key-change-me \
 		VITE_AUTH_ENABLED=false docker compose --profile ui up -d --build
 
-up-auth: ## Full stack + Keycloak + Traefik + UI
+up-auth: ## Full stack + Keycloak + Traefik + UI (Traefik :80 only)
 	AUTH_MODE=jwt VITE_AUTH_ENABLED=true VITE_KEYCLOAK_URL=$${VITE_KEYCLOAK_URL:-http://localhost} \
-		docker compose --profile auth --profile ui up -d --build
+		docker compose --profile auth --profile ui \
+		-f docker-compose.yml -f operations/compose.ingress.yaml up -d --build
 
 up-guardrails: ## Presidio + llm-guard (profile guardrails) for chat/api Guard clients
 	docker compose --profile guardrails up -d

@@ -153,6 +153,9 @@ class TenantGateway(KeycloakGatewayBase):
     ) -> tuple[list[TenantMemberRecord], bool]:
         return await self._members.list_members(alias, first=first, max_results=max_results)
 
+    async def list_tenants_for_user(self, user_id: str) -> list[TenantRecord]:
+        return await self._members.list_tenants_for_user(user_id)
+
     async def list_tenant_aliases_for_user(self, user_id: str) -> list[str]:
         return await self._members.list_tenant_aliases_for_user(user_id)
 

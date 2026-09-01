@@ -2,14 +2,14 @@
 
 Black-box HTTP against **running** api / chat / admin. Scenarios are Gherkin; steps may call services **only** through clients typed from `openapi/*.yaml` (`openapi-typescript` + `openapi-fetch`). No Python service imports, no ad-hoc URLs outside those clients. Chat SSE is `text/event-stream` (string body); steps still split `event:` / `data:` frames.
 
-Not in default CI — needs `make up` (or equivalent). Happy path only for smoke features; `@guardrails` needs the classifier profile. This suite is the HTTP acceptance layer instead of in-service Python integration tests ([ADR 004](../../docs/adr/004-no-in-service-integration-tests.md)).
+Not in default CI — needs a running stack. Happy path only for smoke features; `@guardrails` needs the classifier profile. This suite is the HTTP acceptance layer instead of in-service Python integration tests ([ADR 004](../../docs/adr/004-no-in-service-integration-tests.md)).
 
 ## Prerequisites
 
 1. Committed specs: `openapi/api.yaml`, `openapi/chat.yaml`, `openapi/admin.yaml` (`make generate-openapi`).
-2. Stack up: `make up` (api `:8000`, chat `:8002`, admin `:8003`). Tenant/user list and `@auth` / `@me` need Keycloak (`make up-auth`, `AUTH_MODE=jwt`).
+2. Stack up: **`make up-auth`** (Traefik `:80` only) or `make up` (host ports `:8000` / `:8002` / `:8003`). Point `.env` at the same origin (see `.env.example`). Tenant/user list and `@auth` / `@me` need Keycloak (`AUTH_MODE=jwt`). Default Playwright fixtures send an admin Bearer when the token endpoint is reachable.
 3. Copy env: `cp .env.example .env`
-4. **Guardrails feature:** `make up-guardrails`, set chat/api `GUARD_API_BASE` / `GUARD_AUTH_TOKEN` (docker DNS or host ports), and have at least one indexed document (or `API_TEST_CHUNK_ID`) for comment scenarios.
+4. **Guardrails feature:** `make up-guardrails` with the same compose files as the stack (`-f docker-compose.yml -f operations/compose.ingress.yaml` when using `up-auth`). Point `GUARD_API_BASE` at `:8010` (host ports) or `http://localhost/guard` (Traefik). Comment scenarios need at least one indexed document (or `API_TEST_CHUNK_ID`).
 
 ## Quick start
 

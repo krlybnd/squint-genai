@@ -54,3 +54,17 @@ export async function fetchAccessToken(who: string): Promise<string> {
   }
   return payload.access_token;
 }
+
+let cachedAdminToken: Promise<string | undefined> | undefined;
+
+/** Admin password-grant token when Keycloak is up (`make up-auth`); otherwise undefined. */
+export async function optionalAdminAccessToken(): Promise<string | undefined> {
+  cachedAdminToken ??= (async () => {
+    try {
+      return await fetchAccessToken("admin");
+    } catch {
+      return undefined;
+    }
+  })();
+  return cachedAdminToken;
+}
