@@ -21,9 +21,12 @@ class KeycloakAdminSettings(IntegrationSettings):
     )
     keycloak_admin_client_id: str = Field(
         default="agentic-rag-eval-api",
-        description="Confidential client id used for client-credentials token requests.",
+        description=(
+            "Confidential client id for client-credentials. "
+            "Api uses agentic-rag-eval-api; admin compose overrides to agentic-rag-eval-admin."
+        ),
     )
     keycloak_admin_client_secret: SecuredStr = Field(
         default=SecuredStr("change-me-api-client-secret"),
-        description="Confidential client secret for the admin API client.",
+        description="Confidential client secret matching the client id above.",
     )

@@ -66,14 +66,23 @@ Decode at [jwt.io](https://jwt.io) to verify `tenant_id`.
 
 ## Admin API (Keycloak Admin REST)
 
-The **admin** service (`services/admin`, port 8003, Traefik `/admin-api`) manages Organizations (tenants) and users via the generated `keycloak-admin-client`. It authenticates to Keycloak with **client credentials** using the existing confidential client `agentic-rag-eval-api` (not the master admin password).
+The **admin** service (`services/admin`, port 8003, Traefik `/admin-api`) manages Organizations (tenants) and users via the generated `keycloak-admin-client`. It authenticates with **client credentials** using confidential client `agentic-rag-eval-admin` (read **and** write: `manage-realm`).
 
-The realm export grants that client’s service account user `service-account-agentic-rag-eval-api` these **realm-management** client roles: `manage-users`, `view-users`, `manage-realm`, `view-realm`.
+The **api** service uses a **separate secret** (`agentic-rag-eval-api`) for tenancy read (`GET /v1/me`) and a narrow write (`PUT /v1/me/active-tenant` → user attributes). That service account has `view-users`, `view-realm`, and `manage-users`. It does **not** have `manage-realm`. Chat and indexing do not receive either client secret.
 
-Set in `.env` (see `.env.example`):
+Keycloak 26 Organizations `GET /organizations` requires `manage-realm` (there is no `view-organizations` role). The api therefore must **not** list the org catalog. Membership for `GET /v1/me` uses `GET /organizations/members/{id}/organizations` (allowed with `view-users`) plus user attributes. Admin keeps `manage-realm` so it can list/create orgs.
 
-- `KEYCLOAK_ADMIN_CLIENT_ID=agentic-rag-eval-api`
-- `KEYCLOAK_ADMIN_CLIENT_SECRET` — must match the client secret in the realm export
+The realm export grants:
+
+| Service account | Capability | realm-management roles |
+|-----------------|------------|------------------------|
+| `service-account-agentic-rag-eval-api` | read membership + write active tenant | `manage-users`, `view-users`, `view-realm` |
+| `service-account-agentic-rag-eval-admin` | org/user CRUD | `manage-users`, `view-users`, `manage-realm`, `view-realm` |
+
+Compose (not a shared `x-app-env` secret):
+
+- api: `KEYCLOAK_ADMIN_CLIENT_ID=agentic-rag-eval-api` / `KEYCLOAK_API_CLIENT_SECRET`
+- admin: `KEYCLOAK_ADMIN_CLIENT_ID=agentic-rag-eval-admin` / `KEYCLOAK_ADMIN_S2S_CLIENT_SECRET`
 
 After editing `realm/agentic-rag-eval-realm.json` (including service-account roles), reset the Keycloak DB (below) so `--import-realm` runs again.
 

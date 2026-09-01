@@ -42,7 +42,7 @@ async def list_tenants(
             status_code=502,
             detail=(
                 "Keycloak denied Admin API access (403). Re-import the realm so the "
-                "agentic-rag-eval-api service account has realm-management roles — see "
+                "agentic-rag-eval-admin service account has realm-management roles — see "
                 "operations/keycloak/README.md."
             ),
         ) from exc

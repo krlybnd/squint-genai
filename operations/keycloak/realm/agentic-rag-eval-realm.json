@@ -174,10 +174,24 @@
     },
     {
       "clientId": "agentic-rag-eval-api",
-      "name": "agentic-rag-eval API (service account)",
+      "name": "agentic-rag-eval API (tenancy read + active-tenant write)",
       "enabled": true,
       "publicClient": false,
       "secret": "change-me-api-client-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "defaultClientScopes": [
+        "tenant",
+        "app-roles"
+      ]
+    },
+    {
+      "clientId": "agentic-rag-eval-admin",
+      "name": "agentic-rag-eval admin (org/user CRUD)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "change-me-admin-client-secret",
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
@@ -289,6 +303,9 @@
       "attributes": {
         "tenant_id": [
           "tenant-a"
+        ],
+        "tenant_roles": [
+          "{\"tenant-a\":[\"read\",\"write\"]}"
         ]
       },
       "realmRoles": [
@@ -333,6 +350,18 @@
       "username": "service-account-agentic-rag-eval-api",
       "enabled": true,
       "serviceAccountClientId": "agentic-rag-eval-api",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "view-realm"
+        ]
+      }
+    },
+    {
+      "username": "service-account-agentic-rag-eval-admin",
+      "enabled": true,
+      "serviceAccountClientId": "agentic-rag-eval-admin",
       "clientRoles": {
         "realm-management": [
           "manage-users",

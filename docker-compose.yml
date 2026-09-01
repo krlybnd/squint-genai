@@ -17,8 +17,6 @@ x-app-env: &app-env
   INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-dev-internal-service-key-change-me}
   KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
   KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
-  KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-agentic-rag-eval-api}
-  KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-change-me-api-client-secret}
 
 services:
   ops:
@@ -61,6 +59,8 @@ services:
     env_file: .env
     environment:
       <<: *app-env
+      KEYCLOAK_ADMIN_CLIENT_ID: agentic-rag-eval-api
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_API_CLIENT_SECRET:-change-me-api-client-secret}
     depends_on:
       ops:
         condition: service_completed_successfully
@@ -105,6 +105,8 @@ services:
     env_file: .env
     environment:
       <<: *app-env
+      KEYCLOAK_ADMIN_CLIENT_ID: agentic-rag-eval-admin
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_S2S_CLIENT_SECRET:-change-me-admin-client-secret}
     depends_on:
       ops:
         condition: service_completed_successfully
