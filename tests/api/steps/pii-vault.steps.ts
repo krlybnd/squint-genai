@@ -4,12 +4,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { requireData } from "../src/clients";
-import { optionalAdminAccessToken } from "../src/keycloak";
+import { fetchAccessToken, optionalAdminAccessToken } from "../src/keycloak";
 import {
   PII_VAULT_EMAIL,
   PII_VAULT_NAME,
   PII_VAULT_PDF,
   PII_VAULT_TOKEN_PATTERN,
+  textOutsideVaultMarks,
+  vaultMarks,
 } from "../src/pii-vault";
 import { expect, test } from "../support/fixtures";
 
@@ -117,20 +119,30 @@ When("I search retrieval for the known PII name", async ({ api, memory }) => {
   memory.piiSearchChunks = search.chunks;
 });
 
-Then("the retrieval chunk text should not contain the plaintext PII", async ({ memory }) => {
+Then("the retrieval chunk text should wrap the plaintext PII in vault markers", async ({ memory }) => {
   const chunks = memory.piiSearchChunks ?? [];
   expect(chunks.length).toBeGreaterThan(0);
   const combined = chunks.map((chunk) => chunk.text).join("\n");
-  expect(combined).not.toContain(PII_VAULT_NAME);
-  expect(combined).not.toContain(PII_VAULT_EMAIL);
+  const marks = vaultMarks(combined);
+  expect(
+    marks.some(
+      (mark) => mark.value.includes(PII_VAULT_NAME) || mark.value.includes(PII_VAULT_EMAIL),
+    ),
+  ).toBe(true);
+  const outside = textOutsideVaultMarks(combined);
+  expect(outside).not.toContain(PII_VAULT_NAME);
+  expect(outside).not.toContain(PII_VAULT_EMAIL);
 });
 
 Then("the retrieval chunk text should contain a vault token", async ({ memory }) => {
   const chunks = memory.piiSearchChunks ?? [];
   const combined = chunks.map((chunk) => chunk.text).join("\n");
-  expect(combined).toMatch(PII_VAULT_TOKEN_PATTERN);
-  const match = combined.match(PII_VAULT_TOKEN_PATTERN);
-  memory.piiVaultToken = match?.[0];
+  const piiMark = vaultMarks(combined).find(
+    (mark) => mark.value.includes(PII_VAULT_NAME) || mark.value.includes(PII_VAULT_EMAIL),
+  );
+  const token = piiMark?.token ?? combined.match(PII_VAULT_TOKEN_PATTERN)?.[0];
+  expect(token).toMatch(PII_VAULT_TOKEN_PATTERN);
+  memory.piiVaultToken = token;
 });
 
 Given("a vault token from indexed PII content", async ({ api, memory }) => {
@@ -139,16 +151,19 @@ Given("a vault token from indexed PII content", async ({ api, memory }) => {
   }
   const search = requireData(
     await api.POST("/v1/retrieval/search", {
-      body: { query: "contract", top_k: 5 },
+      body: { query: PII_VAULT_NAME, top_k: 5 },
     }),
     "API POST /v1/retrieval/search",
   );
   const combined = search.chunks.map((chunk) => chunk.text).join("\n");
-  const match = combined.match(PII_VAULT_TOKEN_PATTERN);
-  if (!match) {
+  const piiMark = vaultMarks(combined).find(
+    (mark) => mark.value.includes(PII_VAULT_NAME) || mark.value.includes(PII_VAULT_EMAIL),
+  );
+  const token = piiMark?.token ?? combined.match(PII_VAULT_TOKEN_PATTERN)?.[0];
+  if (!token) {
     throw new Error("no vault token found — run indexed PII upload scenario first or reindex");
   }
-  memory.piiVaultToken = match[0];
+  memory.piiVaultToken = token;
 });
 
 When("I detokenize the vault token", async ({ memory }) => {
@@ -162,11 +177,16 @@ When("I detokenize the vault token", async ({ memory }) => {
   memory.piiDetokenizeBody = await response.json();
 });
 
-When("I detokenize the vault token as tenant B", async ({ memory }) => {
+When("I detokenize the vault token as {string}", async ({ memory }, who: string) => {
   const base = process.env.API_BASE_URL ?? "http://localhost:8000";
+  const bearer = await fetchAccessToken(who);
   const response = await fetch(`${base}/v1/vault/detokenize`, {
     method: "POST",
-    headers: await apiHeaders("tenant-b"),
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${bearer}`,
+    },
     body: JSON.stringify({ tokens: [memory.piiVaultToken] }),
   });
   memory.piiDetokenizeStatus = response.status;
