@@ -41,7 +41,7 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
             analyzer=analyzer,
             anonymizer=AsyncMock(),
             query_pii=query_pii,
-            pii_vault=PiiVaultSettings(_env_file=None),
+            pii_vault=PiiVaultSettings(_env_file=None, enabled=False),
         )
         return GenerateNode(deps), chat_client
 

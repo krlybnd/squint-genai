@@ -11,7 +11,7 @@ class PiiVaultSettings(EnvSettings):
     model_config = EnvSettings.model_config | {"populate_by_name": True}
 
     enabled: bool = Field(
-        default=False,
+        default=True,
         validation_alias=AliasChoices("PII_VAULT_ENABLED", "enabled"),
         description=(
             "Vault tokenizer on queries/guard + optional SSE detokenize. Env: PII_VAULT_ENABLED."

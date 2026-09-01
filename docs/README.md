@@ -23,7 +23,7 @@ Entry point for **Squint** docs. Start here if you are reviewing the repo or onb
 
 | Topic | Document |
 |-------|----------|
-| Run locally | Root [README](../README.md) — `make up-ui`, `make up-auth` |
+| Run locally | Root [README](../README.md) and [tools/ops/README.md](../tools/ops/README.md) |
 | System diagram | [architecture.md](architecture.md) — L2 container diagram |
 | Retrieval read path | [architecture.md § L3b](architecture.md#l3b--retrieval-read-path) |
 | Chat agent nodes | [architecture.md § L3a](architecture.md#l3a--chat-agent-graph) |

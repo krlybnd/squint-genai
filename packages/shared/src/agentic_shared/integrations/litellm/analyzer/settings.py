@@ -17,7 +17,7 @@ DEFAULT_ANALYZER_ENTITIES: tuple[str, ...] = (
 
 
 class AnalyzerSettings(IntegrationSettings):
-    """Analyzer sidecar (compose profile ``guardrails`` / Presidio analyzer)."""
+    """Analyzer sidecar (Presidio analyzer; default Compose stack)."""
 
     title: str = Field(
         default="analyzer",

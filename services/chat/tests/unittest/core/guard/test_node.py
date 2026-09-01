@@ -30,7 +30,7 @@ def _deps(*, guard=None, analyzer=None, anonymizer=None) -> AgentGraphDeps:
         analyzer=analyzer,
         anonymizer=anonymizer,
         query_pii=query_pii,
-        pii_vault=PiiVaultSettings(_env_file=None),
+        pii_vault=PiiVaultSettings(_env_file=None, enabled=False),
     )
 
 

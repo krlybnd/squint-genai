@@ -1,9 +1,10 @@
 # Sample documents
 
-Text-based PDFs for local RAG demos (upload in the UI or via the API). They are **not committed** — download them with:
+Text-based PDFs for local RAG demos (upload in the UI or via the API). They are **not committed** — download them with `make resources` (`DEMO_RESOURCES` links in [`tools/ops/Makefile`](../tools/ops/Makefile)):
 
 ```bash
 make resources
+# or: docker compose exec ops make resources
 ```
 
 Offline eval unittest still loads [`tests/eval/dataset.json`](../tests/eval/dataset.json) against these demo PDFs. Live eval (`make eval-live`) uses the investigation dossiers in [`eval/`](eval/) — see [`tests/eval/README.md`](../tests/eval/README.md). All files are redistributable; see sources below.

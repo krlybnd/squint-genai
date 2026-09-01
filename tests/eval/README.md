@@ -12,12 +12,11 @@ Live runs are **not** CI ([ADR 007](../../docs/adr/007-no-live-tests-in-ci.md)).
 # Offline — no stack, no judge LLM (~seconds)
 make -C tests/eval run
 
-# Live — needs `make up`, indexed dossiers, tests/eval/.env
+# Live — needs the Compose stack, indexed dossiers, tests/eval/.env
 cp tests/eval/.env.example tests/eval/.env   # add LiteLLM key
 
 make -C tests/eval run-retrieval-suite    # retrieval IR (pydantic-evals print)
 make -C tests/eval run-generation-suite   # DeepEval judge (slow; writes reports/eval/*.md)
-make up-rerank                            # LiteLLM `rerank` → local TEI (precision)
 ```
 
 ---
@@ -168,8 +167,8 @@ tests/eval/
 
 ## Prerequisites (live)
 
-1. Stack up: `make up` (+ `make up-rerank` for LiteLLM rerank; `make up-guardrails` if chat should scan prompts).
-2. Vault + index flags in repo `.env` (`PII_VAULT_ENABLED`, `INDEXING_PDF_PII_TOKENIZATION_ENABLED`).
+1. Stack up: `docker compose up -d` (TEI rerank is on the default demo; `docker compose --profile guardrails` if chat should scan prompts with llm-guard).
+2. Vault + index flags are on by default in repo `.env` (`PII_VAULT_ENABLED`, `INDEXING_PDF_PII_TOKENIZATION_ENABLED`).
 3. Index three dossiers under `EVAL_TENANT_ID` (see [`resources/eval/README.md`](../../resources/eval/README.md)).
 4. `tests/eval/.env`: LiteLLM key, `EVAL_SUT_CHAT_URL` / `EVAL_SUT_API_URL`, and `INTERNAL_SERVICE_KEY` when `AUTH_MODE=jwt`.
 

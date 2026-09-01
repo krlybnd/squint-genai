@@ -12,7 +12,7 @@ Who uses the system and what sits outside the repo boundary.
 flowchart LR
     user["User (browser)"]
     system["Squint"]
-    keycloak["Keycloak (optional, --profile auth)"]
+    keycloak["Keycloak"]
     llm["LLM provider (OpenAI / Ollama)"]
 
     user -->|"HTTPS"| system
@@ -24,7 +24,7 @@ flowchart LR
 
 ## L2 — Containers
 
-Runtime components in the order a request crosses them. **Traefik + Keycloak** activate with `make up-auth`. **TEI rerank** with `make up-rerank`. Guard sidecars with `make up-guardrails`. Without auth, the UIs talk to host ports (`:5173`, `:8000`, `:8002`).
+Runtime components in the order a request crosses them. **Keycloak** and **TEI rerank** are on the default demo. **Traefik** activates with `--profile auth`. llm-guard with `--profile guardrails`. Default compose publishes host ports (`:5173`, `:8000`, `:8002`, Keycloak `:8080`, TEI `:8090`). Stack recipes: [`tools/ops/README.md`](../tools/ops/README.md).
 
 ```mermaid
 flowchart TB
@@ -34,10 +34,9 @@ flowchart TB
         admin_ui["admin-ui :5174"]
     end
 
-    subgraph edge ["Edge · profile auth"]
+    subgraph edge ["Edge · optional Traefik"]
         direction LR
         traefik["Traefik :80"]
-        keycloak["Keycloak :8080"]
     end
 
     subgraph app [Application]
@@ -53,6 +52,7 @@ flowchart TB
         litellm["LiteLLM :4000"]
         rerank["TEI rerank :8090"]
         guard["llm-guard · Presidio"]
+        keycloak["Keycloak :8080"]
     end
 
     subgraph data [Data]
@@ -66,7 +66,9 @@ flowchart TB
     ext["LLM provider"]
 
     frontend --> traefik
+    frontend --> keycloak
     admin_ui --> traefik
+    admin_ui --> keycloak
     traefik --> api
     traefik --> chat
     traefik --> admin
@@ -95,11 +97,11 @@ flowchart TB
     indexing -.-> guard
 ```
 
-**Bootstrap:** `ops` runs Alembic + MinIO buckets, then exits. App services wait on `service_completed_successfully` ([docker-compose.yml](../docker-compose.yml)). It is not on the request path.
+**Bootstrap:** `ops` runs `make initialization` (MinIO, demo PDFs) then `make bootstrap` (Alembic, users, reindex after apps are up), then **stays up** so `docker compose exec ops make initialization|bootstrap|teardown|…` works. It is not on the request path.
 
 **Traefik** routes `/` → frontend, `/api` → api, `/chat` → chat, `/admin-api` → admin, `/admin` → admin-ui, `/realms` → Keycloak. JWT middleware sits on `/api`, `/chat`, and `/admin-api` except `/health` and `/ready`. `/guard` and `/analyzer` proxy llm-guard / Presidio when those profiles are up (no Keycloak JWT).
 
-`make up-auth` applies [`operations/compose.ingress.yaml`](../operations/compose.ingress.yaml) so **only Traefik `:80`** is published; the browser talks to the gateway, and services stay on the Docker network. App-side JWT validation is unchanged. `make up` / `make up-ui` omit the overlay so app ports (`:8000` / `:8002` / `:8003`) stay published for curl/eval.
+The auth overlay [`operations/compose.ingress.yaml`](../operations/compose.ingress.yaml) publishes **only Traefik `:80`**; the browser talks to the gateway, and services stay on the Docker network. App-side JWT validation is unchanged. Lab compose without the overlay still publishes app ports (`:8000` / `:8002` / `:8003`) for curl/eval. Recipes: [`tools/ops/README.md`](../tools/ops/README.md).
 
 **Data stores:** api/chat/indexing persist in **Postgres**; api/indexing use **Redis** (Celery) and **MinIO** (PDF bytes). Chat SSE is direct — no broker.
 
@@ -191,13 +193,13 @@ sequenceDiagram
 | **chat** | 8002 | LangGraph agent, in-process retrieval, SSE streaming |
 | **admin** | 8003 | Tenant/user admin (Keycloak Organizations REST) |
 | **indexing** | — | Celery worker — semantic PDF chunking + Qdrant **write** |
-| **ops** | — | One-shot bootstrap (migrations, MinIO buckets) |
-| **frontend** (app-ui) | 5173 | React chat + documents UI (`--profile ui`) |
-| **admin-ui** | 5174 | React admin UI (`--profile ui`) |
+| **ops** | — | `make initialization` (infra) then `make bootstrap` (migrate after apps), then idle operator |
+| **frontend** (app-ui) | 5173 | React chat + documents UI |
+| **admin-ui** | 5174 | React admin UI |
 | **Traefik** | 80 | API gateway (`--profile auth`) |
-| **Keycloak** | 8080 | Identity provider (`--profile auth`) |
+| **Keycloak** | 8080 | Identity provider (default demo) |
 | **LiteLLM** | 4000 | Internal chat + embedding + rerank proxy |
-| **tei-rerank** | 8090 | Cross-encoder rerank (`--profile rerank`) |
+| **tei-rerank** | 8090 | Cross-encoder rerank (default demo) |
 | **llm-guard** | 8010 | Prompt-injection classifier (`--profile guardrails`) |
 | **presidio-analyzer** | — | PII detect sidecar (`--profile guardrails`) |
 | **presidio-anonymizer** | — | PII redact sidecar (`--profile guardrails`) |
@@ -211,9 +213,9 @@ Traefik routes ([routes.yaml](../operations/traefik/dynamic/routes.yaml)): `/api
 | Zone | Components |
 |------|------------|
 | **Client** | app-ui (React + SSE), admin-ui |
-| **Edge** | Traefik, Keycloak (`--profile auth`) — inbound HTTP only (`make up-auth`); `make up` / `make up-ui` still publish host ports |
+| **Edge** | Traefik (`--profile auth`) — inbound HTTP only with the ingress overlay; default demo publishes host ports including Keycloak `:8080` |
 | **Application** | ops, api, chat, admin, indexing (Celery) |
-| **Platform** | LiteLLM (`:4000`); TEI rerank (`:8090`, `--profile rerank`); llm-guard + Presidio (`--profile guardrails`) |
+| **Platform** | LiteLLM (`:4000`); TEI rerank (`:8090`); llm-guard (`--profile guardrails`); Presidio (default demo) |
 | **Data stores** | Postgres, Redis, MinIO, Qdrant |
 | **External** | LLM provider (OpenAI / Ollama / …) |
 
@@ -261,7 +263,7 @@ Retrieval read path ([QdrantSettings](../packages/shared/src/agentic_shared/infr
 |---------|---------|-------|
 | `candidate_top_k` | `30` | Initial hybrid search pool from Qdrant |
 | `top_k` | `5` | Final results after RRF + optional TEI rerank |
-| Rerank | LiteLLM alias `rerank` → TEI MiniLM | `make up-rerank`; fail-open to RRF |
+| Rerank | LiteLLM alias `rerank` → TEI MiniLM | default demo; fail-open to RRF |
 | Collection | `agentic_rag_eval_hybrid` | Dense + sparse (BM25) vectors |
 
 Live eval goldens ([dataset-investigation.json](../tests/eval/dataset-investigation.json)) are questions against the synthetic dossiers in [`resources/eval/`](../resources/eval/). Retrieval IR is Pydantic Evals against `POST /v1/retrieval/search` (`make eval-live` → `python tests/retrieval/main.py`, stdout print). Generation is DeepEval `evaluate()` against the running chat SSE API (`make eval-live-generation` → `python tests/generation/main.py`), judged by the LiteLLM `judge` alias (not `generate`). Shared knobs are `CoreSettings` (OpenAI-compatible key + api/chat URLs); suite gates sit in `tests/*/settings.py`. Config is `tests/eval/.env`. Native DeepEval markdown: [`reports/eval/`](../reports/eval/). Not in default CI.

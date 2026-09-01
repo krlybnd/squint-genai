@@ -2,7 +2,7 @@
 
 Browser tests for the React app using **[Playwright](https://playwright.dev/)** and **[playwright-bdd](https://github.com/vitalets/playwright-bdd)**. Default execution is **headless** and **fast**; set `E2E_HEADED=1` for a visible browser.
 
-Phase 2: does not run in default CI (`make test-unit`). Run locally or in a dedicated pipeline when the stack is up.
+Phase 2: does not run in default CI (`make unittest`). Run locally or in a dedicated pipeline when the stack is up.
 
 ## Prerequisites
 
@@ -121,5 +121,5 @@ Demo env vars (set automatically by `test:demo`):
 
 ## Related
 
-- API Gherkin: `tests/api/` (Playwright-BDD, generated OpenAPI clients, live services; `make test-api`).
-- Dagger test profiles: `tools/ops` (`test-unit`, …) — e2e not included until explicitly added.
+- API Gherkin: `tests/api/` (Playwright-BDD, generated OpenAPI clients, live services; `make system-test`).
+- Quality recipes: `tools/qa` (`unittest`, `system-test`, `eval-test`, `e2e`).

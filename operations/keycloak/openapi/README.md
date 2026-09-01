@@ -25,7 +25,7 @@ curl -fsSL -o admin-rest.openapi.json \
 Regenerate the **async httpx** Python workspace client (gitignored under `packages/generated/`):
 
 ```bash
-make generate-keycloak-client
+make generate-openapi-clients
 uv sync --all-packages
 ```
 
@@ -37,4 +37,4 @@ Docker Compose pins Keycloak **`26.0.7`** (`operations/keycloak/compose.yaml`). 
 
 ## Usage in this repo
 
-Reference for scripts such as `init/init-organizations.sh` (Organizations admin endpoints under `/admin/realms/{realm}/organizations`).
+Reference for scripts such as `scripts/keycloak/init-organizations.sh` (Organizations admin endpoints under `/admin/realms/{realm}/organizations`).

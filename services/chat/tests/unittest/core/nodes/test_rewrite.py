@@ -25,7 +25,7 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
             analyzer=AsyncMock(),
             anonymizer=AsyncMock(),
             query_pii=query_pii,
-            pii_vault=PiiVaultSettings(_env_file=None),
+            pii_vault=PiiVaultSettings(_env_file=None, enabled=False),
         )
         return RewriteQueryNode(deps), retrieval, chat_client
 
