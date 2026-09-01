@@ -61,7 +61,6 @@ jobs:
           cache-dependency-glob: "${{ matrix.project }}/uv.lock"
 
       - name: Generate OpenAPI Python clients
-        if: matrix.name == 'admin'
         run: make generate-openapi-clients
 
       - name: Sync (frozen)
@@ -218,6 +217,9 @@ jobs:
               cp -a "${src}/." ".reports/python/${name}/"
             fi
           done
+
+      - name: Generate OpenAPI Python clients
+        run: make generate-openapi-clients
 
       - name: Sync shared (for coverage CLI)
         working-directory: packages/shared
