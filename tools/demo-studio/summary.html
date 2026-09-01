@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What this is — Squint</title>
+    <style>
+      :root {
+        --brand-950: #05060a;
+        --brand-900: #0b0d12;
+        --accent: #c4b089;
+        --text: #e4e6ea;
+        --text-muted: #9aa3b0;
+        --text-body: rgba(228, 230, 234, 0.62);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: var(--brand-950);
+        color: var(--text);
+        overflow: hidden;
+        cursor: none;
+        font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background:
+          radial-gradient(ellipse 70% 50% at 10% 0%, rgba(196, 176, 137, 0.14), transparent 55%),
+          radial-gradient(ellipse 50% 40% at 90% 100%, rgba(180, 188, 200, 0.08), transparent 50%),
+          var(--brand-950);
+      }
+
+      .frame {
+        position: absolute;
+        inset: 8vh 10vw;
+        display: flex;
+        flex-direction: column;
+        gap: 1.4rem;
+        max-width: 44rem;
+        animation: fadeIn 1.1s ease-out forwards;
+      }
+
+      .kicker {
+        font-size: 0.72rem;
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .heading {
+        font-weight: 600;
+        font-size: clamp(2rem, 4.4vw, 3.2rem);
+        letter-spacing: 0.04em;
+      }
+
+      .copy {
+        display: grid;
+        gap: 1.15rem;
+        font-size: clamp(1.05rem, 1.8vw, 1.28rem);
+        line-height: 1.55;
+        color: var(--text-body);
+        font-weight: 400;
+      }
+
+      .copy p strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .copy .repo {
+        color: var(--accent);
+        font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+        letter-spacing: 0.02em;
+      }
+
+      .vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 42%, rgba(5, 6, 10, 0.5) 100%);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage" data-summary>
+      <div class="frame">
+        <p class="kicker">What this is</p>
+        <h1 class="heading">Squint</h1>
+        <div class="copy">
+          <p>
+            Squint reads several documents in one context. Handling is
+            anonymous. A hobby, demonstration project.
+          </p>
+          <p>
+            It can run local or in the cloud. Multitenant: many organisations
+            on one system, each with its own locked cabinet.
+          </p>
+          <p>
+            An admin panel for organisations, people, and roles. Chat cites
+            the passage it used.
+          </p>
+          <p class="repo">Source: github.com/krlybnd/squint-genai</p>
+        </div>
+      </div>
+      <div class="vignette" aria-hidden="true"></div>
+    </div>
+  </body>
+</html>

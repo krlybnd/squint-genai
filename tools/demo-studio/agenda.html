@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agenda — Squint</title>
+    <style>
+      :root {
+        --brand-950: #05060a;
+        --brand-900: #0b0d12;
+        --brand-800: #161a22;
+        --brand-500: #c4b089;
+        --accent: #c4b089;
+        --text: #e4e6ea;
+        --text-muted: #9aa3b0;
+        --text-body: rgba(228, 230, 234, 0.62);
+        --surface: rgba(180, 188, 200, 0.05);
+        --border: rgba(196, 176, 137, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: var(--brand-950);
+        color: var(--text);
+        overflow: hidden;
+        cursor: none;
+        font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background:
+          radial-gradient(ellipse 70% 50% at 10% 0%, rgba(196, 176, 137, 0.14), transparent 55%),
+          radial-gradient(ellipse 50% 40% at 90% 100%, rgba(180, 188, 200, 0.08), transparent 50%),
+          var(--brand-950);
+      }
+
+      .frame {
+        position: absolute;
+        inset: 8vh 10vw;
+        display: flex;
+        flex-direction: column;
+        gap: 1.6rem;
+        animation: fadeIn 1.1s ease-out forwards;
+      }
+
+      .kicker {
+        font-size: 0.72rem;
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .heading {
+        font-weight: 600;
+        font-size: clamp(2rem, 4.4vw, 3.2rem);
+        letter-spacing: 0.04em;
+      }
+
+      .lede {
+        max-width: 44rem;
+        font-size: 1.05rem;
+        line-height: 1.5;
+        color: var(--text-body);
+      }
+
+      .pages {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .page {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(12px);
+        transition:
+          opacity 0.7s ease,
+          transform 0.7s ease;
+      }
+
+      .page.is-active {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+
+      ol {
+        list-style: none;
+        display: grid;
+        gap: 1.1rem;
+        max-width: 44rem;
+      }
+
+      li {
+        display: grid;
+        grid-template-columns: 2.4rem 1fr;
+        gap: 1rem;
+        align-items: start;
+        padding: 0.95rem 1.1rem;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+      }
+
+      .n {
+        font-variant-numeric: tabular-nums;
+        color: var(--brand-500);
+        font-weight: 600;
+        padding-top: 0.15rem;
+      }
+
+      .label {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .hint {
+        margin-top: 0.28rem;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        color: var(--text-body);
+      }
+
+      .pager {
+        display: flex;
+        gap: 0.45rem;
+        align-items: center;
+      }
+
+      .dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 999px;
+        background: rgba(196, 176, 137, 0.22);
+      }
+
+      .dot.is-on {
+        background: var(--accent);
+        box-shadow: 0 0 12px rgba(196, 176, 137, 0.4);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage" data-agenda data-page-seconds="16">
+      <div class="frame">
+        <p class="kicker">Today</p>
+        <h1 class="heading">What we walk through</h1>
+        <p class="lede">
+          An AI-assisted workflow on a made-up investigation. The case does not
+          exist. Every name, firm, and number is fictional.
+        </p>
+        <div class="pages">
+          <section class="page is-active" data-page="1">
+            <ol>
+              <li>
+                <span class="n">01</span>
+                <div>
+                  <p class="label">Sign in</p>
+                  <p class="hint">Who you are, and which organisation you belong to.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">02</span>
+                <div>
+                  <p class="label">Organisations</p>
+                  <p class="hint">One system, many locked cabinets. They never see each other’s files.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">03</span>
+                <div>
+                  <p class="label">Bob’s three files</p>
+                  <p class="hint">Two that belong together, and a decoy — a trap. Indexed off camera.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">04</span>
+                <div>
+                  <p class="label">How search works</p>
+                  <p class="hint">Chunks. Anonymised before they leave. Then we can ask.</p>
+                </div>
+              </li>
+            </ol>
+          </section>
+          <section class="page" data-page="2">
+            <ol start="5">
+              <li>
+                <span class="n">05</span>
+                <div>
+                  <p class="label">Roles</p>
+                  <p class="hint">Admin sets who may look, write, or manage people.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">06</span>
+                <div>
+                  <p class="label">Ask</p>
+                  <p class="hint">The notebook: rewrite, security, retrieve, then the answer.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">07</span>
+                <div>
+                  <p class="label">Grounding and eval</p>
+                  <p class="hint">The receipt — where it came from. Quality is scored, not guessed.</p>
+                </div>
+              </li>
+              <li>
+                <span class="n">08</span>
+                <div>
+                  <p class="label">Alice, read-only</p>
+                  <p class="hint">Same cabinet. No upload, no chat. That is the role.</p>
+                </div>
+              </li>
+            </ol>
+          </section>
+        </div>
+        <div class="pager" aria-hidden="true">
+          <span class="dot is-on"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    </div>
+    <script>
+      const pages = [...document.querySelectorAll(".page")];
+      const dots = [...document.querySelectorAll(".dot")];
+      const ms = Number(document.querySelector("[data-agenda]").dataset.pageSeconds || 10) * 1000;
+      let i = 0;
+      if (pages.length > 1) {
+        setInterval(() => {
+          pages[i].classList.remove("is-active");
+          dots[i]?.classList.remove("is-on");
+          i = (i + 1) % pages.length;
+          pages[i].classList.add("is-active");
+          dots[i]?.classList.add("is-on");
+        }, ms);
+      }
+    </script>
+  </body>
+</html>

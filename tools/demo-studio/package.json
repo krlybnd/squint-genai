@@ -1,0 +1,18 @@
+{
+  "name": "agentic-rag-eval-demo-studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bddgen": "bddgen",
+    "prepare-corpus": "bddgen && playwright test --grep @prep",
+    "record": "export DEMO_RECORD=1 DEMO_HUMAN=1 && bddgen && playwright test --grep @demo",
+    "report": "playwright show-report ../../.reports/demo-studio/html"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.0",
+    "dotenv": "^16.5.0",
+    "playwright-bdd": "^9.2.0",
+    "typescript": "^5.8.0"
+  }
+}

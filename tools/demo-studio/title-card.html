@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Squint</title>
+    <style>
+      :root {
+        --brand-950: #05060a;
+        --brand-900: #0b0d12;
+        --brand-700: #3a414d;
+        --accent: #c4b089;
+        --text: #e4e6ea;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        background: var(--brand-950);
+        color: var(--text);
+        overflow: hidden;
+        cursor: none;
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: var(--brand-950);
+      }
+
+      .card {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        animation: fadeIn 1.2s ease-out forwards;
+      }
+
+      .wash {
+        position: absolute;
+        inset: -20%;
+        background:
+          radial-gradient(ellipse 50% 40% at 18% 30%, rgba(196, 176, 137, 0.28), transparent 58%),
+          radial-gradient(ellipse 45% 50% at 82% 70%, rgba(180, 188, 200, 0.12), transparent 55%),
+          radial-gradient(ellipse 40% 35% at 50% 50%, rgba(196, 176, 137, 0.1), transparent 50%);
+        filter: blur(8px);
+        animation: drift 14s ease-in-out infinite alternate;
+      }
+
+      .title {
+        position: relative;
+        z-index: 1;
+        font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+        font-weight: 600;
+        font-size: clamp(3.2rem, 9vw, 7rem);
+        letter-spacing: 0.14em;
+        text-transform: lowercase;
+        color: var(--text);
+        text-shadow:
+          0 0 40px rgba(196, 176, 137, 0.35),
+          0 0 90px rgba(196, 176, 137, 0.18);
+        animation: glow 5s ease-in-out infinite alternate;
+      }
+
+      .vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 38%, rgba(5, 6, 10, 0.55) 100%);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes drift {
+        0% {
+          transform: translate3d(-4%, -3%, 0) scale(1.05);
+        }
+        100% {
+          transform: translate3d(3%, 4%, 0) scale(1.12);
+        }
+      }
+
+      @keyframes glow {
+        from {
+          text-shadow:
+            0 0 28px rgba(196, 176, 137, 0.22),
+            0 0 70px rgba(180, 188, 200, 0.1);
+        }
+        to {
+          text-shadow:
+            0 0 54px rgba(196, 176, 137, 0.5),
+            0 0 120px rgba(196, 176, 137, 0.28);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage" data-title-card>
+      <section class="card" aria-label="Title">
+        <div class="wash" aria-hidden="true"></div>
+        <h1 class="title">Squint</h1>
+      </section>
+      <div class="vignette" aria-hidden="true"></div>
+    </div>
+  </body>
+</html>
