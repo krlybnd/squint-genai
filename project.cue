@@ -348,6 +348,22 @@ folders: {
 		related:  ["Makefile", "docker-compose.yml", "tools/ops", "tests/api", "tests/e2e", "tests/eval"]
 	}
 
+	"tools/demo-studio": #Folder & {
+		path:    "tools/demo-studio"
+		stack:   "tooling"
+		phase:   1
+		adr:     ["007"]
+		purpose: """
+			Recorded product use-case walkthrough (Playwright-BDD). The Gherkin feature is
+			the screenplay; captions/cues.json explain the mechanism (not product i18n).
+			One scenario → one video + sidecar SRT/VTT under .reports/demo-studio/walkthrough/.
+			Not in CI; not a node suite. @prep is off-camera corpus setup.
+			"""
+		contains: ["features/", "captions/", "banner-card.html", "title-card.html", "summary.html", "agenda.html", "support/", "steps/"]
+		mustNot:  ["acceptance tags mixed with @smoke/@regression", "product locales/ catalogs for narration"]
+		related:  ["tests/e2e", "frontend/app-ui", "frontend/admin-app-ui", ".reports"]
+	}
+
 	"make": #Folder & {
 		path:    "make"
 		stack:   "tooling"
@@ -447,8 +463,8 @@ folders: {
 		path:    "licenses"
 		stack:   "meta"
 		phase:   1
-		purpose: "Per-project CycloneDX SBOM fragments and merged bom.cdx.json for Grant license policy."
-		related: ["make license", ".grant.yaml"]
+		purpose: "Per-project CycloneDX SBOM fragments and merged bom.cdx.json for Grant. Image SBOMs live under licenses/images/ (not merged into the app BOM)."
+		related: ["make license", "make licenses-images", ".grant.yaml", ".grant.images.yaml", "operations/image-licenses.yaml"]
 	}
 
 	"reports": #Folder & {
@@ -470,7 +486,8 @@ folders: {
 		phase:   1
 		purpose: """
 			Generated CI/local reports (gitignored): .reports/python/<name>/, .reports/node/<name>/,
-			.reports/coverage/combined/, .reports/licenses/, .reports/api/, .reports/e2e/.
+			.reports/coverage/combined/, .reports/licenses/, .reports/api/, .reports/e2e/,
+			.reports/demo-studio/.
 			"""
 		related: ["make/report.mk"]
 	}

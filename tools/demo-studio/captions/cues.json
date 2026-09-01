@@ -1,0 +1,1184 @@
+[
+  {
+    "key": "card_banner",
+    "entries": [
+      {
+        "en": [
+          "krlybnd"
+        ],
+        "hu": [
+          "krlybnd"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "card_squint",
+    "entries": [
+      {
+        "en": [
+          "-"
+        ],
+        "hu": [
+          "-"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "card_summary",
+    "entries": [
+      {
+        "en": [
+          "-"
+        ],
+        "hu": [
+          "A Squint több dokumentumot egy kontextusban értelmez. Az adatkezelés anonim. Hobby, demonstrációs projekt."
+        ]
+      },
+      {
+        "en": [
+          "-"
+        ],
+        "hu": [
+          "Futtatható local-on vagy a felhőben. Multitenant: több szervezet egy rendszeren, mindnek saját iratai vannak."
+        ]
+      },
+      {
+        "en": [
+          "-"
+        ],
+        "hu": [
+          "Van admin felület: szervezetek, emberek, role-ok. Chat forrással — látod, honnan vette."
+        ]
+      },
+      {
+        "en": [
+          "-"
+        ],
+        "hu": [
+          "A source kódot itt lehet megnézni: github.com/krlybnd/squint-genai"
+        ]
+      }
+    ]
+  },
+  {
+    "key": "card_agenda",
+    "entries": [
+      {
+        "en": [
+          "Example: an AI-assisted workflow on a made-up investigation. The case does not exist. We sign in, then the organisations — each cabinet is locked."
+        ],
+        "hu": [
+          "Példa: egy kitalált nyomozás AI-assisted munkamenete. Az ügy nem létezik. Belépünk, aztán a szervezetek — mindnek saját, zárható iratai vannak."
+        ]
+      },
+      {
+        "en": [
+          "Bob has three files: two that belong together, and a decoy — a trap. Then how search works, before we ask."
+        ],
+        "hu": [
+          "Bobnak három irata van: kettő összetartozik, egy decoy — csapda. Aztán a keresés, mielőtt kérdeznénk."
+        ]
+      },
+      {
+        "en": [
+          "Admin and roles next: who may look, write, or manage people."
+        ],
+        "hu": [
+          "Aztán az admin és a role-ok: ki nézhet, ki írhat, ki kezel embereket."
+        ]
+      },
+      {
+        "en": [
+          "Then we ask, check the grounding, score it. Alice may look — not add, not chat."
+        ],
+        "hu": [
+          "Aztán kérdezünk, megnézzük a groundingot, mérjük. Alice nézhet — nem adhat hozzá, nem chatel."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "login",
+    "entries": [
+      {
+        "en": [
+          "We sign in as admin."
+        ],
+        "hu": [
+          "Belépünk adminként."
+        ]
+      },
+      {
+        "en": [
+          "The account also says which organisation it belongs to."
+        ],
+        "hu": [
+          "Az account azt is mutatja, melyik szervezethez tartozik."
+        ]
+      },
+      {
+        "en": [
+          "These accounts are part of the demo."
+        ],
+        "hu": [
+          "Ezek a fiókok a bemutató részei."
+        ]
+      },
+      {
+        "en": [
+          "They are on this system for demos and quality checks."
+        ],
+        "hu": [
+          "Demohoz és quality checkhez vannak a rendszeren."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "shell",
+    "entries": [
+      {
+        "en": [
+          "Files on the left, chat on the right."
+        ],
+        "hu": [
+          "Balra az iratok, jobbra a beszélgetés."
+        ]
+      },
+      {
+        "en": [
+          "The assistant may only use what is in these files."
+        ],
+        "hu": [
+          "Csak azt használhatja, ami ezekben az iratokban van."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "prefs_lang",
+    "entries": [
+      {
+        "en": [
+          "You can pick a language. We'll click through quickly."
+        ],
+        "hu": [
+          "Lehet nyelvet választani. Gyorsan végigkattintjuk."
+        ]
+      },
+      {
+        "en": [
+          "Now we stay on English."
+        ],
+        "hu": [
+          "Most angolon maradunk."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "prefs_theme",
+    "entries": [
+      {
+        "en": [
+          "Two themes: Moon and Neptune."
+        ],
+        "hu": [
+          "Két téma: Moon és Neptune."
+        ]
+      },
+      {
+        "en": [
+          "Back to Moon. We stay on this look."
+        ],
+        "hu": [
+          "Vissza Moon-ra. Ezen maradunk."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "tenant_what",
+    "entries": [
+      {
+        "en": [
+          "The look is set. Now the organisation — that is the tenant. Only its papers are inside."
+        ],
+        "hu": [
+          "A téma megvan. Most a szervezet — ez a tenant. Csak az ő iratai vannak bent."
+        ]
+      },
+      {
+        "en": [
+          "Think of a filing cabinet: only that organisation’s papers go in."
+        ],
+        "hu": [
+          "Képzeld el, mint egy iratszekrényt: csak annak a szervezetnek az iratai kerülnek bele."
+        ]
+      },
+      {
+        "en": [
+          "A police unit, a law firm, a ministry — each gets its own cabinet."
+        ],
+        "hu": [
+          "Rendőrség, ügyvédi iroda, minisztérium — mindnek saját szekrénye van."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "tenant_multi",
+    "entries": [
+      {
+        "en": [
+          "Several tenants on one system."
+        ],
+        "hu": [
+          "Több tenant egy rendszeren."
+        ]
+      },
+      {
+        "en": [
+          "They never see each other’s files."
+        ],
+        "hu": [
+          "Egymás iratait mégsem látják."
+        ]
+      },
+      {
+        "en": [
+          "That is multitenant: one product, many locked cabinets."
+        ],
+        "hu": [
+          "Ez a multitenant: egy rendszer, sok zárható szekrény."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "bob_cabinet",
+    "entries": [
+      {
+        "en": [
+          "This cabinet is Tenant B — Bob’s organisation."
+        ],
+        "hu": [
+          "Ez a szekrény Tenant B — Bob szervezete."
+        ]
+      },
+      {
+        "en": [
+          "The three investigation files are already here. We uploaded them before the camera started."
+        ],
+        "hu": [
+          "A három nyomozati irat már itt van. A felvétel előtt feltöltöttük."
+        ]
+      },
+      {
+        "en": [
+          "No waiting on upload in this tour."
+        ],
+        "hu": [
+          "Most nem kell feltöltésre várni."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "case_brief",
+    "entries": [
+      {
+        "en": [
+          "These three PDFs are a made-up investigation — for the demo, not a real case."
+        ],
+        "hu": [
+          "Ez a három PDF kitalált nyomozás — bemutató, nem valódi ügy."
+        ]
+      },
+      {
+        "en": [
+          "Two files tell one story: a procurement referral and the money trail that confirms it."
+        ],
+        "hu": [
+          "Két irat egy történet: a közbeszerzési feljelentés, és a pénz útja, ami ezt megerősíti."
+        ]
+      },
+      {
+        "en": [
+          "The third looks similar on purpose. It is a decoy — a trap. The system must not mix the cases."
+        ],
+        "hu": [
+          "A harmadik szándékosan hasonlít. Decoy — csapda. A program nem keverheti össze az ügyeket."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "dossier_alpha",
+    "entries": [
+      {
+        "en": [
+          "Alpha is the fraud referral. Case ART-2024/8812."
+        ],
+        "hu": [
+          "Az Alpha a feljelentés. Ügyszám: ART-2024/8812."
+        ]
+      },
+      {
+        "en": [
+          "It names people, a tax number, a shell company, a sum: HUF 47.2 million."
+        ],
+        "hu": [
+          "Emberek, adószám, egy stróman cég, 47,2 millió forint."
+        ]
+      },
+      {
+        "en": [
+          "This is the file search will lean on first."
+        ],
+        "hu": [
+          "Ebből fog először keresni."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "dossier_beta",
+    "entries": [
+      {
+        "en": [
+          "Beta is the bank trace. Same people, same company, same money."
+        ],
+        "hu": [
+          "A Beta a banki nyom. Ugyanazok az emberek, ugyanaz a cég, ugyanaz a pénz."
+        ]
+      },
+      {
+        "en": [
+          "If the system works, a question about “both investigation materials” will use Alpha and Beta together."
+        ],
+        "hu": [
+          "Ha jól működik, a „mindkét nyomozati anyag” kérdéshez mindkettő kell."
+        ]
+      },
+      {
+        "en": [
+          "That is what we should see later in the sources."
+        ],
+        "hu": [
+          "Ezt kell majd látnunk a forrásoknál."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "dossier_gamma",
+    "entries": [
+      {
+        "en": [
+          "Gamma is the decoy: also “Kamuhold”, also about 47 million — but 2023, a builder, an environmental fine."
+        ],
+        "hu": [
+          "A Gamma a decoy: szintén „Kamuhold”, szintén kb. 47 millió — de 2023, építő, környezetvédelmi bírság."
+        ]
+      },
+      {
+        "en": [
+          "Different firm, different year, not the crime file."
+        ],
+        "hu": [
+          "Más cég, más év, nem a bűnügyi dosszié."
+        ]
+      },
+      {
+        "en": [
+          "If the assistant cites Gamma for the fraud question, retrieval failed. We should not see that."
+        ],
+        "hu": [
+          "Ha a csalásos kérdésre a Gammát hozza, eltévedt a keresés. Ezt nem szabad látnunk."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "index_promise",
+    "entries": [
+      {
+        "en": [
+          "Indexed means the file is cut into chunks. Search finds those — not the whole PDF."
+        ],
+        "hu": [
+          "Ha Indexed, a fájl chunkokra van vágva. A keresés ezeket a chunkokat találja — nem az egész PDF-et."
+        ]
+      },
+      {
+        "en": [
+          "Before we turn that text into numbers, personal data is encrypted — a vault token. You see the name; the code goes out. That is anonymous handling."
+        ],
+        "hu": [
+          "Mielőtt számokká tesszük, a személyes adat encrypted lesz — vault token. Te látod a nevet; kifelé a kód megy. Ez az anonim kezelés."
+        ]
+      },
+      {
+        "en": [
+          "Vectorisation: the sentence becomes a bunch of numbers — a pin on a huge map."
+        ],
+        "hu": [
+          "Vektorizálás: a mondatból számok lesznek — egy gombostű egy hatalmas térképen."
+        ]
+      },
+      {
+        "en": [
+          "Similar meaning sits nearby. Each number is one direction on that map — not two like left-right, hundreds of them."
+        ],
+        "hu": [
+          "A hasonló jelentés közel van. Minden szám egy irány a térképen — nem kettő, mint bal-jobb, hanem százával."
+        ]
+      },
+      {
+        "en": [
+          "Vectorisation is done by an external AI provider — here that’s OpenAI."
+        ],
+        "hu": [
+          "A vektorizálást külső AI provider végzi — itt az OpenAI."
+        ]
+      },
+      {
+        "en": [
+          "You can’t run a model like that on a typical office or home PC. That’s why it is encrypted first."
+        ],
+        "hu": [
+          "Ilyen embedding model-t egy átlagos irodai vagy otthoni gépen nem tudunk leindítani. Ezért előbb encrypted lesz."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "self_host",
+    "entries": [
+      {
+        "en": [
+          "This whole stack usually runs local when you first use it: the system you operate — your machines, your database, your keys."
+        ],
+        "hu": [
+          "Elsőre általában local-on futtatjuk: a saját, általunk üzemeltetett rendszeren."
+        ]
+      },
+      {
+        "en": [
+          "An outside AI provider is only asked to write from codes and passages, not from the raw identity."
+        ],
+        "hu": [
+          "A külső AI provider csak kódokból és szövegrészekből ír. A nyers személyt nem kapja meg."
+        ]
+      },
+      {
+        "en": [
+          "The model vendor never needs the real name, email, or account number."
+        ],
+        "hu": [
+          "Neki nem kell a valódi név, e-mail vagy számlaszám."
+        ]
+      },
+      {
+        "en": [
+          "If their log leaks, there is no person to identify. That is the design."
+        ],
+        "hu": [
+          "Ha a logjuk kikerül, nincs kit azonosítani. Ezért van így."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "legal_why",
+    "entries": [
+      {
+        "en": [
+          "Names, tax IDs, IBANs are personal data. GDPR says: only what you need, only with a reason."
+        ],
+        "hu": [
+          "Név, adószám, IBAN személyes adat. A GDPR szerint: csak ami kell, csak indokkal."
+        ]
+      },
+      {
+        "en": [
+          "Sending a full dossier to a foreign model vendor makes them a processor — contracts, transfer rules, extra risk."
+        ],
+        "hu": [
+          "Ha a teljes dossziét egy külföldi cégnek küldöd, ők is hozzájutnak — szerződés, extra kockázat."
+        ]
+      },
+      {
+        "en": [
+          "If the raw identity never leaves your cabinet, you stay in control."
+        ],
+        "hu": [
+          "Ha a valódi személyazonosság nem hagyja el a szekrényt, nálad marad a döntés."
+        ]
+      },
+      {
+        "en": [
+          "That is why sensitive work — police, health, finance — runs this on their own hardware."
+        ],
+        "hu": [
+          "Ezért futnak a rendőrségi, egészségügyi, pénzügyi munkák általában saját, local rendszeren."
+        ]
+      },
+      {
+        "en": [
+          "The product can run in the cloud. At a prosecutor’s office it must not — their own local, on-prem system. On-prem: on their site, their machines, not a cloud."
+        ],
+        "hu": [
+          "A termék futhat a felhőben. Ügyészségen nem szabad — saját local, on-prem. On-prem: a saját helyükön, a saját gépeiken, nem felhőben."
+        ]
+      },
+      {
+        "en": [
+          "That’s the EU AI Act: law-enforcement AI is high-risk. The case files sit under the Law Enforcement Directive 2016/680 — not only GDPR."
+        ],
+        "hu": [
+          "Ezt az EU AI Act mondja: a bűnüldözési AI high-risk. A dossziékra a Law Enforcement Directive 2016/680 vonatkozik — nem csak a GDPR."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "chunks",
+    "entries": [
+      {
+        "en": [
+          "Back to the file. These are the chunks."
+        ],
+        "hu": [
+          "Vissza az irathoz. Ezek a chunkok."
+        ]
+      },
+      {
+        "en": [
+          "A highlighted name here is already encrypted — a vault token."
+        ],
+        "hu": [
+          "Egy kiemelt név itt már encrypted — vault token."
+        ]
+      },
+      {
+        "en": [
+          "Later the answer cites a chunk like this. That is the grounding — the receipt: where it took the fact."
+        ],
+        "hu": [
+          "A válasz majd egy ilyen chunkra hivatkozik. Az a grounding — a nyugta: honnan vette."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "chunk_comment",
+    "entries": [
+      {
+        "en": [
+          "You can mark a passage and leave a note. That is the comment section."
+        ],
+        "hu": [
+          "Kijelölhetsz egy részletet, és írhatsz hozzá megjegyzést. Ez a komment."
+        ]
+      },
+      {
+        "en": [
+          "This is prompt injection: a hidden order in the note. It is written so the model forgets the rules and shows the secret instructions."
+        ],
+        "hu": [
+          "Ez prompt injection: rejtett utasítás a kommentben. Olyan szándékkal írják, hogy a model felejtse el a szabályokat, és mutassa a titkos utasítást."
+        ]
+      },
+      {
+        "en": [
+          "It should not be saved. A model we operate on this system reads the note first."
+        ],
+        "hu": [
+          "Nem szabad elmenteni. Előbb egy model olvassa — ezen a rendszeren üzemeltetjük."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "admin_open",
+    "entries": [
+      {
+        "en": [
+          "We close the file. Next, admin: organisations and people."
+        ],
+        "hu": [
+          "Bezárjuk a dossziét. Most az admin: szervezetek és emberek."
+        ]
+      },
+      {
+        "en": [
+          "Not the files themselves — those stay in the chat app."
+        ],
+        "hu": [
+          "Nem az iratokat — azok a chat felületen maradnak."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "rbac_what",
+    "entries": [
+      {
+        "en": [
+          "RBAC: Role-Based Access Control. A role (access) is what they are allowed to do."
+        ],
+        "hu": [
+          "RBAC: Role-Based Access Control. A role (hozzáférés) mondja meg, mit szabad csinálnia."
+        ]
+      },
+      {
+        "en": [
+          "Read: look at the files. Write: upload and chat. Admin: manage people and organisations."
+        ],
+        "hu": [
+          "Olvasás: nézi az iratokat. Írás: feltöltés és chat. Admin: embereket és szervezeteket kezel."
+        ]
+      },
+      {
+        "en": [
+          "We will show this later with Alice — she will only be allowed to read."
+        ],
+        "hu": [
+          "Később Alice-szal megmutatjuk: ő csak olvashat."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "new_chat",
+    "entries": [
+      {
+        "en": [
+          "Back to chat. A new conversation is saved — not a one-off prompt."
+        ],
+        "hu": [
+          "Vissza a chathez. Új beszélgetést nyitunk — ez elmentődik, nem egyszeri kérdés."
+        ]
+      },
+      {
+        "en": [
+          "You can leave and come back. It stays on the server."
+        ],
+        "hu": [
+          "Elmehetsz és visszajöhetsz. A szerveren marad."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "ask",
+    "entries": [
+      {
+        "en": [
+          "We ask who the auditor is in both investigation files — and we put the name in the question."
+        ],
+        "hu": [
+          "Azt kérdezzük, ki a könyvvizsgáló mindkét nyomozati iratban — és a nevet is beírjuk."
+        ]
+      },
+      {
+        "en": [
+          "Watch the steps. The name should be hidden before the outside model sees the prompt."
+        ],
+        "hu": [
+          "Figyeld a lépéseket. A névnek el kell tűnnie, mielőtt kifelé menne a kérdés."
+        ]
+      },
+      {
+        "en": [
+          "The answer should come from Alpha and Beta, not from the decoy."
+        ],
+        "hu": [
+          "A válasznak az Alphából és a Betából kell jönnie, nem a decoyból."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "reason_goal",
+    "entries": [
+      {
+        "en": [
+          "This notebook — the füzet — is the agent trail: each named step before the answer."
+        ],
+        "hu": [
+          "Ez a füzet: az agent lépései a válasz előtt, mindnek van neve."
+        ]
+      },
+      {
+        "en": [
+          "You follow the work, not only the final paragraph."
+        ],
+        "hu": [
+          "A munkát is látod, nem csak a kész bekezdést."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "reason_plan",
+    "entries": [
+      {
+        "en": [
+          "Rewrite: this is not small talk. The question is recast so search can hit the files."
+        ],
+        "hu": [
+          "Rewrite: ez nem csevegés. Átírja a kérdést, hogy a keresés eltalálja az iratokat."
+        ]
+      },
+      {
+        "en": [
+          "That decision happens before retrieval."
+        ],
+        "hu": [
+          "Ezt a retrieval előtt dönti el."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "reason_guard",
+    "entries": [
+      {
+        "en": [
+          "Security: hide personal data, block prompt attacks."
+        ],
+        "hu": [
+          "Biztonság: a személyes adatot elrejti, a támadást kiszűri."
+        ]
+      },
+      {
+        "en": [
+          "Dr. Levente Varga in our question should become a code for the vendor."
+        ],
+        "hu": [
+          "A Dr. Levente Varga kifelé kód legyen."
+        ]
+      },
+      {
+        "en": [
+          "You still see the name. They do not."
+        ],
+        "hu": [
+          "Te látod a nevet. Ők nem."
+        ]
+      },
+      {
+        "en": [
+          "Sharp eyes will see: the user interaction is not encrypted. Toward the provider it is anonymised. That is issue 53."
+        ],
+        "hu": [
+          "A szemfülesek látják: a user interakció nincs encrypted. A provider felé anonimizálva megy. 53-as issue."
+        ]
+      },
+      {
+        "en": [
+          "Anonymisation is not robust enough. That is issue 54."
+        ],
+        "hu": [
+          "Az anonimizálás nem elég robosztus. Arról a 54-es issue készült."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "reason_search",
+    "entries": [
+      {
+        "en": [
+          "Retrieve: embedding search over the chunks from the three PDFs."
+        ],
+        "hu": [
+          "Retrieve: embedding-keresés a három PDF chunkjai között."
+        ]
+      },
+      {
+        "en": [
+          "What we should see: hits from the referral and the bank trace."
+        ],
+        "hu": [
+          "Amit látnunk kell: találat a feljelentésből és a banki nyomból."
+        ]
+      },
+      {
+        "en": [
+          "What we should not see: the environmental decoy treated as the same case."
+        ],
+        "hu": [
+          "Amit nem szabad látni: a környezetvédelmi decoyt ugyanannak az ügynek beállítva."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "reason_write",
+    "entries": [
+      {
+        "en": [
+          "Generate: now it writes the answer from the retrieved chunks."
+        ],
+        "hu": [
+          "Generate: most a retrieved chunkokból írja a választ."
+        ]
+      },
+      {
+        "en": [
+          "When it finishes, the sources are that grounding."
+        ],
+        "hu": [
+          "Ha kész, a sources az a grounding."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "sources",
+    "entries": [
+      {
+        "en": [
+          "These chips are the grounding."
+        ],
+        "hu": [
+          "Ezek a chippek a grounding."
+        ]
+      },
+      {
+        "en": [
+          "Sources should name the Alpha and Beta files — the two that belong together."
+        ],
+        "hu": [
+          "A forrásoknál az Alpha és a Beta iratnak kell szerepelnie — ez a két összetartozó."
+        ]
+      },
+      {
+        "en": [
+          "Open one. Check the sentence. That is the product: not “the AI said so”."
+        ],
+        "hu": [
+          "Nyiss meg egyet. Nézd meg a mondatot. Ez a lényeg: nem az, hogy „a gép mondta”."
+        ]
+      },
+      {
+        "en": [
+          "Gamma should stay out of this answer."
+        ],
+        "hu": [
+          "A Gamma maradjon ki ebből a válaszból."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "eval_answer",
+    "entries": [
+      {
+        "en": [
+          "Quality assurance for an AI system is a live topic now. We have to cover it."
+        ],
+        "hu": [
+          "Manapság egy AI-rendszernél a minőségbiztosítás hangsúlyos. Ki kell térjünk rá."
+        ]
+      },
+      {
+        "en": [
+          "Evaluation is the acceptance criteria in the development lifecycle. We run it during development, with metrics — not by gut feel."
+        ],
+        "hu": [
+          "Az evaluation a development lifecycle acceptance criteria-ja. Fejlesztés közben futtatjuk, metrikákkal — nem érzésre."
+        ]
+      },
+      {
+        "en": [
+          "A hard line — that is RAG: retrieval first, the embedding search. Then the answer, when chat writes back. Separate suites."
+        ],
+        "hu": [
+          "Éles vonal — ez a RAG: először retrieval, az embedding-keresés. Aztán a válasz, amikor a chat megírja. Két külön suite."
+        ]
+      },
+      {
+        "en": [
+          "Retrieval IR: Hit Rate@5, Document Recall@5, Chunk Precision@5, MRR, nDCG@5."
+        ],
+        "hu": [
+          "Retrieval IR: Hit Rate@5, Document Recall@5, Chunk Precision@5, MRR, nDCG@5."
+        ]
+      },
+      {
+        "en": [
+          "Hit Rate@5: is any relevant dossier in the top five? Miss that, and the rest is luck."
+        ],
+        "hu": [
+          "Hit Rate@5: bekerült-e bármely releváns dosszié az első ötbe? Ha nem, a többi szerencse."
+        ]
+      },
+      {
+        "en": [
+          "Document Recall@5: what fraction of the relevant set did we find? Alpha and Beta both needed — only Alpha is 0.5."
+        ],
+        "hu": [
+          "Document Recall@5: a releváns halmaz hányadát hoztuk. Alpha és Beta is kell — csak Alpha az 0.5."
+        ]
+      },
+      {
+        "en": [
+          "Chunk Precision@5: of the five pulled chunks, how many belong to that set? A Gamma decoy slot hurts the score."
+        ],
+        "hu": [
+          "Chunk Precision@5: az öt kihúzott chunk közül hány tartozik oda. Egy Gamma decoy rontja."
+        ]
+      },
+      {
+        "en": [
+          "MRR — Mean Reciprocal Rank: how high is the first relevant hit? Rank 1 is 1.0; rank 2 is 0.5."
+        ],
+        "hu": [
+          "MRR — Mean Reciprocal Rank: milyen magasan van az első releváns találat. Első hely 1.0, második 0.5."
+        ]
+      },
+      {
+        "en": [
+          "nDCG@5 — Normalized Discounted Cumulative Gain: order counts. Relevant near the top scores high; decoy first scores low."
+        ],
+        "hu": [
+          "nDCG@5 — Normalized Discounted Cumulative Gain: a sorrend is számít. Releváns elöl magas, decoy elöl alacsony."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "eval_gate",
+    "entries": [
+      {
+        "en": [
+          "Now the answer. A golden set: fixed questions and reference facts. The judge scores against that — the chat model does not grade itself."
+        ],
+        "hu": [
+          "Most a válasz. A golden set: rögzített kérdések és referencia tények. A judge ehhez hasonlít — nem a chat model pontozza önmagát."
+        ]
+      },
+      {
+        "en": [
+          "On the answer: Correctness (G-Eval), Faithfulness, Answer Relevancy, Required Phrases, Abstention."
+        ],
+        "hu": [
+          "A válaszra: Correctness (G-Eval), Faithfulness, Answer Relevancy, Required Phrases, Abstention."
+        ]
+      },
+      {
+        "en": [
+          "Correctness (G-Eval): the golden facts are there — the name, the number. Wording may differ."
+        ],
+        "hu": [
+          "Correctness (G-Eval): a golden tények megvannak — a név, a szám. A megfogalmazás eltérhet."
+        ]
+      },
+      {
+        "en": [
+          "Faithfulness: supported by the retrieved chunks, not by the golden. Invented facts fail."
+        ],
+        "hu": [
+          "Faithfulness: a retrieved chunkok támasztják, nem a golden. Kitalált tény bukik."
+        ]
+      },
+      {
+        "en": [
+          "Answer Relevancy: it addresses the question. No wander, no essay on a side topic."
+        ],
+        "hu": [
+          "Answer Relevancy: a kérdésre válaszol. Nem kanyarodik, nem ír mellékszálat."
+        ]
+      },
+      {
+        "en": [
+          "Required Phrases: the annotated ID must appear verbatim — full IBAN, not a HU68 prefix. No judge: string match."
+        ],
+        "hu": [
+          "Required Phrases: az annotált azonosító szó szerint — teljes IBAN, nem HU68-prefix. Nincs judge: string match."
+        ]
+      },
+      {
+        "en": [
+          "Abstention: labeled questions must answer; if it is not in the corpus, refuse. Do not invent a story."
+        ],
+        "hu": [
+          "Abstention: labeled kérdésre válaszoljon; ha nincs a corpusban, utasítsa vissza. Ne találjon ki történetet."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "pii_show",
+    "entries": [
+      {
+        "en": [
+          "The highlighted name is that same encrypted vault token."
+        ],
+        "hu": [
+          "A kiemelt név ugyanaz az encrypted vault token."
+        ]
+      },
+      {
+        "en": [
+          "Move the pointer over the highlighted text. The tooltip is the stand-in, not a leak."
+        ],
+        "hu": [
+          "Vigyük a pointert a kiemelt szöveg fölé. A buborék a kód, nem kiszivárgás."
+        ]
+      },
+      {
+        "en": [
+          "Same idea as during index: the person stays in the cabinet."
+        ],
+        "hu": [
+          "Ugyanaz, mint indexeléskor: a személy a szekrényben marad."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "prompt_inject",
+    "entries": [
+      {
+        "en": [
+          "Now we look at prompt injection again — another example, this time in chat."
+        ],
+        "hu": [
+          "Most ismét nézzük meg a prompt injectiont — egy másik példán keresztül, a chatben."
+        ]
+      },
+      {
+        "en": [
+          "The attacker wants the assistant to ignore your files, or to leak its own private instructions."
+        ],
+        "hu": [
+          "A támadó azt akarja, hogy ne az irataidat nézze, vagy kiadja a saját belső utasítását."
+        ]
+      },
+      {
+        "en": [
+          "Here the text is checked first, before any search. A separate security step reads it."
+        ],
+        "hu": [
+          "Itt a szöveg először egy külön ellenőrzésen megy át. Még keresés előtt."
+        ]
+      },
+      {
+        "en": [
+          "Known attack phrases are blocked at once. The rest is scored: is this a question, or an order?"
+        ],
+        "hu": [
+          "Az ismert támadómintát azonnal elutasítja. A többit megnézi: kérdés ez, vagy parancs?"
+        ]
+      },
+      {
+        "en": [
+          "Comments use the same door. If the note looks like an order, it is not saved."
+        ],
+        "hu": [
+          "A komment ugyanígy. Ha a megjegyzés parancsnak tűnik, nem marad meg."
+        ]
+      },
+      {
+        "en": [
+          "We send one now. You should see a refusal — not a leak, not an answer from the files."
+        ],
+        "hu": [
+          "Most elküldünk egyet. Elutasítást kell látnod — nem kiszivárgást, nem választ az iratokból."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "alice_add",
+    "entries": [
+      {
+        "en": [
+          "Security is done. Now the role: we add Alice to Bob’s cabinet, read only."
+        ],
+        "hu": [
+          "A biztonság ennyi. Most a role: Alice-t beengedjük Bob szervezetébe, csak olvasásra."
+        ]
+      },
+      {
+        "en": [
+          "She will see all three files. She will not be allowed to upload or chat."
+        ],
+        "hu": [
+          "Mind a három iratot látni fogja. Feltölteni és chatelni nem lesz szabad."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "logout_alice",
+    "entries": [
+      {
+        "en": [
+          "We sign out as admin and sign in as Alice."
+        ],
+        "hu": [
+          "Kilépünk, és Alice-ként lépünk be."
+        ]
+      },
+      {
+        "en": [
+          "Same app, different person, different permissions."
+        ],
+        "hu": [
+          "Ugyanaz a program, másik ember, más jogosultság."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "alice_see",
+    "entries": [
+      {
+        "en": [
+          "Alice sees the same three dossiers. There is no Upload button."
+        ],
+        "hu": [
+          "Alice ugyanazt a három iratot látja. Feltöltés gomb nincs."
+        ]
+      },
+      {
+        "en": [
+          "Read-only: look, do not add — and she cannot chat. Write is required to ask."
+        ],
+        "hu": [
+          "Read-only: nézhet, nem adhat hozzá — és chatelni sem. Kérdezni write kell."
+        ]
+      },
+      {
+        "en": [
+          "The investigation stays in the cabinet. She cannot grow it. That is RBAC."
+        ],
+        "hu": [
+          "A nyomozás a szekrényben marad. Ő nem bővítheti. Ez az RBAC."
+        ]
+      }
+    ]
+  },
+  {
+    "key": "outro",
+    "entries": [
+      {
+        "en": [
+          "Thank you for your attention."
+        ],
+        "hu": [
+          "Köszönöm a figyelmet."
+        ]
+      }
+    ]
+  }
+]

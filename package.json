@@ -8,7 +8,8 @@
     "frontend/app-ui",
     "frontend/admin-app-ui",
     "tests/e2e",
-    "tests/api"
+    "tests/api",
+    "tools/demo-studio"
   ],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
