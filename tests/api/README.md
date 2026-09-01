@@ -46,6 +46,7 @@ npx playwright test --grep @auth
 | `06_pii_vault.feature` | Index-time PII tokens in Qdrant + `/vault/detokenize` (@pii-vault) |
 | `07_auth.feature` | JWT 401/403, tenant isolation, spoofed `X-Tenant-Id` (`@auth`; skips if not jwt) |
 | `07_me.feature` | JWT `GET /v1/me` + `PUT /v1/me/active-tenant` without `manage-realm` (`@auth` `@me`; skips if not jwt) |
+| `08_ai_system_card.feature` | `GET /v1/ai/system-card` envelope |
 
 Banned phrases are defined in `operations/llm-guard/config/scanners.yml` (`BanSubstrings`) and mirrored in `src/guardrails.ts`.
 

@@ -2,7 +2,22 @@
 
 This document describes how **Squint** prepares for European regulatory requirements. The backend includes **extension points** in `packages/shared/src/agentic_shared/core/compliance/` — not a certified compliance product and **no external SIEM** (e.g. Wazuh) is bundled.
 
-> **Status:** preparation layer — protocols, models, settings, and NoOp defaults. Domain handlers and persistence for audit logs are **roadmap items**.
+> **Status:** preparation layer plus two wired surfaces — `GET /v1/ai/system-card` and Postgres `audit_events` when `COMPLIANCE_ENABLED=true`. Domain handlers for DSAR / incidents remain roadmap. No external SIEM.
+
+## Control matrix
+
+| Control | Evidence | Status |
+|---------|----------|--------|
+| JWT required on protected routes | `tests/api` `07_auth.feature` (401) | implemented |
+| RBAC 403 | `tests/api` `07_auth.feature` (read vs write/admin) | implemented |
+| Tenant isolation + JWT over `X-Tenant-Id` | `tests/api` `07_auth.feature`; ADR 009 | implemented |
+| Prompt injection / PII | `05_guardrails`, `06_pii_vault`; eval generation | implemented |
+| AI Act transparency | `GET /v1/ai/system-card` | implemented |
+| NIS2-style audit trail | `audit_events` (`document.upload/delete`, `tenant.switch`, `tenant.create` / `user.create`, `http.unauthorized`) | implemented (opt-in) |
+| Supply chain | `make licenses` (CycloneDX + Grant) | implemented |
+| DSAR / erasure API | `DataSubjectRightsPort` | noop |
+| Incident reporter / SIEM | `IncidentReporter` | noop |
+| Retention cron | `ComplianceSettings.*_retention_days` | n/a |
 
 ## Regulatory scope (high level)
 
@@ -96,7 +111,8 @@ NIS2 emphasizes risk management, incident handling, and logging for operators of
 
 ### Roadmap
 
-- [ ] `PostgresAuditLogger` — append-only audit table
+- [x] `PostgresAuditLogger` — append-only audit table
+- [ ] Admin endpoint or internal tool to list/open incidents
 - [ ] Admin endpoint or internal tool to list/open incidents
 - [ ] Runbook doc: `docs/compliance/incident-response.md`
 - [ ] Security contact + notification SLA documented per deployment
@@ -118,7 +134,8 @@ This system is likely **limited risk** (transparency obligations) when deployed 
 
 ### Roadmap
 
-- [ ] `GET /v1/ai/system-card` — public transparency JSON from `AiSystemRecord`
+- [x] `GET /v1/ai/system-card` — public transparency JSON from `AiSystemRecord`
+- [x] Postgres `audit_events` + `PostgresAuditLogger` (opt-in `COMPLIANCE_ENABLED`)
 - [ ] Persist interaction logs (hashed prompts, retrieval chunk IDs, model version)
 - [ ] Conformity assessment checklist for high-risk deployments (if applicable)
 - [ ] Eval pipeline as evidence for accuracy / robustness testing

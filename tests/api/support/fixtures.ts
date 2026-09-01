@@ -18,6 +18,7 @@ export type DocumentList = ApiComponents["schemas"]["DocumentListResponse"];
 export type MeOut = ApiComponents["schemas"]["MeOut"];
 export type TenantList = AdminComponents["schemas"]["TenantListResponse"];
 export type UserList = AdminComponents["schemas"]["UserListResponse"];
+export type AiSystemCard = ApiComponents["schemas"]["AiSystemCardOut"];
 
 export type ScenarioMemory = {
   healthStatus?: string;
@@ -38,6 +39,7 @@ export type ScenarioMemory = {
   httpStatus?: number;
   documentId?: string;
   me?: MeOut;
+  systemCard?: AiSystemCard;
 };
 
 export const test = bddTest.extend<{

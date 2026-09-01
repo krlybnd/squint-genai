@@ -1,8 +1,12 @@
 from uuid import UUID
 
+from agentic_shared.core.compliance.enums import AuditEventCategory
+from agentic_shared.core.compliance.models import AuditEvent
+from agentic_shared.core.compliance.protocols import AuditLogger
 from agentic_shared.crosscut.auth.context import AuthContext
 from agentic_shared.crosscut.auth.roles import AppRole
 from agentic_shared.crosscut.auth.settings import AuthSettings
+from agentic_shared.domains.persistence.audit_logger import emit_audit
 from agentic_shared.frameworks.fastapi.dependencies.auth.dependency import require_roles
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, HTTPException, Request, Response, status
@@ -60,9 +64,21 @@ async def delete_document(
     auth: FromDishka[AuthContext],
     auth_settings: FromDishka[AuthSettings],
     document_service: FromDishka[DocumentService],
+    audit: FromDishka[AuditLogger],
 ) -> Response:
     require_roles(auth, auth_settings, AppRole.WRITE)
     await document_service.delete_document(document_id)
+    await emit_audit(
+        audit,
+        AuditEvent(
+            category=AuditEventCategory.DATA_CHANGE,
+            action="document.delete",
+            actor_id=auth.user_id,
+            tenant_id=auth.tenant_id,
+            resource_type="document",
+            resource_id=str(document_id),
+        ),
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -138,6 +154,7 @@ async def complete_upload(
     auth_settings: FromDishka[AuthSettings],
     document_service: FromDishka[DocumentService],
     job_service: FromDishka[JobService],
+    audit: FromDishka[AuditLogger],
 ) -> CompleteUploadResponse:
     require_roles(auth, auth_settings, AppRole.WRITE)
     document, job = await document_service.complete_upload(document_id)
@@ -146,4 +163,15 @@ async def complete_upload(
     out = await document_service.get_out(document.id)
     if not out:
         raise HTTPException(status_code=500, detail="Failed to load document")
+    await emit_audit(
+        audit,
+        AuditEvent(
+            category=AuditEventCategory.DATA_CHANGE,
+            action="document.upload",
+            actor_id=auth.user_id,
+            tenant_id=auth.tenant_id,
+            resource_type="document",
+            resource_id=str(document.id),
+        ),
+    )
     return CompleteUploadResponse(document=out, job_id=job.id)

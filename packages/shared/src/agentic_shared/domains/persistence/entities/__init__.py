@@ -1,3 +1,4 @@
+from agentic_shared.domains.persistence.entities.audit_event import AuditEventRow
 from agentic_shared.domains.persistence.entities.base import (
     AuditMixin,
     Base,
@@ -11,15 +12,16 @@ from agentic_shared.domains.persistence.entities.index_job import IndexJob, JobS
 from agentic_shared.domains.persistence.entities.pii_vault import PiiVaultEntry
 
 __all__ = [
+    "AuditEventRow",
     "AuditMixin",
     "Base",
-    "TenantMixin",
-    "TenantScopedEntity",
-    "UUIDPrimaryKeyMixin",
     "ChatMessage",
     "ChatSession",
     "Document",
     "IndexJob",
     "JobStatus",
     "PiiVaultEntry",
+    "TenantMixin",
+    "TenantScopedEntity",
+    "UUIDPrimaryKeyMixin",
 ]
