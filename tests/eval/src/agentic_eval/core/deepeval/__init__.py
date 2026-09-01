@@ -1,3 +1,10 @@
-from agentic_eval.core.deepeval.settings import DeepEvalSettings
+"""DeepEval extensions (metrics + evaluate wrapper)."""
 
-__all__ = ["DeepEvalSettings"]
+from agentic_eval.core.deepeval.evaluate import evaluate
+from agentic_eval.core.deepeval.metrics import AbstentionMetric, RequiredPhrasesMetric
+
+__all__ = [
+    "AbstentionMetric",
+    "RequiredPhrasesMetric",
+    "evaluate",
+]

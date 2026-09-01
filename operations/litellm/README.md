@@ -1,6 +1,6 @@
 # LiteLLM
 
-OpenAI-compatible LLM and embedding proxy (rerank alias kept for legacy `.env` only — apps no longer call it).
+OpenAI-compatible LLM, embedding, and rerank proxy. Alias `rerank` points at local TEI (default demo).
 
 - Port: `:4000`
 - Config: `litellm.config.yaml`
@@ -12,7 +12,7 @@ OpenAI-compatible LLM and embedding proxy (rerank alias kept for legacy `.env` o
 | `generate` | `gpt-4o-mini` | RAG answers, comment moderation |
 | `judge` | `gpt-4o` | DeepEval generation gate (no fallback to `generate`) |
 | `embed` | `text-embedding-3-small` | Indexing + query embeddings |
-| `rerank` | Cohere `rerank-multilingual-v3.0` | Optional retrieval rerank |
+| `rerank` | Local TEI `cross-encoder/ms-marco-MiniLM-L-6-v2` | Hybrid retrieval rerank (default demo) |
 
 Legacy names (`gpt-4o-mini`, `text-embedding-3-small`, `rerank-multilingual-v3.0`) remain registered so existing `.env` values keep working.
 

@@ -1,6 +1,5 @@
 services:
   keycloak:
-    profiles: [auth]
     image: quay.io/keycloak/keycloak:26.0.7
     command: start-dev --import-realm --features=organization
     environment:
@@ -9,7 +8,8 @@ services:
       KC_DB_USERNAME: ${POSTGRES_USER:-agentic}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-agentic}
       KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: ${TRAEFIK_HTTP_PORT:-80}
+      # Browser talks to :8080 on the default demo. Traefik overlay: KC_HOSTNAME_PORT=80.
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
@@ -27,24 +27,26 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./realm:/opt/keycloak/data/import:ro
+      # Only the realm export — Keycloak 26 --import-realm treats every *.json
+      # in this directory as a realm. user-profile.json is REST payload for init.
+      - ./realm/agentic-rag-eval-realm.json:/opt/keycloak/data/import/agentic-rag-eval-realm.json:ro
 
   keycloak-init:
-    profiles: [auth]
     image: alpine:3.21
     depends_on:
       keycloak:
         condition: service_healthy
     volumes:
-      - ./init/init-organizations.sh:/init/init-organizations.sh:ro
-      # Script resolves REALM_DIR as sibling of /init → /realm
+      - ../..:/workspace:ro
       - ./realm:/realm:ro
     environment:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      REALM_DIR: /realm
+      WORKSPACE: /workspace
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - apk add --no-cache curl jq >/dev/null && sh /init/init-organizations.sh
+      - apk add --no-cache curl jq make >/dev/null && sh /workspace/scripts/keycloak/init-organizations.sh
     restart: on-failure

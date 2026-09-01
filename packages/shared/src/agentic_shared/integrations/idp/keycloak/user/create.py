@@ -66,6 +66,7 @@ async def create_user(
             tenant_ids=user.tenant_ids,
             realm_roles=user.realm_roles,
             tenant_roles=dict(user.tenant_roles),
+            tenant_labels=dict(user.tenant_labels),
         )
 
     if realm_roles:

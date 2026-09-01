@@ -8,6 +8,8 @@ import {
   type DocumentChunk,
 } from "../api/client";
 import { Modal, sanitizeText } from "@are/ui-core";
+import { VaultMarkedText } from "../vault/VaultMarkedText";
+import { stripVaultMarks } from "../vault/parseVaultMarks";
 import "./ChunkViewerModal.css";
 
 interface Props {
@@ -61,18 +63,22 @@ function renderCommentedText(
   comments: ChunkComment[],
   activeCommentId: string | null,
   commentedTitle: string,
+  formatVaultTooltip: (token: string) => string,
 ) {
   if (!text) return "—";
+  const display = stripVaultMarks(text);
   const byId = new Map(comments.map((c) => [c.comment_id, c]));
-  const ranges = mergeHighlightRanges(findHighlightRanges(text, comments));
-  if (ranges.length === 0) return sanitizeText(text);
+  const ranges = mergeHighlightRanges(findHighlightRanges(display, comments));
+  if (ranges.length === 0) {
+    return <VaultMarkedText text={text} formatTooltip={formatVaultTooltip} />;
+  }
 
   const parts: ReactNode[] = [];
   let cursor = 0;
   for (const range of ranges) {
     if (range.start > cursor) {
       parts.push(
-        <span key={`plain-${cursor}`}>{sanitizeText(text.slice(cursor, range.start))}</span>,
+        <span key={`plain-${cursor}`}>{sanitizeText(display.slice(cursor, range.start))}</span>,
       );
     }
     const comment = byId.get(range.commentId);
@@ -82,19 +88,19 @@ function renderCommentedText(
         className={`chunk-comment-highlight${activeCommentId === range.commentId ? " active" : ""}`}
         title={comment?.comment_text?.trim() || commentedTitle}
       >
-        {sanitizeText(text.slice(range.start, range.end))}
+        {sanitizeText(display.slice(range.start, range.end))}
       </mark>,
     );
     cursor = range.end;
   }
-  if (cursor < text.length) {
-    parts.push(<span key={`plain-${cursor}`}>{sanitizeText(text.slice(cursor))}</span>);
+  if (cursor < display.length) {
+    parts.push(<span key={`plain-${cursor}`}>{sanitizeText(display.slice(cursor))}</span>);
   }
   return parts;
 }
 
 function chunkPreview(text: string): string {
-  const cleaned = text.replace(/\s+/g, " ").trim();
+  const cleaned = stripVaultMarks(text).replace(/\s+/g, " ").trim();
   if (!cleaned) return "—";
   if (cleaned.length <= PREVIEW_LEN) return cleaned;
   return `${cleaned.slice(0, PREVIEW_LEN).trim()}…`;
@@ -293,6 +299,7 @@ export function ChunkViewerModal({
                   comments,
                   activeCommentId,
                   t("chunkViewer.commentedPart"),
+                  (token) => t("chat.vaultTokenTooltip", { token }),
                 )}
               </article>
 

@@ -29,8 +29,9 @@ model_list:
       api_key: os.environ/OPENAI_API_KEY
   - model_name: rerank
     litellm_params:
-      model: cohere/rerank-multilingual-v3.0
-      api_key: os.environ/COHERE_API_KEY
+      model: huggingface/cross-encoder/ms-marco-MiniLM-L-6-v2
+      api_base: http://tei-rerank:80
+      api_key: os.environ/LITELLM_MASTER_KEY
     model_info:
       mode: rerank
   - model_name: gpt-4o-mini
@@ -47,8 +48,9 @@ model_list:
       api_key: os.environ/OPENAI_API_KEY
   - model_name: rerank-multilingual-v3.0
     litellm_params:
-      model: cohere/rerank-multilingual-v3.0
-      api_key: os.environ/COHERE_API_KEY
+      model: huggingface/cross-encoder/ms-marco-MiniLM-L-6-v2
+      api_base: http://tei-rerank:80
+      api_key: os.environ/LITELLM_MASTER_KEY
     model_info:
       mode: rerank
 

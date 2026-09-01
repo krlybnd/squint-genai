@@ -10,6 +10,22 @@ from pydantic import BaseModel, ConfigDict, Field
 from agentic_chat.core.state import PiiDetailState
 from agentic_chat.modules.chat.enums import ReasoningStatus, ReasoningStep, SseEventType
 
+SSE_MEDIA_TYPE = "text/event-stream"
+SSE_OPENAPI_SUCCESS: dict[int | str, dict[str, Any]] = {
+    200: {
+        "description": (
+            "Server-Sent Events. Each frame is `event: <name>` and `data: <json>`, "
+            "where name is run, reasoning, status, token, session, done, or error, "
+            "and data matches the corresponding *EventData model."
+        ),
+        "content": {
+            SSE_MEDIA_TYPE: {
+                "schema": {"type": "string"},
+            }
+        },
+    }
+}
+
 __all__ = [
     "DoneEventData",
     "ErrorEventData",
@@ -17,6 +33,8 @@ __all__ = [
     "ReasoningStatus",
     "ReasoningStep",
     "RunEventData",
+    "SSE_MEDIA_TYPE",
+    "SSE_OPENAPI_SUCCESS",
     "SessionEventData",
     "SseEventType",
     "StatusEventData",

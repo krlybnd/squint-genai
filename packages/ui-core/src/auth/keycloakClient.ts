@@ -1,5 +1,5 @@
 import Keycloak from "keycloak-js";
-import { resolveKeycloakRoles, rolePolicyHasAny } from "./rolePolicy";
+import { resolveKeycloakRoles, rolePolicyHasAny, tenantIdFrom } from "./rolePolicy";
 import type { AuthClient, KeycloakAuthConfig } from "./types";
 
 export function createKeycloakAuthClient(config: KeycloakAuthConfig): AuthClient {
@@ -42,6 +42,12 @@ export function createKeycloakAuthClient(config: KeycloakAuthConfig): AuthClient
         return undefined;
       }
       return keycloak.token ?? undefined;
+    },
+    getTenantId() {
+      if (!config.enabled) {
+        return null;
+      }
+      return tenantIdFrom(keycloak.tokenParsed?.tenant_id) ?? null;
     },
     hasAnyRole(...roles: string[]) {
       return rolePolicyHasAny(this.getRoles(), ...roles);

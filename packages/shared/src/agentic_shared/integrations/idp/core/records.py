@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,3 +29,11 @@ class UserRecord:
     tenant_ids: list[str]
     realm_roles: list[str]
     tenant_roles: dict[str, list[str]]
+    tenant_labels: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class UserTenancy:
+    username: str
+    tenant_id: str | None
+    tenants: list[TenantRecord]

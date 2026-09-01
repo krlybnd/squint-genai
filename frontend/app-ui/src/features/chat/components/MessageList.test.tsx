@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage } from "../../../api/types";
 import { MessageList } from "./MessageList";
 
-const t = (key: string) => key;
+const t = (key: string, opts?: { token?: string }) =>
+  opts?.token ? `${key} ${opts.token}` : key;
 
 function userMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
   return {
@@ -106,10 +107,36 @@ describe("MessageList", () => {
     );
 
     // Act
-    const streamingBubble = screen.getByText("it's a & b");
+    const streamingBubble = screen.getByText("it's a & b").closest(".message-bubble");
 
     // Assert
-    expect(streamingBubble.className).toContain("streaming");
+    expect(streamingBubble?.className).toContain("streaming");
+  });
+
+  it("colors vault-marked spans and exposes the token in a tooltip", () => {
+    render(
+      <MessageList
+        t={t}
+        messages={[
+          assistantMessage({
+            content: "Contact [[vault:<PERSON_AABBCCDD>]]Jane VaultTest[[/vault]] today.",
+          }),
+        ]}
+        streaming={false}
+        streamText=""
+        canWrite={true}
+        bottomRef={createRef<HTMLDivElement>()}
+        getMessageText={(m) => m.content}
+        onEditMessage={vi.fn()}
+        onResendMessage={vi.fn()}
+        onOpenCitation={vi.fn()}
+      />,
+    );
+
+    const marked = screen.getByText("Jane VaultTest");
+    expect(marked.className).toContain("vault-reveal");
+    expect(screen.getByText("chat.vaultTokenTooltip <PERSON_AABBCCDD>")).toBeTruthy();
+    expect(screen.queryByText(/\[\[vault:/)).toBeNull();
   });
 
   it("forwards user edits and resend actions", () => {

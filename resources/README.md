@@ -1,12 +1,13 @@
 # Sample documents
 
-Text-based PDFs for local RAG demos (upload in the UI or via the API). They are **not committed** — download them with:
+Text-based PDFs for local RAG demos (upload in the UI or via the API). They are **not committed** — download them with `make resources` (`DEMO_RESOURCES` links in [`tools/ops/Makefile`](../tools/ops/Makefile)):
 
 ```bash
 make resources
+# or: docker compose exec ops make resources
 ```
 
-The live eval suite (`make eval-live`) uses goldens in [`tests/eval/dataset.json`](../tests/eval/dataset.json) written against these files — index them before running the gate. All files are redistributable; see sources below.
+Offline eval unittest still loads [`tests/eval/dataset.json`](../tests/eval/dataset.json) against these demo PDFs. Live eval (`make eval-live`) uses the investigation dossiers in [`eval/`](eval/) — see [`tests/eval/README.md`](../tests/eval/README.md). All files are redistributable; see sources below.
 
 | File | Pages | What to ask |
 |------|------:|-------------|
@@ -17,6 +18,18 @@ The live eval suite (`make eval-live`) uses goldens in [`tests/eval/dataset.json
 | `nist-ai-rmf-1.0.pdf` | 48 | What are the four AI RMF functions? |
 
 EUR-Lex (GDPR / EU AI Act) blocked automated download (WAF challenge). Use those from the browser if you want a legal corpus.
+
+## Eval golden corpus (committed)
+
+Synthetic investigation dossiers for PII vault, guardrails, and DeepEval testing — **all fictional**:
+
+| File | Purpose |
+|------|---------|
+| [`eval/investigation-dossier-alpha.md`](eval/investigation-dossier-alpha.md) | Procurement fraud referral (~10 pages) |
+| [`eval/investigation-dossier-beta.md`](eval/investigation-dossier-beta.md) | Financial trace — linked to Alpha |
+| [`eval/investigation-dossier-gamma-decoy.md`](eval/investigation-dossier-gamma-decoy.md) | Environmental penalty decoy |
+
+See [`eval/README.md`](eval/README.md) for rubric, cross-doc ground truth, and sample goldens. Convert to PDF with pandoc before UI upload if desired.
 
 ## Sources and licenses
 

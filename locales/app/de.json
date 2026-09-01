@@ -43,7 +43,8 @@
     "sessionAuthError": "Chat-Sitzung konnte nicht erstellt werden. Abmelden und erneut anmelden.",
     "sessionDeleteError": "Sitzung konnte nicht gelöscht werden.",
     "sessionDeleteWhileStreaming": "Beende die Antwortgenerierung, bevor du die Sitzung löschst.",
-    "chunkOpenError": "Chunk konnte nicht geöffnet werden — Dateiname oder Chunk-ID fehlt."
+    "chunkOpenError": "Chunk konnte nicht geöffnet werden — Dateiname oder Chunk-ID fehlt.",
+    "vaultTokenTooltip": "Vault-Token: {{token}}"
   },
   "reasoning": {
     "steps": {

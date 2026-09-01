@@ -1,3 +1,5 @@
+name: krlybnd-squint
+
 include:
   - path: operations/postgres/compose.yaml
   - path: operations/redis/compose.yaml
@@ -7,6 +9,7 @@ include:
   - path: operations/llm-guard/compose.yaml
   - path: operations/presidio-analyzer/compose.yaml
   - path: operations/presidio-anonymizer/compose.yaml
+  - path: operations/rerank/compose.yaml
   - path: operations/keycloak/compose.yaml
   - path: operations/traefik/compose.yaml
 
@@ -16,21 +19,52 @@ x-app-env: &app-env
   INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-dev-internal-service-key-change-me}
   KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
   KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
-  KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-agentic-rag-eval-api}
-  KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-change-me-api-client-secret}
+
+x-http-health: &http-health
+  interval: 5s
+  timeout: 3s
+  retries: 12
+  start_period: 20s
 
 services:
+  # Infra first (`make initialization`: MinIO + demo PDFs). Then `make bootstrap` after apps (migrate, users, reindex).
   ops:
     build:
       context: .
       dockerfile: tools/ops/Dockerfile
     env_file: .env
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    environment:
+      API_BASE: http://api:8000
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       minio:
         condition: service_healthy
-    restart: "no"
+      qdrant:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+      presidio-analyzer:
+        condition: service_healthy
+      presidio-anonymizer:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      keycloak-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/ops-ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 60s
 
   indexing:
     build:
@@ -40,8 +74,6 @@ services:
     environment:
       <<: *app-env
     depends_on:
-      ops:
-        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -49,9 +81,13 @@ services:
       minio:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
       litellm:
-        condition: service_started
+        condition: service_healthy
+      presidio-analyzer:
+        condition: service_healthy
+      presidio-anonymizer:
+        condition: service_healthy
 
   api:
     build:
@@ -60,9 +96,9 @@ services:
     env_file: .env
     environment:
       <<: *app-env
+      KEYCLOAK_ADMIN_CLIENT_ID: agentic-rag-eval-api
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_API_CLIENT_SECRET:-change-me-api-client-secret}
     depends_on:
-      ops:
-        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -70,13 +106,26 @@ services:
       minio:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
       litellm:
-        condition: service_started
+        condition: service_healthy
       indexing:
         condition: service_started
+      presidio-analyzer:
+        condition: service_healthy
+      presidio-anonymizer:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     ports:
       - "8000:8000"
+    healthcheck:
+      <<: *http-health
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\"",
+        ]
 
   chat:
     build:
@@ -86,16 +135,27 @@ services:
     environment:
       <<: *app-env
     depends_on:
-      ops:
-        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
       litellm:
-        condition: service_started
+        condition: service_healthy
+      presidio-analyzer:
+        condition: service_healthy
+      presidio-anonymizer:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     ports:
       - "8002:8002"
+    healthcheck:
+      <<: *http-health
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health')\"",
+        ]
 
   admin:
     build:
@@ -104,60 +164,77 @@ services:
     env_file: .env
     environment:
       <<: *app-env
+      KEYCLOAK_ADMIN_CLIENT_ID: agentic-rag-eval-admin
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_S2S_CLIENT_SECRET:-change-me-admin-client-secret}
     depends_on:
-      ops:
-        condition: service_completed_successfully
       keycloak:
-        condition: service_started
-        required: false
+        condition: service_healthy
     ports:
       - "8003:8003"
+    healthcheck:
+      <<: *http-health
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/health')\"",
+        ]
 
   frontend:
-    profiles: [ui]
     build:
       context: .
       dockerfile: frontend/app-ui/Dockerfile
       args:
-        VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-false}
-        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost}
+        VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-true}
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost:8080}
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
         VITE_KEYCLOAK_CLIENT_ID: agentic-rag-eval-ui
     depends_on:
-      ops:
-        condition: service_completed_successfully
       api:
-        condition: service_started
+        condition: service_healthy
       chat:
-        condition: service_started
+        condition: service_healthy
       admin:
-        condition: service_started
-        required: false
+        condition: service_healthy
       keycloak:
-        condition: service_started
-        required: false
+        condition: service_healthy
     ports:
       - "5173:5173"
+    healthcheck:
+      <<: *http-health
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173/ >/dev/null"]
 
   admin-ui:
-    profiles: [ui]
     build:
       context: .
       dockerfile: frontend/admin-app-ui/Dockerfile
       args:
-        VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-false}
-        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost}
+        VITE_AUTH_ENABLED: ${VITE_AUTH_ENABLED:-true}
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost:8080}
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-agentic-rag-eval}
         VITE_KEYCLOAK_CLIENT_ID: agentic-rag-eval-ui
         VITE_API_KEY: ${API_KEY:-dev-admin-key-change-me}
     depends_on:
-      ops:
-        condition: service_completed_successfully
       admin:
-        condition: service_started
-        required: false
+        condition: service_healthy
       keycloak:
-        condition: service_started
-        required: false
+        condition: service_healthy
     ports:
       - "5174:5173"
+    healthcheck:
+      <<: *http-health
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173/ >/dev/null"]
+
+  qa:
+    profiles: ["qa"]
+    build:
+      context: .
+      dockerfile: tools/qa/Dockerfile
+    env_file: .env
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    network_mode: host
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    restart: "no"

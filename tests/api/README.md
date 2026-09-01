@@ -1,15 +1,15 @@
 # API acceptance (Playwright-BDD + generated OpenAPI)
 
-Black-box HTTP against **running** api / chat / admin. Scenarios are Gherkin; steps may call services **only** through clients typed from `openapi/*.yaml` (`openapi-typescript` + `openapi-fetch`). No Python service imports, no ad-hoc URLs outside those clients (SSE stream uses the published chat path via `fetch`).
+Black-box HTTP against **running** api / chat / admin. Scenarios are Gherkin; steps may call services **only** through clients typed from `openapi/*.yaml` (`openapi-typescript` + `openapi-fetch`). No Python service imports, no ad-hoc URLs outside those clients. Chat SSE is `text/event-stream` (string body); steps still split `event:` / `data:` frames.
 
-Not in default CI — needs `make up` (or equivalent). Happy path only for smoke features; `@guardrails` needs the classifier profile. This suite is the HTTP acceptance layer instead of in-service Python integration tests ([ADR 004](../../docs/adr/004-no-in-service-integration-tests.md)).
+Not in default CI — needs a running stack. Happy path only for smoke features; `@guardrails` needs the classifier profile. This suite is the HTTP acceptance layer instead of in-service Python integration tests ([ADR 004](../../docs/adr/004-no-in-service-integration-tests.md)).
 
 ## Prerequisites
 
 1. Committed specs: `openapi/api.yaml`, `openapi/chat.yaml`, `openapi/admin.yaml` (`make generate-openapi`).
-2. Stack up: `make up` (api `:8000`, chat `:8002`, admin `:8003`). Tenant/user list needs Keycloak (`make up-auth`).
+2. Stack up: auth overlay (Traefik `:80` only) or lab compose (host ports `:8000` / `:8002` / `:8003`) — [`tools/ops/README.md`](../../tools/ops/README.md). Point `.env` at the same origin (see `.env.example`). Tenant/user list and `@auth` / `@me` need Keycloak (`AUTH_MODE=jwt`). Default Playwright fixtures send an admin Bearer when the token endpoint is reachable.
 3. Copy env: `cp .env.example .env`
-4. **Guardrails feature:** `make up-guardrails`, set chat/api `GUARD_API_BASE` / `GUARD_AUTH_TOKEN` (docker DNS or host ports), and have at least one indexed document (or `API_TEST_CHUNK_ID`) for comment scenarios.
+4. **Guardrails feature:** `docker compose --profile guardrails up -d` (add `-f operations/compose.ingress.yaml` when using the auth overlay). Point `GUARD_API_BASE` at `:8010` (host ports) or `http://localhost/guard` (Traefik). Comment scenarios need at least one indexed document (or `API_TEST_CHUNK_ID`).
 
 ## Quick start
 
@@ -20,12 +20,18 @@ npm install
 npm test
 ```
 
-From repo root: `make test-api`.
+From repo root: `make api-test` (`test-api` alias). Full measuring gate: `make system-test`.
 
 Guardrails only:
 
 ```bash
 npx playwright test --grep @guardrails
+```
+
+JWT auth / tenant isolation / caller tenancy only:
+
+```bash
+npx playwright test --grep @auth
 ```
 
 ## Features
@@ -37,8 +43,20 @@ npx playwright test --grep @guardrails
 | `03_chat_sessions.feature` | create session, then list includes it |
 | `04_admin.feature` | `GET /v1/tenants` and `GET /v1/users` envelopes |
 | `05_guardrails.feature` | BanSubstrings hard reject (chat SSE + comment 422) + clean pass |
+| `06_pii_vault.feature` | Index-time PII tokens in Qdrant + `/vault/detokenize` (@pii-vault) |
+| `07_auth.feature` | JWT 401/403, tenant isolation, spoofed `X-Tenant-Id` (`@auth`; skips if not jwt) |
+| `07_me.feature` | JWT `GET /v1/me` + `PUT /v1/me/active-tenant` without `manage-realm` (`@auth` `@me`; skips if not jwt) |
+| `08_ai_system_card.feature` | `GET /v1/ai/system-card` envelope |
 
 Banned phrases are defined in `operations/llm-guard/config/scanners.yml` (`BanSubstrings`) and mirrored in `src/guardrails.ts`.
+
+PII vault feature additionally requires:
+
+- `docker compose --profile guardrails up -d` (Presidio analyzer for index-time tokenization)
+- Indexing worker: `INDEXING_PDF_PII_TOKENIZATION_ENABLED=true` plus shared `VAULT_ENCRYPTION_KEY` / `VAULT_TOKEN_SALT` (same values as API)
+- Chat/API: `PII_VAULT_ENABLED=true` for query tokenization + SSE detokenize on chat `done` events
+- Alembic revision `003` applied (`make migrate` or ops bootstrap)
+- tests/api `.env`: `PII_VAULT_TESTS_ENABLED=true`
 
 ## Generated types
 

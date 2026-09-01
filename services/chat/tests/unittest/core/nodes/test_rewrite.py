@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import AsyncMock
 
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.domains.retrieval.models import IndexedDocumentEntry
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
@@ -14,6 +15,8 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
     def _node(self) -> tuple[RewriteQueryNode, AsyncMock, AsyncMock]:
         retrieval = AsyncMock()
         chat_client = AsyncMock()
+        query_pii = AsyncMock()
+        query_pii.enabled = False
         deps = AgentGraphDeps(
             chat_client=chat_client,
             retrieval=retrieval,
@@ -21,6 +24,8 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
             guard=AsyncMock(),
             analyzer=AsyncMock(),
             anonymizer=AsyncMock(),
+            query_pii=query_pii,
+            pii_vault=PiiVaultSettings(_env_file=None, enabled=False),
         )
         return RewriteQueryNode(deps), retrieval, chat_client
 
@@ -111,6 +116,31 @@ class TestRewriteQueryNode(unittest.IsolatedAsyncioTestCase):
         # Assert
         self.assertTrue(update["needs_retrieval"])
         self.assertEqual(update["search_query"], "user question")
+
+    async def test_search_keeps_original_query_when_safe_query_is_tokenized(self) -> None:
+        node, retrieval, chat_client = self._node()
+        retrieval.list_indexed_documents.return_value = []
+        chat_client.chat_completion.return_value = {
+            "choices": [
+                {
+                    "message": {
+                        "content": (
+                            '{"needs_document_search": true, "search_query": "", "reason": ""}'
+                        ),
+                    },
+                },
+            ],
+        }
+
+        update = await node(
+            {
+                "query": "kicsoda Dr. Varga Levente?",
+                "safe_query": "kicsoda Dr. <PERSON_A870C779> Levente?",
+                "locale": "en",
+            }
+        )
+
+        self.assertEqual(update["search_query"], "kicsoda Dr. Varga Levente?")
 
     async def test_llm_error_uses_fallback(self) -> None:
         # Arrange

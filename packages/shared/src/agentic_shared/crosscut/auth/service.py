@@ -51,6 +51,7 @@ class AuthService:
                 user_id="api-key",
                 tenant_id=tenant,
                 roles=frozenset({AppRole.ADMIN, AppRole.READ, AppRole.WRITE}),
+                username="api-key",
             )
 
         token = _extract_bearer(authorization)
@@ -68,6 +69,7 @@ class AuthService:
             user_id=claims.user_id or None,
             tenant_id=claims.tenant_id or _header_tenant_id(x_tenant_id),
             roles=self._map_roles(claims),
+            username=claims.preferred_username or None,
         )
 
     def _resolve_internal_service(
@@ -84,7 +86,7 @@ class AuthService:
         return AuthContext(
             user_id="internal-service",
             tenant_id=tenant,
-            roles=frozenset({AppRole.READ, AppRole.WRITE}),
+            roles=frozenset(AppRole.privileged()),
         )
 
     def _map_roles(self, claims: AccessTokenClaims) -> frozenset[AppRole]:

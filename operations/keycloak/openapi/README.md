@@ -1,31 +1,27 @@
 # Keycloak Admin REST API — OpenAPI (official)
 
-Vendor copy of the **Keycloak Admin REST API** OpenAPI 3.0 definitions published by the Keycloak project (preview feature in upstream docs).
+Vendor copy of the **Keycloak Admin REST API** OpenAPI 3.0 definition published by the Keycloak project (preview feature in upstream docs). YAML only — same as `openapi/` in this repo; JSON is not kept.
 
 | File | Format |
 |------|--------|
-| `admin-rest.openapi.yaml` | YAML (preferred for diff/review) |
-| `admin-rest.openapi.json` | JSON |
+| `admin-rest.openapi.yaml` | YAML (codegen + review) |
 
 ## Source (refresh)
 
-Download the current official artifacts from:
+Download the current official artifact from:
 
 - YAML: https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml
-- JSON: https://www.keycloak.org/docs-api/latest/rest-api/openapi.json
 - Human-readable reference: https://www.keycloak.org/docs-api/latest/rest-api/
 
 ```bash
 curl -fsSL -o admin-rest.openapi.yaml \
   https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml
-curl -fsSL -o admin-rest.openapi.json \
-  https://www.keycloak.org/docs-api/latest/rest-api/openapi.json
 ```
 
 Regenerate the **async httpx** Python workspace client (gitignored under `packages/generated/`):
 
 ```bash
-make generate-keycloak-client
+make generate-openapi-clients
 uv sync --all-packages
 ```
 
@@ -37,4 +33,4 @@ Docker Compose pins Keycloak **`26.0.7`** (`operations/keycloak/compose.yaml`). 
 
 ## Usage in this repo
 
-Reference for scripts such as `init/init-organizations.sh` (Organizations admin endpoints under `/admin/realms/{realm}/organizations`).
+Reference for scripts such as `scripts/keycloak/init-organizations.sh` (Organizations admin endpoints under `/admin/realms/{realm}/organizations`).

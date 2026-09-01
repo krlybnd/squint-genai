@@ -60,9 +60,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "${{ matrix.project }}/uv.lock"
 
-      - name: Generate Keycloak admin client
-        if: matrix.name == 'admin'
-        run: make generate-keycloak-client
+      - name: Generate OpenAPI Python clients
+        run: make generate-openapi-clients
 
       - name: Sync (frozen)
         working-directory: ${{ matrix.project }}
@@ -142,8 +141,8 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Generate Keycloak admin client
-        run: make generate-keycloak-client
+      - name: Generate OpenAPI Python clients
+        run: make generate-openapi-clients
 
       - name: Sync all projects (frozen)
         run: make sync-frozen
@@ -218,6 +217,9 @@ jobs:
               cp -a "${src}/." ".reports/python/${name}/"
             fi
           done
+
+      - name: Generate OpenAPI Python clients
+        run: make generate-openapi-clients
 
       - name: Sync shared (for coverage CLI)
         working-directory: packages/shared

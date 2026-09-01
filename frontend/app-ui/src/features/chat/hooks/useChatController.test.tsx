@@ -1,4 +1,4 @@
-import { cleanup, renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChatSession } from "../../../api/types";
 import { useChatController } from "./useChatController";
@@ -92,5 +92,41 @@ describe("useChatController", () => {
       expect(result.current.messages).toEqual([]);
     });
     expect(result.current.sessionTitle).toBeNull();
+  });
+
+  it("keeps the first user bubble while the session title arrives", async () => {
+    const created: ChatSession = {
+      id: "session-new",
+      title: "New chat",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    } as ChatSession;
+    fetchSessions.mockResolvedValue([]);
+    fetchMessages.mockResolvedValue([]);
+    createSession.mockResolvedValue(created);
+    streamChat.mockReturnValue({ abort: vi.fn() });
+
+    const { result, rerender } = renderHook(
+      ({ active }: { active: ChatSession | null }) =>
+        useChatController({ session: active, onSessionCreated: vi.fn() }),
+      { initialProps: { active: null } },
+    );
+
+    act(() => {
+      result.current.setInput("who is the ceo");
+    });
+    await act(async () => {
+      await result.current.handleSend();
+    });
+
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0]?.content).toBe("who is the ceo");
+
+    rerender({ active: created });
+    rerender({ active: { ...created, title: "Kamuhold CEO" } });
+
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0]?.content).toBe("who is the ceo");
+    expect(fetchMessages).not.toHaveBeenCalled();
   });
 });

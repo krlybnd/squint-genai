@@ -10,14 +10,15 @@ Docker Compose **include** fragments — one folder per dependency.
 | `qdrant/` | Qdrant | 6333 |
 | `litellm/` | LiteLLM proxy | 4000 |
 | `llm-guard/` | PromptInjection DeBERTa (`--profile guardrails`) | internal |
-| `presidio-analyzer/` | PII detect (`--profile guardrails`) | internal |
-| `presidio-anonymizer/` | PII redact (`--profile guardrails`) | internal |
-| `keycloak/` | Keycloak + org bootstrap (`--profile auth`) | via Traefik `/realms` |
-| `traefik/` | API gateway + JWT auth (`--profile auth`) | 80 / 8088 |
+| `presidio-analyzer/` | PII detect (default stack) | 5002 |
+| `presidio-anonymizer/` | PII redact (default stack) | 5001 |
+| `rerank/` | TEI MiniLM reranker (default demo) | 8090 |
+| `keycloak/` | Keycloak + org bootstrap (default demo) | 8080 |
+| `traefik/` | API gateway (`--profile auth`) | 80 |
 
 App Dockerfiles live under each project: `services/*/Dockerfile`, `frontend/app-ui/Dockerfile`, `frontend/admin-app-ui/Dockerfile`.
 
-Post-start bootstrap (Alembic migrate + MinIO bucket/CORS): **`tools/ops`** — Dagger module + lightweight `ops` compose service.
+Post-start **`make initialization`** then **`make bootstrap`** (infra, then migrate/users/reindex after apps): **`tools/ops`**.
 
 ## Postgres init
 
@@ -28,10 +29,14 @@ Post-start bootstrap (Alembic migrate + MinIO bucket/CORS): **`tools/ops`** — 
 
 ## Usage
 
+Host commands are Docker Compose — not Make. Full recipes: [`tools/ops/README.md`](../tools/ops/README.md).
+
 ```bash
-make up              # infra + app services + ops bootstrap
-make up-guardrails   # optional: llm-guard + Presidio (profile guardrails) for chat/api Guard clients
-make up-auth         # + Traefik + Keycloak (profiles auth + ui)
-docker compose --profile auth --profile ui up -d
-make ops-bootstrap   # run bootstrap via Dagger (host env)
+docker compose up -d --build
+docker compose --profile guardrails up -d
+AUTH_MODE=jwt VITE_AUTH_ENABLED=true \
+  docker compose --profile auth \
+  -f docker-compose.yml -f operations/compose.ingress.yaml up -d --build
+docker compose exec ops make add-users
+docker compose down
 ```

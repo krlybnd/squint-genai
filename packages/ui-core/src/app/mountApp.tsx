@@ -2,7 +2,7 @@ import { StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import type { i18n } from "i18next";
 import { I18nextProvider } from "react-i18next";
-import { AuthProvider, bootstrapAuth } from "../auth";
+import { AuthProvider, bootstrapAuth, TenantProvider } from "../auth";
 import { configureHttp } from "../http";
 import { getAppLocaleFromInstance } from "../i18n";
 import { PreferencesProvider } from "../preferences";
@@ -31,7 +31,9 @@ export async function mountApp({ authClient, i18n, app, legacyApiKey }: MountApp
     <StrictMode>
       <I18nextProvider i18n={i18n}>
         <PreferencesProvider i18n={i18n}>
-          <AuthProvider client={authClient}>{app}</AuthProvider>
+          <AuthProvider client={authClient}>
+            <TenantProvider>{app}</TenantProvider>
+          </AuthProvider>
         </PreferencesProvider>
       </I18nextProvider>
     </StrictMode>,

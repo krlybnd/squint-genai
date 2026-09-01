@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from agentic_shared.core.health.providers import make_resource_health_provider
 from agentic_shared.domains.persistence.providers import AsyncDbProvider
+from agentic_shared.domains.pii_vault.providers import PiiVaultProvider
 from agentic_shared.domains.retrieval.providers import AsyncRetrievalProvider
 from agentic_shared.frameworks.fastapi.dishka import make_service_container
 from agentic_shared.frameworks.fastapi.framework import FastAPIAppBuilder
@@ -18,6 +19,7 @@ from agentic_shared.integrations.litellm.anonymizer.providers import AnonymizerP
 from agentic_shared.integrations.litellm.guard.providers import GuardProvider
 from agentic_shared.integrations.litellm.llm.protocols import ChatClient
 from agentic_shared.integrations.litellm.llm.providers import LLMProvider
+from agentic_shared.integrations.litellm.rerank.providers import RerankProvider
 from dishka import AsyncContainer
 from fastapi import FastAPI
 
@@ -46,6 +48,7 @@ def create_app() -> FastAPI:
         AnalyzerProvider(settings.analyzer),
         AnonymizerProvider(settings.anonymizer),
         GuardProvider(settings.guard),
+        RerankProvider(settings.llm, settings.rerank),
         make_resource_health_provider(DatabaseClient, ChatClient),
         QdrantProvider(settings.qdrant),
         AsyncDbProvider(settings.database),
@@ -53,6 +56,7 @@ def create_app() -> FastAPI:
             settings.llm,
             settings.embedding,
         ),
+        PiiVaultProvider(settings.crypto, settings.pii_vault),
         ChatProvider(settings),
     )
     return (

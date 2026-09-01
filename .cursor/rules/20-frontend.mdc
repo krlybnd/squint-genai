@@ -8,8 +8,8 @@ globs: frontend/**/*
 - App bootstrap: `mountApp`, `authClientFromEnv`, `createAppI18nFromLocales` from `@are/ui-core/app/*`; `viteAppConfig` from `@are/ui-core/build/*`; single `scripts/generate-api.mjs` in ui-core
 - Types from `openapi/api.yaml`, `openapi/chat.yaml`, `openapi/admin.yaml` → generated per app
 - Run `make sync`, then `npm run generate:api` (also on postinstall)
-- Traefik routes `/` → app-ui, `/admin` → admin-ui when using `make up-auth`
+- Traefik routes `/` → app-ui, `/admin` → admin-ui with `--profile auth` and the ingress overlay
 - Purple youthful theme (DM Sans, gradient accents)
 - Layout: header top, left documents panel, right chat sessions
 - Chat consumes SSE from chat service (`/v1/chat/sessions/{id}/stream`)
-- Auth: `keycloak-js` when `VITE_AUTH_ENABLED=true` (`make up-auth`); dev without auth via `make up-ui` (`AUTH_MODE=none`)
+- Auth: `keycloak-js` when `VITE_AUTH_ENABLED=true` (auth Compose profile); without Keycloak use `AUTH_MODE=none` and `VITE_AUTH_ENABLED=false`

@@ -3,13 +3,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from keycloak_admin_client.api.organizations import (
+    get_admin_realms_realm_organizations_members_member_id_organizations as get_member_orgs,
+)
+from keycloak_admin_client.api.organizations import (
     get_admin_realms_realm_organizations_org_id_members,
 )
 from keycloak_admin_client.types import UNSET
 
 from agentic_shared.integrations.idp.keycloak.errors import KeycloakNotFoundError
 from agentic_shared.integrations.idp.keycloak.helpers import _check_response, _roles_for_tenant
-from agentic_shared.integrations.idp.keycloak.tenant.models import TenantMemberRecord
+from agentic_shared.integrations.idp.keycloak.tenant.models import TenantMemberRecord, TenantRecord
 
 if TYPE_CHECKING:
     from agentic_shared.integrations.idp.keycloak.tenant.gateway import TenantGateway
@@ -67,10 +70,26 @@ class TenantMembers:
         has_more = len(parsed) >= page_size
         return members, has_more
 
+    async def list_tenants_for_user(self, user_id: str) -> list[TenantRecord]:
+        # Per-user orgs: view-users is enough. GET /organizations needs manage-realm on KC 26.
+        client = await self._gateway._client()
+        async with client:
+            response = await get_member_orgs.asyncio_detailed(
+                self._gateway._realm,
+                user_id,
+                client=client,
+                brief_representation=False,
+            )
+        _check_response(response.status_code, response.content)
+        parsed = response.parsed
+        if not isinstance(parsed, list):
+            return []
+        records: list[TenantRecord] = []
+        for item in parsed:
+            record = self._gateway._to_record(item)
+            if record:
+                records.append(record)
+        return sorted(records, key=lambda item: item.alias)
+
     async def list_tenant_aliases_for_user(self, user_id: str) -> list[str]:
-        aliases: list[str] = []
-        for tenant in await self._gateway.list_tenants():
-            members, _ = await self.list_members(tenant.alias, first=0, max_results=500)
-            if any(m.id == user_id for m in members):
-                aliases.append(tenant.alias)
-        return sorted(aliases)
+        return [record.alias for record in await self.list_tenants_for_user(user_id)]

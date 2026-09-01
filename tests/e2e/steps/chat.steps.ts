@@ -1,67 +1,23 @@
 import { createBdd } from "playwright-bdd";
-import { humanClick, humanFill, humanPause, humanPress } from "../support/human";
+import { humanClick, humanPause } from "../support/human";
 import { expect, test } from "../support/fixtures";
 
 const { Given, When, Then } = createBdd(test);
 
-When("I start a new chat from the toolbar", async ({ page }) => {
-  await humanClick(page, page.locator(".btn-new-chat"));
-});
-
-Then("the chat empty title should be visible", async ({ page }) => {
-  await expect(page.getByText(/ask anything about your documents/i)).toBeVisible();
-});
-
-Then("the chat input placeholder should be {string}", async ({ page }, placeholder: string) => {
-  await expect(page.getByPlaceholder(placeholder)).toBeVisible();
-});
-
-When("I send the chat message {string}", async ({ page }, message: string) => {
-  const input = page.getByPlaceholder(/ask a question|kérdés|frage/i);
-  await humanFill(page, input, message);
-  await humanPress(page, input, "Enter");
-});
-
-Then("I should see my message {string} in the thread", async ({ page }, message: string) => {
-  await expect(page.getByText(message, { exact: true })).toBeVisible();
-});
-
-Then("I should receive an assistant reply within {int} seconds", async ({ page }, seconds: number) => {
+Then("I should see an assistant reply within {int} seconds", async ({ page }, seconds: number) => {
   await expect(page.locator(".message.assistant .message-bubble").first()).toBeVisible({
     timeout: seconds * 1000,
   });
 });
 
-When("I open the sessions drawer", async ({ page }) => {
-  await humanClick(page, page.getByRole("button", { name: /open sessions|sessions/i }));
-});
-
-When("I close the sessions drawer", async ({ page }) => {
-  await humanClick(page, page.getByRole("button", { name: /close sessions|sessions/i }));
-});
-
-Then("the sessions panel title should be {string}", async ({ page }, title: string) => {
-  await expect(page.locator(".session-drawer-header h3")).toHaveText(title);
-});
-
-Then("the sessions panel should be hidden", async ({ page }) => {
-  await expect(page.locator(".session-drawer")).not.toHaveClass(/open/);
-});
-
-Then("the sessions list should contain a session with title matching {string}", async ({ page }, title: string) => {
-  await expect(page.locator(".session-drawer-title").filter({ hasText: title }).first()).toBeVisible({
-    timeout: 60_000,
-  });
-});
-
-When("I wait until chat is not streaming", async ({ page }) => {
+When("I wait until generation has stopped", async ({ page }) => {
   await expect(page.locator(".btn-pause")).toHaveCount(0, { timeout: 90_000 });
   await expect(page.locator(".message-bubble.streaming")).toHaveCount(0, { timeout: 10_000 });
   await humanPause(page, 1000);
 });
 
-Given("the chat sessions list is empty", async ({ page }) => {
-  await humanClick(page, page.getByRole("button", { name: /open sessions|sessions/i }));
+Given("the sessions list is empty", async ({ page }) => {
+  await humanClick(page, page.getByRole("button", { name: "Open sessions", exact: true }));
   const drawer = page.locator(".session-drawer.open");
   await expect(drawer).toBeVisible();
   let items = drawer.locator(".session-drawer-item");
@@ -76,35 +32,34 @@ Given("the chat sessions list is empty", async ({ page }) => {
     items = drawer.locator(".session-drawer-item");
   }
   await expect(drawer.locator(".session-drawer-empty")).toBeVisible();
-  await humanClick(page, page.getByRole("button", { name: /close sessions|sessions/i }));
+  await humanClick(page, page.getByRole("button", { name: "Close sessions", exact: true }));
 });
 
-When("I wait until the session title is updated from default", async ({ page }) => {
-  await expect(page.locator(".chat-session-title")).not.toHaveText(/^(New chat|Új beszélgetés|Neuer Chat)$/i, {
-    timeout: 90_000,
-  });
+When("I wait until the session title is not {string}", async ({ page }, defaultTitle: string) => {
+  await expect(page.locator(".chat-session-title")).not.toHaveText(defaultTitle, { timeout: 90_000 });
 });
 
-Then("the sessions list should contain the active session title", async ({ page }) => {
+Then("the sessions list should contain the current session", async ({ page }) => {
   const title = (await page.locator(".chat-session-title").textContent())?.trim();
-  if (!title) throw new Error("No active session title in toolbar");
+  if (!title) throw new Error("No session title in the toolbar");
   await expect(page.locator(".session-drawer-title").filter({ hasText: title }).first()).toBeVisible({
     timeout: 15_000,
   });
 });
 
-When("I wait until the active session can be deleted", async ({ page }) => {
+When("I wait until the current session can be deleted", async ({ page }) => {
   await expect(page.locator(".btn-pause")).toHaveCount(0, { timeout: 90_000 });
   await expect(page.locator(".message-bubble.streaming")).toHaveCount(0, { timeout: 10_000 });
   await expect(page.locator(".message.assistant .message-bubble").last()).toBeVisible({
     timeout: 90_000,
   });
   await humanPause(page, 2500);
-  const deleteBtn = page.locator(".session-drawer-item.active .session-drawer-delete");
-  await expect(deleteBtn).toBeEnabled({ timeout: 30_000 });
+  await expect(page.locator(".session-drawer-item.active .session-drawer-delete")).toBeEnabled({
+    timeout: 30_000,
+  });
 });
 
-When("I delete the current chat session from the drawer", async ({ page }) => {
+When("I delete the current session", async ({ page }) => {
   const active = page.locator(".session-drawer-item.active");
   await expect(active).toHaveCount(1);
   const title = (await active.locator(".session-drawer-title").textContent())?.trim();
@@ -136,22 +91,14 @@ When("I delete the current chat session from the drawer", async ({ page }) => {
   }
 });
 
-Then("no chat error should be visible", async ({ page }) => {
+Then("I should not see a chat error", async ({ page }) => {
   await expect(page.locator(".chat-error")).toHaveCount(0);
 });
 
-Then("the active session should be removed from the sessions list", async ({ page }) => {
+Then("the current session should not be in the sessions list", async ({ page }) => {
   await expect(page.locator(".session-drawer-item.active")).toHaveCount(0);
 });
 
-Then("the session {string} should not appear in the sessions list", async ({ page }, title: string) => {
-  await expect(page.locator(".session-drawer-title").filter({ hasText: title })).toHaveCount(0);
-});
-
-Then("the current chat session should not appear in the sessions list", async ({ page }) => {
-  await expect(page.locator(".session-drawer-item.active")).toHaveCount(0);
-});
-
-Then("the sessions list should show {string}", async ({ page }, text: string) => {
-  await expect(page.locator(".session-drawer-empty")).toHaveText(text);
+Then("the sessions drawer should be closed", async ({ page }) => {
+  await expect(page.locator(".session-drawer")).not.toHaveClass(/open/);
 });

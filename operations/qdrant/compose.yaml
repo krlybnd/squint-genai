@@ -6,10 +6,12 @@ services:
     ports:
       - "${QDRANT_PORT:-6333}:6333"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/"]
+      # qdrant/qdrant:latest (Debian) no longer ships curl/wget
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333'"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 10s
 
 volumes:
   qdrant_data:

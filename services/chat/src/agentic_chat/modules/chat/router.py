@@ -18,7 +18,10 @@ from agentic_chat.modules.chat.schemas import (
     CreateSessionRequest,
 )
 from agentic_chat.modules.chat.service import ChatService
-from agentic_chat.modules.chat.streaming.sse_events import parse_sse_chunk
+from agentic_chat.modules.chat.streaming.sse_events import (
+    SSE_OPENAPI_SUCCESS,
+    parse_sse_chunk,
+)
 from agentic_chat.modules.chat.streaming.stream_service import ChatStreamService
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
@@ -97,7 +100,11 @@ async def truncate_messages(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/sessions/{session_id}/stream")
+@router.post(
+    "/sessions/{session_id}/stream",
+    response_class=EventSourceResponse,
+    responses=SSE_OPENAPI_SUCCESS,
+)
 @inject
 async def stream_chat(
     session_id: UUID,
@@ -114,7 +121,11 @@ async def stream_chat(
     )
 
 
-@router.post("/sessions/{session_id}/replay")
+@router.post(
+    "/sessions/{session_id}/replay",
+    response_class=EventSourceResponse,
+    responses=SSE_OPENAPI_SUCCESS,
+)
 @inject
 async def replay_chat(
     session_id: UUID,

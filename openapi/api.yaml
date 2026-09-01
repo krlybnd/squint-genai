@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
-  title: Squint API
-  description: Documents, indexing jobs, retrieval, and admin endpoints
+  title: agentic-api
+  description: Documents, indexing jobs, retrieval, and annotations REST API
   version: 0.1.0
 paths:
   /health:
@@ -35,6 +35,57 @@ paths:
                   - type: boolean
                 type: object
                 title: Response Ready Ready Get
+  /v1/me:
+    get:
+      tags:
+      - me
+      summary: Get Me
+      operationId: get_me_v1_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeOut'
+  /v1/me/active-tenant:
+    put:
+      tags:
+      - me
+      summary: Set My Active Tenant
+      operationId: set_my_active_tenant_v1_me_active_tenant_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetMyActiveTenantRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/ai/system-card:
+    get:
+      tags:
+      - ai
+      summary: Get System Card
+      operationId: get_system_card_v1_ai_system_card_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiSystemCardOut'
   /v1/documents:
     get:
       tags:
@@ -359,6 +410,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /v1/vault/detokenize:
+    post:
+      tags:
+      - vault
+      summary: Detokenize
+      operationId: detokenize_v1_vault_detokenize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetokenizeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetokenizeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/annotations/chunks/{chunk_id}/comments:
     get:
       tags:
@@ -422,8 +498,93 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    AiSystemCardOut:
+      properties:
+        system_name:
+          type: string
+          title: System Name
+        purpose:
+          type: string
+          title: Purpose
+        risk_tier:
+          type: string
+          title: Risk Tier
+        model_id:
+          type: string
+          title: Model Id
+        provider:
+          type: string
+          title: Provider
+        human_oversight:
+          type: boolean
+          title: Human Oversight
+        logging_enabled:
+          type: boolean
+          title: Logging Enabled
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+          title: Metadata
+      type: object
+      required:
+      - system_name
+      - purpose
+      - risk_tier
+      - model_id
+      - provider
+      - human_oversight
+      - logging_enabled
+      title: AiSystemCardOut
     ChunkComment:
       properties:
+        point_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Point Type
+        tenant_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tenant Id
+        text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Text
+        doc_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Doc Id
+        source_file:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source File
+        page:
+          anyOf:
+          - type: string
+          - type: integer
+          - type: 'null'
+          title: Page
+        page_label:
+          anyOf:
+          - type: string
+          - type: integer
+          - type: 'null'
+          title: Page Label
+        section:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Section
+        _node_content:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Node Content
         comment_id:
           type: string
           minLength: 1
@@ -601,6 +762,26 @@ components:
       - selected_text
       - comment_text
       title: CreateChunkCommentRequest
+    DetokenizeRequest:
+      properties:
+        tokens:
+          items:
+            type: string
+          type: array
+          title: Tokens
+          description: Vault tokens to resolve (e.g. '<PERSON_a1b2c3d4>').
+      type: object
+      title: DetokenizeRequest
+    DetokenizeResponse:
+      properties:
+        values:
+          additionalProperties:
+            type: string
+          type: object
+          title: Values
+          description: Resolved token → plaintext for the current tenant only.
+      type: object
+      title: DetokenizeResponse
     DocumentChunksResponse:
       properties:
         doc_id:
@@ -776,6 +957,39 @@ components:
       - created_at
       - completed_at
       title: JobOut
+    MeOut:
+      properties:
+        username:
+          type: string
+          title: Username
+        tenant_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tenant Id
+        tenants:
+          items:
+            $ref: '#/components/schemas/MembershipTenantOut'
+          type: array
+          title: Tenants
+      type: object
+      required:
+      - username
+      - tenant_id
+      title: MeOut
+    MembershipTenantOut:
+      properties:
+        alias:
+          type: string
+          title: Alias
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+      - alias
+      - name
+      title: MembershipTenantOut
     PresignUploadRequest:
       properties:
         filename:
@@ -851,6 +1065,17 @@ components:
       required:
       - chunks
       title: SearchResponse
+    SetMyActiveTenantRequest:
+      properties:
+        alias:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Alias
+      type: object
+      required:
+      - alias
+      title: SetMyActiveTenantRequest
     ValidationError:
       properties:
         loc:

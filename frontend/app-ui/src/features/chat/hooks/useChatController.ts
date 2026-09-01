@@ -85,23 +85,50 @@ export function useChatController({ session, onSessionCreated }: UseChatControll
 
   useEffect(() => {
     if (!session) {
+      if (streamingSessionIdRef.current) {
+        return;
+      }
       setMessages([]);
       setSessionTitle(null);
       setMessageEdits({});
       lastSessionIdRef.current = null;
       return;
     }
-    fetchMessages(session.id).then(setMessages).catch(() => setMessages([]));
 
-    const switched = lastSessionIdRef.current !== session.id;
-    lastSessionIdRef.current = session.id;
-    if (switched) {
-      setSessionTitle(
-        isDefaultSessionTitle(session.title, newChatDefault) ? null : session.title,
-      );
-    } else if (!isDefaultSessionTitle(session.title, newChatDefault)) {
+    const sessionId = session.id;
+    const switched = lastSessionIdRef.current !== sessionId;
+    lastSessionIdRef.current = sessionId;
+
+    if (!isDefaultSessionTitle(session.title, newChatDefault)) {
       setSessionTitle(session.title);
+    } else if (switched) {
+      setSessionTitle(null);
     }
+
+    if (!switched) {
+      return;
+    }
+
+    setMessageEdits({});
+    if (streamingSessionIdRef.current === sessionId) {
+      return;
+    }
+
+    let cancelled = false;
+    fetchMessages(sessionId)
+      .then((loaded) => {
+        if (!cancelled && lastSessionIdRef.current === sessionId) {
+          setMessages(loaded);
+        }
+      })
+      .catch(() => {
+        if (!cancelled && lastSessionIdRef.current === sessionId) {
+          setMessages([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [session, newChatDefault]);
 
   useEffect(() => {
@@ -432,6 +459,8 @@ export function useChatController({ session, onSessionCreated }: UseChatControll
       if (!activeSession) {
         activeSession = await createSession();
         activeSessionRef.current = activeSession;
+        streamingSessionIdRef.current = activeSession.id;
+        setStreamingSessionId(activeSession.id);
         onSessionCreated(activeSession);
         setSessions((prev) => [activeSession!, ...prev]);
       }

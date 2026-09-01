@@ -58,7 +58,9 @@ def to_record(user: UserRepresentation) -> UserRecord | None:
 
 
 async def with_tenant_memberships(gateway: UserGateway, user: UserRecord) -> UserRecord:
-    tenant_ids = await gateway._tenants.list_tenant_aliases_for_user(user.id)
+    memberships = await gateway._tenants.list_tenants_for_user(user.id)
+    tenant_ids = [item.alias for item in memberships]
+    tenant_labels = {item.alias: item.name for item in memberships}
     active = user.tenant_id
     if active and active not in tenant_ids:
         active = tenant_ids[0] if tenant_ids else None
@@ -75,4 +77,5 @@ async def with_tenant_memberships(gateway: UserGateway, user: UserRecord) -> Use
         tenant_ids=tenant_ids,
         realm_roles=realm_roles,
         tenant_roles=tenant_roles,
+        tenant_labels=tenant_labels,
     )

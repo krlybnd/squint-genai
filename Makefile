@@ -9,6 +9,9 @@ REPORTS_DIR  := $(ROOT)/.reports
 
 include $(ROOT)/make/projects.mk
 include $(ROOT)/make/licenses.mk
+include $(ROOT)/make/openapi-client.mk
+include $(ROOT)/tools/ops/Makefile
+include $(ROOT)/tools/qa/Makefile
 
 .DEFAULT_GOAL := help
 
@@ -16,12 +19,13 @@ include $(ROOT)/make/licenses.mk
 help: ## List top-level targets
 	@echo "agentic-rag-eval (independent projects)"
 	@echo ""
-	@grep -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-22s %s\n", $$1, $$2}'
+	@grep -hE '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-22s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Python: $(PYTHON_PROJECTS)"
 	@echo "Node:   $(NODE_PROJECTS)"
 	@echo "Suites: $(PYTHON_SUITES) $(NODE_SUITES)"
 	@echo "Repo map: project.cue (verify: make verify-repo-map)"
+	@echo "Stack:    tools/ops/README.md (docker compose; Make is not the host entry)"
 
 # ── Sync / install ───────────────────────────────────────────────────────────
 
@@ -44,33 +48,31 @@ sync-frozen: ## Frozen sync (CI) — requires committed lockfiles
 KEYCLOAK_OPENAPI     := $(ROOT)/operations/keycloak/openapi/admin-rest.openapi.yaml
 KEYCLOAK_CLIENT_DIR  := $(ROOT)/packages/generated/keycloak-admin-client
 KEYCLOAK_CLIENT_CONFIG := $(ROOT)/operations/keycloak/openapi/openapi-python-client.yaml
+API_CLIENT_DIR       := $(ROOT)/packages/generated/agentic-api-client
+CHAT_CLIENT_DIR      := $(ROOT)/packages/generated/agentic-chat-client
+API_CLIENT_CONFIG    := $(ROOT)/openapi/python-client-api.yaml
+CHAT_CLIENT_CONFIG   := $(ROOT)/openapi/python-client-chat.yaml
 
-.PHONY: generate-openapi generate-keycloak-client openapi
+.PHONY: generate-openapi generate-openapi-clients openapi
 generate-openapi: ## Export OpenAPI specs → openapi/
 	@mkdir -p $(ROOT)/openapi
 	@cd $(ROOT)/services/api && $(UV) run python -c 'import yaml; from pathlib import Path; from agentic_api.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("api.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); print("Wrote openapi/api.yaml")'
 	@cd $(ROOT)/services/chat && $(UV) run python -c 'import yaml; from pathlib import Path; from agentic_chat.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("chat.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); print("Wrote openapi/chat.yaml")'
 	@cd $(ROOT)/services/admin && $(UV) run python -c 'import yaml; from pathlib import Path; from agentic_admin.main import create_app; s=create_app().openapi(); p=Path("$(ROOT)/openapi"); p.mkdir(exist_ok=True); p.joinpath("admin.yaml").write_text(yaml.dump(s, sort_keys=False, allow_unicode=True, default_flow_style=False), encoding="utf-8"); print("Wrote openapi/admin.yaml")'
 
-generate-keycloak-client: ## Keycloak Admin OpenAPI → packages/generated/
-	@test -f "$(KEYCLOAK_OPENAPI)" || (echo "Missing $(KEYCLOAK_OPENAPI)" >&2; exit 1)
+generate-openapi-clients: ## api.yaml + chat.yaml + Keycloak Admin → packages/generated/
 	@mkdir -p "$(ROOT)/packages/generated"
-	@rm -rf "$(KEYCLOAK_CLIENT_DIR)"
-	$(UVX) openapi-python-client generate \
-		--path "$(KEYCLOAK_OPENAPI)" \
-		--config "$(KEYCLOAK_CLIENT_CONFIG)" \
-		--meta uv \
-		--output-path "$(KEYCLOAK_CLIENT_DIR)" \
-		--overwrite \
-		--no-fail-on-warning
+	@rm -rf "$(API_CLIENT_DIR)" "$(CHAT_CLIENT_DIR)" "$(KEYCLOAK_CLIENT_DIR)"
+	$(call openapi-python-client,$(ROOT)/openapi/api.yaml,$(API_CLIENT_CONFIG),$(API_CLIENT_DIR))
+	$(call openapi-python-client,$(ROOT)/openapi/chat.yaml,$(CHAT_CLIENT_CONFIG),$(CHAT_CLIENT_DIR))
+	$(call openapi-python-client,$(KEYCLOAK_OPENAPI),$(KEYCLOAK_CLIENT_CONFIG),$(KEYCLOAK_CLIENT_DIR))
 
 openapi: generate-openapi
 
 # ── Database ───────────────────────────────────────────────────────────────────
 
 .PHONY: db-migrate db-revision
-db-migrate: ## Alembic upgrade head (packages/shared)
-	cd $(ROOT)/packages/shared && $(UV) run alembic -c alembic/alembic.ini upgrade head
+db-migrate: migrate ## Alembic upgrade head (alias)
 
 db-revision: ## Alembic autogenerate (MSG=...)
 	cd $(ROOT)/packages/shared && $(UV) run alembic -c alembic/alembic.ini revision --autogenerate -m "$(MSG)"
@@ -85,113 +87,6 @@ sync-projects-mk: ## Regenerate make/projects.mk lists from project.cue
 	cue export project.cue -e projectsMk --out text > "$(ROOT)/make/projects.mk"
 	@echo "Wrote make/projects.mk"
 	@$(MAKE) verify-repo-map
-
-# ── Quality ────────────────────────────────────────────────────────────────────
-
-.PHONY: test test-unit test-unit-coverage test-coverage lint format hooks
-test: test-unit ## All tests
-
-test-unit: ## Unit tests (libs, services, UI)
-	@set -e; for p in $(PYTHON_PROJECTS); do echo "==> $$p unit-test"; $(MAKE) -C $$p unit-test; done
-	@set -e; for p in $(NODE_PROJECTS); do echo "==> $$p unit-test"; $(MAKE) -C $$p unit-test; done
-
-test-unit-coverage: ## Unit tests + per-project coverage
-	@set -e; for p in $(PYTHON_LIBS) $(PYTHON_SERVICES); do echo "==> $$p unit-test-coverage"; $(MAKE) -C $$p unit-test-coverage; done
-	@$(MAKE) coverage-combine
-
-test-coverage: test-unit-coverage ## Alias
-
-coverage-combine: ## Combine per-project .coverage → .reports/coverage/combined/ (non-gating)
-	@mkdir -p $(REPORTS_DIR)/coverage/combined
-	@cov_files=""; \
-	for name in $(PYTHON_REPORT_NAMES); do \
-		f="$(REPORTS_DIR)/python/$$name/.coverage"; \
-		if [ -f "$$f" ]; then cov_files="$$cov_files $$f"; fi; \
-	done; \
-	if [ -n "$$cov_files" ]; then \
-		rm -f $(REPORTS_DIR)/coverage/combined/.coverage; \
-		cd $(ROOT)/packages/shared && $(UV) run coverage combine --keep $$cov_files; \
-		$(UV) run coverage html -d $(REPORTS_DIR)/coverage/combined; \
-		$(UV) run coverage report || true; \
-		echo "Coverage HTML: $(REPORTS_DIR)/coverage/combined/index.html"; \
-	else \
-		echo "No coverage data files under $(REPORTS_DIR)/python/*/\.coverage" >&2; \
-	fi
-
-lint: ## Lint libs, services, and UI
-	@set -e; for p in $(PYTHON_PROJECTS); do $(MAKE) -C $$p lint; done
-	@set -e; for p in $(NODE_PROJECTS); do $(MAKE) -C $$p lint; done
-
-format: ## Auto-format Python (libs, services, suites)
-	@set -e; for p in $(PYTHON_PROJECTS) $(PYTHON_SUITES); do $(MAKE) -C $$p format; done
-
-hooks: ## Install pre-commit
-	$(UVX) pre-commit install
-
-.PHONY: eval eval-live eval-live-generation e2e test-api
-eval: ## Offline eval checks (dataset + metrics)
-	$(MAKE) -C tests/eval run
-
-eval-live: ## Retrieval IR gate (live stack, no judge LLM)
-	$(MAKE) -C tests/eval run-live
-
-eval-live-generation: ## DeepEval generation gate (slow; live stack)
-	$(MAKE) -C tests/eval run-live-generation
-
-e2e: ## Playwright BDD UI (needs make up-ui; not in default CI)
-	$(MAKE) -C tests/e2e run
-
-test-api: ## Playwright BDD HTTP (needs make up; not in default CI)
-	$(MAKE) -C tests/api run
-
-.PHONY: resources
-resources: ## Download demo PDFs into resources/ (not committed)
-	@chmod +x $(ROOT)/scripts/fetch-resources.sh
-	$(ROOT)/scripts/fetch-resources.sh
-
-# ── SBOM / license policy ──────────────────────────────────────────────────────
-
-.PHONY: licenses
-licenses: licenses-check ## SBOM for all projects + merge + Grant policy gate
-
-# ── Docker Compose ─────────────────────────────────────────────────────────────
-
-.PHONY: build up up-ui up-auth up-guardrails down index ops-bootstrap
-build: ## docker compose build
-	docker compose --profile auth --profile ui build
-
-up: ## Backend stack
-	docker compose up -d postgres redis minio qdrant litellm ops indexing api chat admin
-
-up-ui: ## Backend + UI (no Keycloak)
-	AUTH_MODE=none INTERNAL_SERVICE_KEY=dev-internal-service-key-change-me \
-		VITE_AUTH_ENABLED=false docker compose --profile ui up -d --build
-
-up-auth: ## Full stack + Keycloak + Traefik + UI
-	AUTH_MODE=jwt VITE_AUTH_ENABLED=true VITE_KEYCLOAK_URL=$${VITE_KEYCLOAK_URL:-http://localhost} \
-		docker compose --profile auth --profile ui up -d --build
-
-up-guardrails: ## Presidio + llm-guard (profile guardrails) for chat/api Guard clients
-	docker compose --profile guardrails up -d
-	docker compose up -d litellm
-
-down: ## Stop containers
-	docker compose down
-
-ops-bootstrap: ## Run migrate + MinIO bootstrap container
-	docker compose run --rm ops
-
-index: ## Trigger reindex
-	curl -X POST http://localhost:8000/v1/admin/index \
-		-H "X-API-Key: $${API_KEY:-dev-admin-key-change-me}"
-
-.PHONY: dev dev-api dev-chat dev-indexing dev-admin dev-ui dev-admin-ui
-dev-api:      ; $(MAKE) -C services/api dev
-dev-chat:     ; $(MAKE) -C services/chat dev
-dev-admin:    ; $(MAKE) -C services/admin dev
-dev-indexing: ; $(MAKE) -C services/indexing dev
-dev-ui:       ; $(MAKE) -C frontend/app-ui dev
-dev-admin-ui: ; $(MAKE) -C frontend/admin-app-ui dev
 
 .PHONY: gh-labels
 gh-labels: ## GitHub labels (needs gh auth)

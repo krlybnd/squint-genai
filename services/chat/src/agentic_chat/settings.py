@@ -2,6 +2,8 @@
 
 from agentic_shared.core.settings.app import AppSettings, load_app_settings
 from agentic_shared.crosscut.auth.settings import AuthSettings, RoleSettings
+from agentic_shared.crosscut.crypto.settings import CryptoSettings
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.frameworks.fastapi.defaults import FrameworkDefaults
 from agentic_shared.frameworks.fastapi.settings import FastAPISettings
 from agentic_shared.infrastructure.sql.postgres.settings import DatabaseSettings
@@ -11,6 +13,7 @@ from agentic_shared.integrations.litellm.anonymizer.settings import AnonymizerSe
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.guard.settings import GuardSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
+from agentic_shared.integrations.litellm.rerank.settings import LiteLLMRerankSettings
 from pydantic import Field
 
 from agentic_chat.tracing import LangSmithTracingSettings
@@ -39,6 +42,10 @@ class ChatSettings(AppSettings):
         default_factory=LiteLLMEmbeddingSettings,
         description="LiteLLM embeddings for in-process retrieval.",
     )
+    rerank: LiteLLMRerankSettings = Field(
+        default_factory=LiteLLMRerankSettings,
+        description="LiteLLM /rerank after hybrid RRF (local TEI; fail-open).",
+    )
     analyzer: AnalyzerSettings = Field(
         default_factory=AnalyzerSettings,
         description="PII analyzer API (local or vendor; compose profile guardrails).",
@@ -66,6 +73,14 @@ class ChatSettings(AppSettings):
     role: RoleSettings = Field(
         default_factory=RoleSettings,
         description="IdP realm role → AppRole mapping for authorization.",
+    )
+    crypto: CryptoSettings = Field(
+        default_factory=CryptoSettings,
+        description="Fernet key + token salt for PII vault reveal/detokenize.",
+    )
+    pii_vault: PiiVaultSettings = Field(
+        default_factory=PiiVaultSettings,
+        description="Vault query tokenization + SSE detokenize toggles.",
     )
 
 

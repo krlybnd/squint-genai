@@ -1,6 +1,6 @@
 import { createBdd } from "playwright-bdd";
 
-import { requireData } from "../src/clients";
+import { requireData, type ChatClient } from "../src/clients";
 import {
   GUARDRAILS_BANNED_PHRASE,
   GUARDRAILS_CLEAN_CHAT_MESSAGE,
@@ -11,22 +11,6 @@ import { expect, test } from "../support/fixtures";
 const { Given, When, Then } = createBdd(test);
 
 type SseEvent = { event: string; data: Record<string, unknown> };
-
-function serviceHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    Accept: "text/event-stream",
-    "Content-Type": "application/json",
-  };
-  const apiKey = process.env.API_KEY?.trim();
-  if (apiKey) {
-    headers["X-API-Key"] = apiKey;
-  }
-  const tenantId = process.env.API_TENANT_ID?.trim();
-  if (tenantId) {
-    headers["X-Tenant-Id"] = tenantId;
-  }
-  return headers;
-}
 
 function parseSse(raw: string): SseEvent[] {
   const normalized = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
@@ -56,30 +40,36 @@ function parseSse(raw: string): SseEvent[] {
   return events;
 }
 
-async function streamChatMessage(sessionId: string, message: string): Promise<SseEvent[]> {
-  const base = process.env.CHAT_BASE_URL ?? "http://localhost:8002";
-  const response = await fetch(`${base}/v1/chat/sessions/${sessionId}/stream`, {
-    method: "POST",
-    headers: serviceHeaders(),
-    body: JSON.stringify({ message }),
+async function streamChatMessage(
+  chat: ChatClient,
+  sessionId: string,
+  message: string,
+): Promise<SseEvent[]> {
+  const result = await chat.POST("/v1/chat/sessions/{session_id}/stream", {
+    params: { path: { session_id: sessionId } },
+    body: { message },
+    parseAs: "text",
+    headers: { Accept: "text/event-stream" },
   });
-  if (!response.ok) {
-    throw new Error(`chat stream failed: HTTP ${response.status}`);
+  if (!result.response.ok || typeof result.data !== "string") {
+    throw new Error(`chat stream failed: HTTP ${result.response.status}`);
   }
-  const raw = await response.text();
-  return parseSse(raw);
+  return parseSse(result.data);
 }
 
 Given("guardrails profile services are reachable", async () => {
   const base = process.env.GUARD_API_BASE ?? "http://localhost:8010";
   const token = process.env.GUARD_AUTH_TOKEN ?? "poc-local-classifier";
-  const health = await fetch(`${base.replace(/\/$/, "")}/healthz`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!health.ok) {
-    throw new Error(
-      `llm-guard not reachable at ${base} (HTTP ${health.status}). Run: make up-guardrails`,
-    );
+  try {
+    const health = await fetch(`${base.replace(/\/$/, "")}/healthz`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!health.ok) {
+      test.skip(true, `llm-guard not reachable at ${base} (HTTP ${health.status}). Run: make up-guardrails`);
+    }
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    test.skip(true, `llm-guard not reachable at ${base} (${reason}). Run: make up-guardrails`);
   }
 });
 
@@ -118,6 +108,7 @@ When("I stream a chat message containing the banned obscenity phrase", async ({ 
   );
   memory.session = created;
   memory.sseEvents = await streamChatMessage(
+    chat,
     created.id,
     `Please summarize this: ${GUARDRAILS_BANNED_PHRASE}`,
   );
@@ -129,7 +120,7 @@ When("I stream a clean chat message for guardrails", async ({ chat, memory }) =>
     "chat POST /v1/chat/sessions",
   );
   memory.session = created;
-  memory.sseEvents = await streamChatMessage(created.id, GUARDRAILS_CLEAN_CHAT_MESSAGE);
+  memory.sseEvents = await streamChatMessage(chat, created.id, GUARDRAILS_CLEAN_CHAT_MESSAGE);
 });
 
 Then("the chat stream should refuse with a guard block", async ({ memory }) => {

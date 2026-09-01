@@ -3,7 +3,7 @@
 # Layout under $(ROOT)/.reports/:
 #   python/<name>/     unit-test.xml, .coverage, coverage/, sbom.cdx.json
 #   node/<name>/       unit-test.xml, sbom.cdx.json
-#   coverage/combined/ merged Python HTML (root Makefile: coverage-combine)
+#   coverage/combined/ merged Python HTML (tools/qa/Makefile: coverage-combine)
 #   licenses/bom.cdx.json
 #   api/, e2e/         Playwright suites (configured in tests/*)
 

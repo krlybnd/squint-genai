@@ -1,6 +1,10 @@
+from agentic_shared.core.compliance.enums import AuditEventCategory
+from agentic_shared.core.compliance.models import AuditEvent
+from agentic_shared.core.compliance.protocols import AuditLogger
 from agentic_shared.crosscut.auth.context import AuthContext
 from agentic_shared.crosscut.auth.roles import AppRole
 from agentic_shared.crosscut.auth.settings import AuthSettings
+from agentic_shared.domains.persistence.audit_logger import emit_audit
 from agentic_shared.frameworks.fastapi.dependencies.auth.dependency import require_roles
 from agentic_shared.integrations.idp.core.errors import (
     IdpConflictError,
@@ -42,7 +46,7 @@ async def list_tenants(
             status_code=502,
             detail=(
                 "Keycloak denied Admin API access (403). Re-import the realm so the "
-                "agentic-rag-eval-api service account has realm-management roles — see "
+                "agentic-rag-eval-admin service account has realm-management roles — see "
                 "operations/keycloak/README.md."
             ),
         ) from exc
@@ -57,14 +61,27 @@ async def create_tenant(
     auth: FromDishka[AuthContext],
     auth_settings: FromDishka[AuthSettings],
     service: FromDishka[TenantAdminService],
+    audit: FromDishka[AuditLogger],
 ) -> TenantOut:
     require_roles(auth, auth_settings, AppRole.ADMIN)
     try:
-        return await service.create_tenant(alias=body.alias, name=body.name)
+        out = await service.create_tenant(alias=body.alias, name=body.name)
     except IdpConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except IdpError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    await emit_audit(
+        audit,
+        AuditEvent(
+            category=AuditEventCategory.CONFIG_CHANGE,
+            action="tenant.create",
+            actor_id=auth.user_id,
+            tenant_id=out.alias,
+            resource_type="tenant",
+            resource_id=out.alias,
+        ),
+    )
+    return out
 
 
 @router.patch("/{alias}", response_model=TenantOut)

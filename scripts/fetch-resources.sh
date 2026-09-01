@@ -1,50 +1,75 @@
 #!/usr/bin/env bash
-# Download demo PDFs into resources/. Not committed — see resources/README.md.
+# Download demo PDFs into resources/. Catalog: DEMO_RESOURCES (tools/ops/Makefile).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="${ROOT}/resources"
+UA="Mozilla/5.0 (compatible; Squint-resources/1.0; +https://github.com/krlybnd/squint-genai)"
+CATALOG_FILE=""
+
+usage() {
+  echo "Usage: fetch-resources.sh [--file catalog]  (or DEMO_RESOURCES env / stdin)" >&2
+  echo "Catalog lines: filename|url" >&2
+  exit 2
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --file) CATALOG_FILE="$2"; shift 2 ;;
+    -h|--help) usage ;;
+    *) echo "Unknown argument: $1" >&2; usage ;;
+  esac
+done
+
+catalog() {
+  if [ -n "${CATALOG_FILE}" ] && [ -f "${CATALOG_FILE}" ]; then
+    cat "${CATALOG_FILE}"
+  elif [ -n "${DEMO_RESOURCES:-}" ]; then
+    printf '%s\n' "${DEMO_RESOURCES}"
+  elif [ ! -t 0 ]; then
+    cat
+  else
+    echo "Missing resource catalog (DEMO_RESOURCES, --file, or stdin)" >&2
+    exit 1
+  fi
+}
+
 mkdir -p "${DEST}"
-
-UA="Mozilla/5.0 (compatible; Squint-resources/1.0; +https://github.com/krlybnd/agentic-rag-eval)"
-
-# filename|url
-FILES=(
-  "attention-is-all-you-need.pdf|https://arxiv.org/pdf/1706.03762"
-  "rag-lewis-2020.pdf|https://arxiv.org/pdf/2005.11401"
-  "us-constitution.pdf|https://constitution.congress.gov/static/files/Literal_Print_of_Constitution_MCT_1.9.26.pdf"
-  "nasa-fy2025-mission-fact-sheets.pdf|https://www.nasa.gov/wp-content/uploads/2024/03/nasa-fiscal-year-2025-mission-fact-sheets.pdf"
-  "nist-ai-rmf-1.0.pdf|https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf"
-)
+tmp="$(mktemp)"
+catalog > "${tmp}"
 
 failed=0
-for entry in "${FILES[@]}"; do
-  name="${entry%%|*}"
-  url="${entry#*|}"
+while IFS= read -r line || [ -n "${line}" ]; do
+  case "${line}" in
+    ''|\#*) continue ;;
+  esac
+  name="${line%%|*}"
+  url="${line#*|}"
   out="${DEST}/${name}"
-  if [[ -f "${out}" ]] && [[ "$(head -c 5 "${out}" 2>/dev/null || true)" == "%PDF-" ]]; then
+  if [ -f "${out}" ] && [ "$(head -c 5 "${out}" 2>/dev/null || true)" = "%PDF-" ]; then
     echo "ok  ${name} (already present)"
     continue
   fi
   echo "get ${name}"
-  tmp="${out}.tmp"
-  if ! curl -fsSL --retry 3 --retry-delay 2 -A "${UA}" -o "${tmp}" "${url}"; then
+  part="${out}.tmp"
+  if ! curl -fsSL --retry 3 --retry-delay 2 -A "${UA}" -o "${part}" "${url}"; then
     echo "fail ${name}: download error from ${url}" >&2
-    rm -f "${tmp}"
+    rm -f "${part}"
     failed=1
     continue
   fi
-  if [[ "$(head -c 5 "${tmp}" 2>/dev/null || true)" != "%PDF-" ]]; then
+  if [ "$(head -c 5 "${part}" 2>/dev/null || true)" != "%PDF-" ]; then
     echo "fail ${name}: response is not a PDF (blocked or HTML error page)" >&2
-    rm -f "${tmp}"
+    rm -f "${part}"
     failed=1
     continue
   fi
-  mv "${tmp}" "${out}"
+  mv "${part}" "${out}"
   echo "ok  ${name}"
-done
+done < "${tmp}"
+rm -f "${tmp}"
 
-if [[ "${failed}" -ne 0 ]]; then
+if [ "${failed}" -ne 0 ]; then
   echo "Some PDFs failed. Download those URLs in a browser and save them under resources/." >&2
   exit 1
 fi

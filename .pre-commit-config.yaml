@@ -10,6 +10,7 @@ repos:
       - id: end-of-file-fixer
       - id: check-merge-conflict
       - id: check-yaml
+        exclude: ^operations/compose\.ingress\.yaml$
       - id: check-json
         exclude: ^(frontend/.*/dist/|.*\.tsbuildinfo|package-lock\.json)
 

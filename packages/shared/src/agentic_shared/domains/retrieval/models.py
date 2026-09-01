@@ -96,6 +96,8 @@ class SearchMeta(BaseModel):
     error: str | None = None
     rrf_candidates: list[ChunkPreview] = Field(default_factory=list)
     final_chunks: list[ChunkPreview] = Field(default_factory=list)
+    reranked: bool = False
+    rerank_model: str = ""
 
     @classmethod
     def skipped_local(cls, reason: str, *, search_query: str = "") -> Self:

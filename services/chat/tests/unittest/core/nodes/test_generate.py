@@ -3,6 +3,7 @@ import unittest
 from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, MagicMock
 
+from agentic_shared.domains.pii_vault.settings import PiiVaultSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
 
 from agentic_chat.core.deps import AgentGraphDeps
@@ -30,6 +31,8 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
 
         analyzer = AsyncMock()
         analyzer.analyze.side_effect = _analyze
+        query_pii = AsyncMock()
+        query_pii.enabled = False
         deps = AgentGraphDeps(
             chat_client=chat_client,
             retrieval=MagicMock(),
@@ -37,6 +40,8 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
             guard=AsyncMock(),
             analyzer=analyzer,
             anonymizer=AsyncMock(),
+            query_pii=query_pii,
+            pii_vault=PiiVaultSettings(_env_file=None, enabled=False),
         )
         return GenerateNode(deps), chat_client
 
@@ -150,9 +155,13 @@ class TestGenerateNode(unittest.IsolatedAsyncioTestCase):
         self.assertIn("only", rag)
         self.assertIn("cannot find it in the indexed excerpts", rag)
         self.assertIn("copy numbers", rag)
+        self.assertIn("vault placeholder", rag)
+        self.assertIn("same placeholder", rag)
         self.assertIn("results table", rag)
         self.assertIn("one to three sentences", rag)
-        self.assertIn("substance of the answer is missing", rag)
+        self.assertIn("criminal classification", rag)
+        self.assertIn("ordinary identifiers", rag)
+        self.assertIn("do not appear", rag)
         self.assertIn("plain prose", rag)
         self.assertIn("latex", rag)
         self.assertIn("do not add offers to upload documents", rag)

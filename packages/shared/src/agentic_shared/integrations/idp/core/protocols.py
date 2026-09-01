@@ -6,6 +6,7 @@ from agentic_shared.integrations.idp.core.records import (
     TenantMemberRecord,
     TenantRecord,
     UserRecord,
+    UserTenancy,
 )
 
 
@@ -28,6 +29,8 @@ class TenantAdmin(Protocol):
         first: int = 0,
         max_results: int = 50,
     ) -> tuple[list[TenantMemberRecord], bool]: ...
+
+    async def list_tenants_for_user(self, user_id: str) -> list[TenantRecord]: ...
 
     async def list_tenant_aliases_for_user(self, user_id: str) -> list[str]: ...
 
@@ -84,3 +87,13 @@ class UserAdmin(Protocol):
         clear_tenant: bool = False,
         password: str | None = None,
     ) -> UserRecord: ...
+
+
+@runtime_checkable
+class UserTenancyRead(Protocol):
+    async def get(self, username: str) -> UserTenancy | None: ...
+
+
+@runtime_checkable
+class UserTenancyWrite(Protocol):
+    async def set_active(self, username: str, tenant_alias: str) -> UserTenancy: ...

@@ -12,8 +12,13 @@ from agentic_shared.domains.persistence.protocols.chat import (
     ChatSessionReadRepository,
     ChatSessionWriteRepository,
 )
+from agentic_shared.domains.pii_vault.protocols import QueryPiiTokenizationPort
+from agentic_shared.domains.pii_vault.reveal_service import VaultRevealService
+from agentic_shared.integrations.litellm.analyzer.protocols import Analyzer
+from agentic_shared.integrations.litellm.anonymizer.protocols import Anonymizer
 from langchain_core.runnables import RunnableConfig
 
+from agentic_chat.core.guard.pii import mask_text
 from agentic_chat.core.state import AgentGraphInput, graph_config
 from agentic_chat.modules.chat.schemas import ChatMessageOut, to_graph_messages
 from agentic_chat.modules.chat.streaming.graph_runner import ChatGraphRunner
@@ -49,6 +54,10 @@ class ChatStreamService:
         title_generator: SessionTitleGenerator,
         *,
         tenant_id: str,
+        query_pii: QueryPiiTokenizationPort | None = None,
+        vault_reveal: VaultRevealService | None = None,
+        analyzer: Analyzer | None = None,
+        anonymizer: Anonymizer | None = None,
     ) -> None:
         self._sessions_read = sessions_read
         self._sessions_write = sessions_write
@@ -57,10 +66,53 @@ class ChatStreamService:
         self._graph_runner = graph_runner
         self._title_generator = title_generator
         self._tenant_id = tenant_id
+        self._query_pii = query_pii
+        self._vault_reveal = vault_reveal
+        self._analyzer = analyzer
+        self._anonymizer = anonymizer
 
     async def _get_messages(self, session_id: uuid.UUID) -> list[ChatMessageOut]:
         rows = await self._messages_read.list_for_session_ordered(session_id)
         return [ChatMessageOut.from_entity(m) for m in rows]
+
+    async def _safe_title_prompt(self, message: str) -> str:
+        """Strip PII before the title LLM call; never fall back to plaintext."""
+        cleaned = message.strip()
+        if not cleaned:
+            return cleaned
+        if self._query_pii is not None and self._query_pii.enabled:
+            return await self._query_pii.tokenize_query(cleaned, tenant_id=self._tenant_id)
+        if self._analyzer is not None and self._anonymizer is not None:
+            masked = await mask_text(
+                cleaned,
+                analyzer=self._analyzer,
+                anonymizer=self._anonymizer,
+            )
+            return masked.text
+        return cleaned
+
+    async def _generate_session_title(self, message: str, *, locale: str) -> str:
+        local_fallback = message.strip()[:120] or default_session_title(locale)
+        try:
+            prompt = await self._safe_title_prompt(message)
+        except Exception:
+            logger.exception("session title prompt sanitization failed")
+            return local_fallback
+        try:
+            title = await self._title_generator.generate(prompt, locale=locale)
+        except Exception:
+            logger.exception("session title generation failed")
+            return local_fallback
+        if (
+            self._vault_reveal is not None
+            and self._query_pii is not None
+            and self._query_pii.enabled
+        ):
+            try:
+                title = await self._vault_reveal.reveal_text(title)
+            except Exception:
+                logger.exception("session title detokenize failed")
+        return title
 
     async def stream_response(
         self,
@@ -103,11 +155,7 @@ class ChatStreamService:
 
         if is_first_turn:
             yield sse_title_active(locale)
-            new_title = message.strip()[:120] or default_session_title(locale)
-            try:
-                new_title = await self._title_generator.generate(message, locale=locale)
-            except Exception:
-                logger.exception("session title generation failed")
+            new_title = await self._generate_session_title(message, locale=locale)
             chat_session.title = new_title
             await self._sessions_write.update(chat_session)
             yield sse_title_done(locale, new_title)

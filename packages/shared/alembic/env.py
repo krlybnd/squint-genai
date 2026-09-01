@@ -8,9 +8,11 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from agentic_shared.domains.persistence.entities import Base
+from agentic_shared.domains.persistence.entities import audit_event as _audit_event  # noqa: F401
 from agentic_shared.domains.persistence.entities import chat as _chat  # noqa: F401
 from agentic_shared.domains.persistence.entities import document as _document  # noqa: F401
 from agentic_shared.domains.persistence.entities import index_job as _index_job  # noqa: F401
+from agentic_shared.domains.persistence.entities import pii_vault as _pii_vault  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

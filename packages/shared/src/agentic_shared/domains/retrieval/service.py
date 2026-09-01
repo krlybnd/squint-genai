@@ -2,6 +2,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 
+from agentic_shared.domains.pii_vault.protocols import QueryPiiTokenizationPort
 from agentic_shared.domains.retrieval.models import (
     ChunkPreview,
     IndexedDocumentEntry,
@@ -16,22 +17,27 @@ from agentic_shared.infrastructure.vector.qdrant.dense import embed_dense_text
 from agentic_shared.infrastructure.vector.qdrant.sparse import embed_sparse_text
 from agentic_shared.integrations.litellm.embedding.settings import LiteLLMEmbeddingSettings
 from agentic_shared.integrations.litellm.llm.settings import LiteLLMChatSettings
+from agentic_shared.integrations.litellm.rerank.protocols import RerankPort
 
 logger = logging.getLogger(__name__)
 
 
 class RetrievalService:
-    """Hybrid retrieval (dense + sparse RRF)."""
+    """Hybrid retrieval (dense + sparse RRF), optional LiteLLM rerank."""
 
     def __init__(
         self,
         chunk_read: ChunkReadRepository,
         llm: LiteLLMChatSettings,
         embedding: LiteLLMEmbeddingSettings,
+        query_pii: QueryPiiTokenizationPort | None = None,
+        reranker: RerankPort | None = None,
     ) -> None:
         self._chunk_read = chunk_read
         self._llm = llm
         self._embedding = embedding
+        self._query_pii = query_pii
+        self._reranker = reranker
 
     def search_documents(
         self, query: str, top_k: int | None = None, *, tenant_id: str
@@ -83,10 +89,27 @@ class RetrievalService:
         )
         return cleaned, final_k, candidate_k, meta
 
+    async def _prepare_query_async(self, query: str, *, tenant_id: str) -> str:
+        cleaned = query.strip()
+        if not cleaned or self._query_pii is None or not self._query_pii.enabled:
+            return cleaned
+        return await self._query_pii.tokenize_query(cleaned, tenant_id=tenant_id)
+
+    def _prepare_query_sync(self, query: str, *, tenant_id: str) -> str:
+        cleaned = query.strip()
+        if not cleaned or self._query_pii is None or not self._query_pii.enabled:
+            return cleaned
+        return asyncio.run(self._query_pii.tokenize_query(cleaned, tenant_id=tenant_id))
+
     def search_documents_with_meta(
         self, query: str, top_k: int | None = None, *, tenant_id: str
     ) -> SearchDocumentsResult:
         cleaned, final_k, candidate_k, meta = self._search_meta(query, top_k)
+        if not cleaned:
+            return SearchDocumentsResult(chunks=[], meta=meta)
+
+        cleaned = self._prepare_query_sync(cleaned, tenant_id=tenant_id)
+        meta = meta.model_copy(update={"query": cleaned})
         if not cleaned:
             return SearchDocumentsResult(chunks=[], meta=meta)
 
@@ -106,7 +129,9 @@ class RetrievalService:
             sparse_vector=sparse_vector,
             limit=candidate_k,
         )
-        result = self._rank_candidates(list(raw_candidates), meta=meta, final_k=final_k)
+        result = self._rank_candidates(
+            list(raw_candidates), query=cleaned, meta=meta, final_k=final_k
+        )
         logger.debug(
             "retrieval search tenant_id=%s candidates=%d results=%d",
             tenant_id,
@@ -119,6 +144,11 @@ class RetrievalService:
         self, query: str, top_k: int | None = None, *, tenant_id: str
     ) -> SearchDocumentsResult:
         cleaned, final_k, candidate_k, meta = self._search_meta(query, top_k)
+        if not cleaned:
+            return SearchDocumentsResult(chunks=[], meta=meta)
+
+        cleaned = await self._prepare_query_async(cleaned, tenant_id=tenant_id)
+        meta = meta.model_copy(update={"query": cleaned})
         if not cleaned:
             return SearchDocumentsResult(chunks=[], meta=meta)
 
@@ -147,7 +177,9 @@ class RetrievalService:
             sparse_vector=sparse_vector,
             limit=candidate_k,
         )
-        result = self._rank_candidates(list(raw_candidates), meta=meta, final_k=final_k)
+        result = await self._rank_candidates_async(
+            list(raw_candidates), query=cleaned, meta=meta, final_k=final_k
+        )
         logger.debug(
             "retrieval search tenant_id=%s candidates=%d results=%d",
             tenant_id,
@@ -156,10 +188,23 @@ class RetrievalService:
         )
         return result
 
-    @staticmethod
     def _rank_candidates(
+        self,
         candidates: list[RetrievedChunk],
         *,
+        query: str,
+        meta: SearchMeta,
+        final_k: int,
+    ) -> SearchDocumentsResult:
+        return asyncio.run(
+            self._rank_candidates_async(candidates, query=query, meta=meta, final_k=final_k)
+        )
+
+    async def _rank_candidates_async(
+        self,
+        candidates: list[RetrievedChunk],
+        *,
+        query: str,
         meta: SearchMeta,
         final_k: int,
     ) -> SearchDocumentsResult:
@@ -168,6 +213,35 @@ class RetrievalService:
             return SearchDocumentsResult(chunks=[], meta=meta)
 
         final_chunks = candidates[:final_k]
+        reranker = self._reranker
+        if reranker is not None and reranker.enabled and query and len(candidates) > 1:
+            try:
+                hits = await reranker.rerank(
+                    query,
+                    [chunk.text for chunk in candidates],
+                    top_n=final_k,
+                )
+            except Exception:
+                logger.warning("rerank failed; using RRF order", exc_info=True)
+                hits = []
+            if hits:
+                ordered: list[RetrievedChunk] = []
+                seen: set[int] = set()
+                for hit in hits:
+                    index = hit.index
+                    if index < 0 or index >= len(candidates) or index in seen:
+                        continue
+                    seen.add(index)
+                    ordered.append(candidates[index].model_copy(update={"score": hit.score}))
+                for index, chunk in enumerate(candidates):
+                    if index not in seen:
+                        ordered.append(chunk)
+                if ordered:
+                    final_chunks = ordered[:final_k]
+                    meta = meta.model_copy(
+                        update={"reranked": True, "rerank_model": reranker.model}
+                    )
+
         meta = RetrievalService._attach_chunk_lists(meta, candidates, final_chunks)
         return SearchDocumentsResult(chunks=final_chunks, meta=meta)
 

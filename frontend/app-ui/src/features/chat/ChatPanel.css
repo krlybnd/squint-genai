@@ -839,7 +839,10 @@
 .message-bubble-editable {
   flex: 1;
   min-width: 120px;
-  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
   border: 1px solid transparent;
   font-family: inherit;
   color: white;
@@ -940,12 +943,14 @@
 .chat-input-area textarea {
   flex: 1;
   resize: none;
+  overflow: hidden;
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--border-muted);
   color: var(--text);
   font-size: 0.95rem;
+  line-height: 1.5;
   outline: none;
   transition: border-color 0.15s;
 }

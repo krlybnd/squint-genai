@@ -1,5 +1,6 @@
 import { Pause, Send } from "lucide-react";
 import type { TFunction } from "i18next";
+import { AutoGrowTextarea } from "./AutoGrowTextarea";
 
 interface Props {
   t: TFunction;
@@ -29,7 +30,7 @@ export function ChatInputArea({
           {error}
         </div>
       )}
-      <textarea
+      <AutoGrowTextarea
         value={input}
         onChange={(e) => onInputChange(e.target.value)}
         onKeyDown={(e) => {
@@ -39,7 +40,7 @@ export function ChatInputArea({
           }
         }}
         placeholder={canWrite ? t("chat.placeholder") : t("chat.placeholderReadOnly")}
-        rows={2}
+        minRows={2}
         disabled={!canWrite}
       />
       {streaming ? (

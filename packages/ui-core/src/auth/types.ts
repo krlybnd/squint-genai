@@ -3,6 +3,7 @@ export type AuthClient = {
   getUsername(): string | null;
   getRoles(): readonly string[];
   getAccessToken(): string | undefined;
+  getTenantId(): string | null;
   hasAnyRole(...roles: string[]): boolean;
   refreshToken(minValiditySeconds?: number): Promise<void>;
   logout(): void;
