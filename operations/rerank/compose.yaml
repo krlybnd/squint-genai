@@ -1,9 +1,7 @@
-# HuggingFace TEI cross-encoder reranker. Profile: rerank.
-# Start with: make up-rerank
+# HuggingFace TEI cross-encoder reranker (default demo).
 # LiteLLM alias `rerank` posts here (http://tei-rerank:80/rerank).
 services:
   tei-rerank:
-    profiles: ["rerank"]
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
     environment:
       HF_HOME: /data

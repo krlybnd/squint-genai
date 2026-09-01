@@ -1,7 +1,8 @@
 {
   "realm": "agentic-rag-eval",
   "enabled": true,
-  "displayName": "agentic-rag-eval",
+  "displayName": "krlybnd's - Squint",
+  "displayNameHtml": "krlybnd's - Squint",
   "organizationsEnabled": true,
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
@@ -130,7 +131,7 @@
   "clients": [
     {
       "clientId": "agentic-rag-eval-ui",
-      "name": "agentic-rag-eval UI",
+      "name": "krlybnd's - Squint",
       "enabled": true,
       "publicClient": true,
       "directAccessGrantsEnabled": false,

@@ -86,7 +86,7 @@ class AuthService:
         return AuthContext(
             user_id="internal-service",
             tenant_id=tenant,
-            roles=frozenset({AppRole.READ, AppRole.WRITE}),
+            roles=frozenset(AppRole.privileged()),
         )
 
     def _map_roles(self, claims: AccessTokenClaims) -> frozenset[AppRole]:

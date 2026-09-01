@@ -1,10 +1,6 @@
 # Presidio analyzer (PII detect)
 
-Compose profile: **`guardrails`**. Internal DNS: `presidio-analyzer:3000`.
-
-```bash
-make up-guardrails
-```
+Default Compose stack (PII vault is on). Internal DNS: `presidio-analyzer:3000`.
 
 Used by shared `AnalyzerClient` (`ANALYZER_API_BASE`) and optionally by LiteLLM's built-in `presidio-pii` guardrail.
 

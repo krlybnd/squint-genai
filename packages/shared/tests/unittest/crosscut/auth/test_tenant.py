@@ -28,7 +28,7 @@ class TestAuthTenant(unittest.TestCase):
         # Assert
         self.assertEqual(ctx.user_id, "internal-service")
         self.assertEqual(ctx.tenant_id, "tenant-b")
-        self.assertTrue(ctx.has_any(AppRole.WRITE))
+        self.assertTrue(ctx.has_any(AppRole.ADMIN, AppRole.WRITE))
 
     def test_jwt_claim_tenant_preferred_over_header(self) -> None:
         # Arrange

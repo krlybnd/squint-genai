@@ -17,7 +17,7 @@ class PdfIndexingModuleSettings(ModuleSettings):
         description="Percentile threshold for semantic breakpoints (higher → fewer chunks).",
     )
     pii_tokenization_enabled: bool = Field(
-        default=False,
+        default=True,
         description="Tokenize PII before chunking/embed (requires Presidio analyzer).",
     )
     pii_language: str = Field(

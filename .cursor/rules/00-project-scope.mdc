@@ -6,8 +6,8 @@ alwaysApply: true
 
 Phase 1 architecture (LOCKED):
 - **Services:** api (documents/jobs/retrieval/annotations REST), chat (LangGraph + in-process retrieval + SSE), indexing (Celery), admin (Keycloak Organizations REST)
-- **Infra:** PostgreSQL, Redis, MinIO, Qdrant, LiteLLM, docker-compose
-- **Edge (optional `--profile auth --profile ui`):** Keycloak, Traefik, frontend + admin-ui
+- **Infra:** PostgreSQL, Redis, MinIO, Qdrant, LiteLLM, TEI rerank, docker-compose
+- **Edge (optional `--profile auth`):** Traefik ingress overlay. **Keycloak** starts with the default demo stack (JWT login). Frontend + admin-ui start with the default Compose stack.
 - **Backend:** Dishka DI, vertical module slices (`modules/<domain>/`), providers receive settings in `__init__`
 - **Heavy ops:** semantic chunking + indexing via Celery only — never sync in API
 - **UI:** React purple theme, documents sidebar + chat sessions, SSE streaming; Keycloak login when `VITE_AUTH_ENABLED=true`

@@ -7,9 +7,9 @@ Not in default CI — needs a running stack. Happy path only for smoke features;
 ## Prerequisites
 
 1. Committed specs: `openapi/api.yaml`, `openapi/chat.yaml`, `openapi/admin.yaml` (`make generate-openapi`).
-2. Stack up: **`make up-auth`** (Traefik `:80` only) or `make up` (host ports `:8000` / `:8002` / `:8003`). Point `.env` at the same origin (see `.env.example`). Tenant/user list and `@auth` / `@me` need Keycloak (`AUTH_MODE=jwt`). Default Playwright fixtures send an admin Bearer when the token endpoint is reachable.
+2. Stack up: auth overlay (Traefik `:80` only) or lab compose (host ports `:8000` / `:8002` / `:8003`) — [`tools/ops/README.md`](../../tools/ops/README.md). Point `.env` at the same origin (see `.env.example`). Tenant/user list and `@auth` / `@me` need Keycloak (`AUTH_MODE=jwt`). Default Playwright fixtures send an admin Bearer when the token endpoint is reachable.
 3. Copy env: `cp .env.example .env`
-4. **Guardrails feature:** `make up-guardrails` with the same compose files as the stack (`-f docker-compose.yml -f operations/compose.ingress.yaml` when using `up-auth`). Point `GUARD_API_BASE` at `:8010` (host ports) or `http://localhost/guard` (Traefik). Comment scenarios need at least one indexed document (or `API_TEST_CHUNK_ID`).
+4. **Guardrails feature:** `docker compose --profile guardrails up -d` (add `-f operations/compose.ingress.yaml` when using the auth overlay). Point `GUARD_API_BASE` at `:8010` (host ports) or `http://localhost/guard` (Traefik). Comment scenarios need at least one indexed document (or `API_TEST_CHUNK_ID`).
 
 ## Quick start
 
@@ -20,7 +20,7 @@ npm install
 npm test
 ```
 
-From repo root: `make test-api`.
+From repo root: `make api-test` (`test-api` alias). Full measuring gate: `make system-test`.
 
 Guardrails only:
 
@@ -52,7 +52,7 @@ Banned phrases are defined in `operations/llm-guard/config/scanners.yml` (`BanSu
 
 PII vault feature additionally requires:
 
-- `make up-guardrails` (Presidio analyzer for index-time tokenization)
+- `docker compose --profile guardrails up -d` (Presidio analyzer for index-time tokenization)
 - Indexing worker: `INDEXING_PDF_PII_TOKENIZATION_ENABLED=true` plus shared `VAULT_ENCRYPTION_KEY` / `VAULT_TOKEN_SALT` (same values as API)
 - Chat/API: `PII_VAULT_ENABLED=true` for query tokenization + SSE detokenize on chat `done` events
 - Alembic revision `003` applied (`make migrate` or ops bootstrap)

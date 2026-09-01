@@ -24,7 +24,7 @@ pandoc resources/eval/investigation-dossier-beta.md  -o resources/eval/investiga
 pandoc resources/eval/investigation-dossier-gamma-decoy.md -o resources/eval/investigation-dossier-gamma-decoy.pdf
 ```
 
-Index with vault flags enabled (`INDEXING_PDF_PII_TOKENIZATION_ENABLED=true`, `PII_VAULT_ENABLED=true`).
+Index with the default vault flags (`INDEXING_PDF_PII_TOKENIZATION_ENABLED`, `PII_VAULT_ENABLED` — on in `.env.example`).
 
 ## Cross-document ground truth (Alpha + Beta only)
 

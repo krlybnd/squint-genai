@@ -1,7 +1,6 @@
-# Presidio analyzer (PII detect). Profile: guardrails.
+# Presidio analyzer (PII detect). Default stack (PII vault on).
 services:
   presidio-analyzer:
-    profiles: ["guardrails"]
     image: ghcr.io/data-privacy-stack/presidio-analyzer:latest
     ports:
       - "5002:3000"

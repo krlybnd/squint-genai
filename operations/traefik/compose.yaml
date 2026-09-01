@@ -11,15 +11,13 @@ services:
       - ./traefik.yaml:/etc/traefik/traefik.yaml:ro
       - ./dynamic:/etc/traefik/dynamic:ro
     depends_on:
-      ops:
-        condition: service_completed_successfully
       keycloak:
         condition: service_healthy
       api:
-        condition: service_started
+        condition: service_healthy
       chat:
-        condition: service_started
+        condition: service_healthy
       frontend:
-        condition: service_started
+        condition: service_healthy
       admin-ui:
-        condition: service_started
+        condition: service_healthy

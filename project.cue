@@ -99,7 +99,7 @@ folders: {
 		path:    "packages/generated"
 		stack:   "python"
 		phase:   1
-		purpose: "Generated clients (Keycloak Admin, api.yaml, chat.yaml). Regenerate via make generate-keycloak-client / make generate-openapi-clients — do not hand-edit."
+		purpose: "Generated clients (Keycloak Admin, api.yaml, chat.yaml). Regenerate via make generate-openapi-clients — do not hand-edit."
 		mustNot: ["manual feature code"]
 	}
 
@@ -177,10 +177,10 @@ folders: {
 		adr:     ["004", "007"]
 		purpose: """
 			Live-stack HTTP acceptance: Playwright-BDD, steps use only OpenAPI-generated clients.
-			Requires make up. Not in default CI (ADR 007).
+			Requires a running stack (see tools/ops/README.md). Not in default CI (ADR 007).
 			"""
 		mustNot: ["pytest integration suites under services/", "importing FastAPI apps in service tests"]
-		related: ["openapi/", ".reports/api"]
+		related: ["openapi/", ".reports/api", "tools/qa"]
 	}
 
 	"tests/e2e": #Folder & {
@@ -189,7 +189,7 @@ folders: {
 		phase:   1
 		adr:     ["007"]
 		purpose: "Browser UI journeys (Playwright + Gherkin). Manual / on-demand; reports under .reports/e2e/."
-		related: ["frontend/app-ui", "frontend/admin-app-ui"]
+		related: ["frontend/app-ui", "frontend/admin-app-ui", "tools/qa"]
 	}
 
 	"tests/eval": #Folder & {
@@ -209,7 +209,7 @@ folders: {
 			"""
 		contains: ["src/agentic_eval/core/", "src/agentic_eval/core/clients/", "src/agentic_eval/core/deepeval/", "src/agentic_eval/core/pydantic_evals/", "src/agentic_eval/core/golden/", "tests/unittest/", "tests/retrieval/", "tests/generation/", "dataset-investigation.json", ".env.example"]
 		mustNot: ["hand-rolled .env parsers", "eval config on LLMSettings", "os.environ host rewrites", "src importing tests/", "eval modules package under src/", "suite-specific eval gates in src/agentic_eval/", "custom markdown report writers wrapping DeepEval / pydantic-evals", "ad-hoc httpx URL clients for api/chat", "in-process Qdrant or LangGraph as the live eval SUT"]
-		related: ["resources/", "services/chat", "reports", "packages/generated"]
+		related: ["resources/", "services/chat", "reports", "packages/generated", "tools/qa"]
 	}
 
 	"openapi": #Folder & {
@@ -247,7 +247,7 @@ folders: {
 		phase:   1
 		purpose: "Infra-side configs: Keycloak realm, LiteLLM, local classifiers, Postgres/Redis/MinIO/Qdrant/Traefik snippets for docker-compose."
 		contains: ["postgres/", "redis/", "minio/", "qdrant/", "litellm/", "llm-guard/", "presidio-analyzer/", "presidio-anonymizer/", "rerank/", "keycloak/", "traefik/", "compose.ingress.yaml"]
-		related: ["docker-compose.yml", "tools/ops/bootstrap"]
+		related: ["docker-compose.yml", "tools/ops"]
 	}
 
 	"operations/llm-guard": #Folder & {
@@ -263,7 +263,7 @@ folders: {
 		path:    "operations/presidio-analyzer"
 		stack:   "infra"
 		phase:   1
-		purpose: "Presidio analyzer (PII detect). Compose profile `guardrails`."
+		purpose: "Presidio analyzer (PII detect). Default Compose stack (PII vault on)."
 		contains: ["compose.yaml", "README.md"]
 		related: ["operations/presidio-anonymizer", "operations/litellm"]
 	}
@@ -272,7 +272,7 @@ folders: {
 		path:    "operations/presidio-anonymizer"
 		stack:   "infra"
 		phase:   1
-		purpose: "Presidio anonymizer (PII redact). Compose profile `guardrails`."
+		purpose: "Presidio anonymizer (PII redact). Default Compose stack (PII vault on)."
 		contains: ["compose.yaml", "README.md"]
 		related: ["operations/presidio-analyzer", "operations/litellm"]
 	}
@@ -323,16 +323,91 @@ folders: {
 		path:    "tools/ops"
 		stack:   "tooling"
 		phase:   1
-		purpose: "Ops/bootstrap scripts (migrate, MinIO CORS, bucket setup). Dagger test profiles optional."
-		related: ["operations/", "make ops-bootstrap"]
+		purpose: """
+			Operator image: `make initialization` (MinIO + demo PDFs) then `make bootstrap` (migrate, users,
+			reindex after apps are up), then idle. Host: `docker compose exec ops make initialization|bootstrap|…`.
+			Does not call Docker or run tests. Operator recipes: Makefile (incl. DEMO_USERS).
+			"""
+		contains: ["Dockerfile", "README.md", "Makefile"]
+		mustNot:  ["docker CLI or compose invocations", "unit tests in the ops image"]
+		related:  ["docker-compose.yml", "Makefile", "tools/qa", "scripts/keycloak", "scripts/minio", "scripts/postgres"]
+	}
+
+	"tools/qa": #Folder & {
+		path:    "tools/qa"
+		stack:   "tooling"
+		phase:   1
+		purpose: """
+			QA image + recipes: unittest (coverage), system-test (all measuring suites:
+			unit + API Gherkin + e2e + live retrieval + live generation). Host:
+			`docker compose --profile qa run --rm qa make …`. No Docker inside the image.
+			Live suites need ops healthy; not in CI (ADR 007). Offline eval unittest is not a gate.
+			"""
+		contains: ["Dockerfile", "Makefile", "README.md"]
+		mustNot:  ["docker CLI or compose invocations", "operator bootstrap"]
+		related:  ["Makefile", "docker-compose.yml", "tools/ops", "tests/api", "tests/e2e", "tests/eval"]
 	}
 
 	"make": #Folder & {
 		path:    "make"
 		stack:   "tooling"
 		phase:   1
-		purpose: "Shared Makefile templates (python.mk, node.mk, report.mk) and project fan-out lists (projects.mk)."
-		related: ["project.cue", "Makefile"]
+		purpose: "Shared Makefile templates (python.mk, node.mk, openapi-client.mk, report.mk) and project fan-out lists (projects.mk)."
+		related: ["project.cue", "Makefile", "tools/ops", "tools/qa"]
+	}
+
+	"scripts/keycloak": #Folder & {
+		path:    "scripts/keycloak"
+		stack:   "tooling"
+		phase:   1
+		purpose: "Keycloak operator shell (add-user, org bootstrap). Personas: DEMO_USERS in tools/ops/Makefile."
+		contains: ["add-user.sh", "init-organizations.sh"]
+		related:  ["tools/ops", "operations/keycloak"]
+	}
+
+	"scripts/api": #Folder & {
+		path:    "scripts/api"
+		stack:   "tooling"
+		phase:   1
+		purpose: "API operator shell (reindex-all). Called from make bootstrap when api is up."
+		contains: ["index.sh"]
+		related:  ["tools/ops", "services/api"]
+	}
+
+	"scripts/minio": #Folder & {
+		path:    "scripts/minio"
+		stack:   "tooling"
+		phase:   1
+		purpose: "MinIO operator shell (bucket + CORS, teardown). CORS JSON lives in operations/minio/cors.json."
+		contains: ["setup.sh", "teardown.sh"]
+		related:  ["tools/ops", "operations/minio"]
+	}
+
+	"scripts/postgres": #Folder & {
+		path:    "scripts/postgres"
+		stack:   "tooling"
+		phase:   1
+		purpose: "Postgres operator shell (Alembic migrate, schema teardown)."
+		contains: ["migrate.sh", "teardown.sh"]
+		related:  ["tools/ops", "packages/shared"]
+	}
+
+	"scripts/qdrant": #Folder & {
+		path:    "scripts/qdrant"
+		stack:   "tooling"
+		phase:   1
+		purpose: "Qdrant operator shell (collection teardown)."
+		contains: ["teardown.sh"]
+		related:  ["tools/ops", "operations/qdrant"]
+	}
+
+	"scripts/redis": #Folder & {
+		path:    "scripts/redis"
+		stack:   "tooling"
+		phase:   1
+		purpose: "Redis operator shell (FLUSHALL teardown)."
+		contains: ["teardown.sh"]
+		related:  ["tools/ops", "operations/redis"]
 	}
 
 	"docs": #Folder & {
@@ -373,7 +448,7 @@ folders: {
 		stack:   "meta"
 		phase:   1
 		purpose: "Per-project CycloneDX SBOM fragments and merged bom.cdx.json for Grant license policy."
-		related: ["make licenses", ".grant.yaml"]
+		related: ["make license", ".grant.yaml"]
 	}
 
 	"reports": #Folder & {
@@ -404,8 +479,8 @@ folders: {
 		path:    "resources"
 		stack:   "docs"
 		phase:   1
-		purpose: "Demo PDFs for indexing/eval goldens. Fetched via make resources — not always committed."
-		related: ["tests/eval", "scripts/fetch-resources.sh"]
+		purpose: "Demo PDFs for indexing/eval goldens. Fetched via make resources (tools/ops/Makefile) — not always committed."
+		related: ["tests/eval", "scripts/fetch-resources.sh", "tools/ops"]
 	}
 
 	".github/workflows": #Folder & {

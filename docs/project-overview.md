@@ -64,13 +64,7 @@ Services:
 
 ## Quick start
 
-See the root [README](../README.md):
-
-```bash
-cp .env.example .env
-make up-ui      # dev without Keycloak
-make up-auth    # full stack with Keycloak + Traefik (:80 only)
-```
+Clone, set `OPENAI_API_KEY`, then `docker compose up -d`. **ops** runs `make initialization` then `make bootstrap`. Linux and Windows steps: root [README](../README.md#quick-start). Profiles and operator recipes: [`tools/ops/README.md`](../tools/ops/README.md).
 
 ## Further reading
 

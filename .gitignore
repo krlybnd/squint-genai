@@ -21,11 +21,8 @@ tests/api/src/generated/
 .DS_Store
 data/checkpoints.db
 
-# Demo PDFs (download with `make resources`)
+# Demo PDFs (download with `make resources` / `docker compose exec ops make resources`)
 resources/*.pdf
-
-# Dagger removed — ops container only
-tools/ops/.gitignore
 
 # Generated SBOM / license reports
 licenses/
@@ -49,7 +46,7 @@ reports/eval/investigation-abstention_*.md
 # openapi/*.yaml is tracked; JSON twins are not used
 openapi/*.json
 
-# OpenAPI-generated Python clients (run `make generate-keycloak-client` / `make generate-openapi-clients`)
+# OpenAPI-generated Python clients (run `make generate-openapi-clients`)
 packages/generated/
 
 # IDE / editor (keep project rules + skills in git)

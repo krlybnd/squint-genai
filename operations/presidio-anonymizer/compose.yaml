@@ -1,7 +1,6 @@
-# Presidio anonymizer (PII redact). Profile: guardrails.
+# Presidio anonymizer (PII redact). Default stack (PII vault on).
 services:
   presidio-anonymizer:
-    profiles: ["guardrails"]
     image: ghcr.io/data-privacy-stack/presidio-anonymizer:latest
     ports:
       - "5001:3000"
