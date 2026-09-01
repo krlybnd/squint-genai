@@ -122,4 +122,4 @@ Demo env vars (set automatically by `test:demo`):
 ## Related
 
 - API Gherkin: `tests/api/` (Playwright-BDD, generated OpenAPI clients, live services; `make system-test`).
-- Quality recipes: `tools/qa` (`unittest`, `system-test`, `eval-test`, `e2e`).
+- Quality recipes: `tools/qa` (`unittest`, `system-test`, `eval-live`, `e2e`).

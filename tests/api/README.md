@@ -20,7 +20,7 @@ npm install
 npm test
 ```
 
-From repo root: `make system-test` (`test-api` alias).
+From repo root: `make api-test` (`test-api` alias). Full measuring gate: `make system-test`.
 
 Guardrails only:
 

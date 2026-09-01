@@ -338,13 +338,14 @@ folders: {
 		stack:   "tooling"
 		phase:   1
 		purpose: """
-			Host quality recipes included from the root Makefile: unittest (all unit tests + combined
-			coverage), system-test (tests/api), license, eval-test (tests/eval), e2e. Does not call
-			Docker or install pre-commit. Live suites need a finished ops bootstrap; not in CI (ADR 007).
+			QA image + recipes: unittest (coverage), system-test (all measuring suites:
+			unit + API Gherkin + e2e + live retrieval + live generation). Host:
+			`docker compose --profile qa run --rm qa make …`. No Docker inside the image.
+			Live suites need ops healthy; not in CI (ADR 007). Offline eval unittest is not a gate.
 			"""
-		contains: ["Makefile", "README.md"]
+		contains: ["Dockerfile", "Makefile", "README.md"]
 		mustNot:  ["docker CLI or compose invocations", "operator bootstrap"]
-		related:  ["Makefile", "tools/ops", "tests/api", "tests/e2e", "tests/eval"]
+		related:  ["Makefile", "docker-compose.yml", "tools/ops", "tests/api", "tests/e2e", "tests/eval"]
 	}
 
 	"make": #Folder & {

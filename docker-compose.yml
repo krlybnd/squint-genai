@@ -223,3 +223,18 @@ services:
     healthcheck:
       <<: *http-health
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5173/ >/dev/null"]
+
+  qa:
+    profiles: ["qa"]
+    build:
+      context: .
+      dockerfile: tools/qa/Dockerfile
+    env_file: .env
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    network_mode: host
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    restart: "no"

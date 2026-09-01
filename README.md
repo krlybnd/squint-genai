@@ -253,11 +253,11 @@ Stack up/down is **not** Make — see [`tools/ops/README.md`](tools/ops/README.m
 | `make sync` | Sync all Python + Node projects; export `openapi/*.yaml` |
 | `make sync-frozen` | CI-style frozen sync (requires committed lockfiles) |
 | `make unittest` | All unit tests + combined coverage (`test-unit` alias) |
-| `make eval-test` | Offline eval dataset checks (`eval` alias) |
+| `make system-test` | All measuring tests: unit + API Gherkin + e2e + live retrieval + live generation |
 | `make eval-live` | Retrieval IR gate (Recall@k / MRR / nDCG@k; needs indexed corpus) |
 | `make eval-live-generation` | DeepEval generation gate (slow; judge LLM) |
-| `make e2e` | Playwright UI BDD locally (needs a running UI stack; not in default CI) |
-| `make system-test` | Playwright API Gherkin locally (`test-api` alias; needs running api/chat/admin) |
+| `make e2e` | Playwright UI BDD (needs a running UI stack; not in default CI) |
+| `make api-test` | Playwright API Gherkin only (`test-api` alias) |
 | `make license` | CycloneDX SBOM merge + Grant (`licenses` alias) |
 | `make resources` | Download demo PDFs into `resources/` (`tools/ops/Makefile`) |
 | `make add-users` | Seed Keycloak demo/test personas (needs Keycloak) |

@@ -12,6 +12,13 @@ Default lab (app [`http://localhost:5173`](http://localhost:5173), Keycloak [`ht
 docker compose up -d
 ```
 
+Tests (QA image, host network so demo ports work):
+
+```bash
+docker compose --profile qa run --rm qa                 # system-test, then stop
+docker compose --profile qa run --rm qa make unittest
+```
+
 Traefik ingress (only `:80`; set `KC_HOSTNAME_PORT=80` and `VITE_KEYCLOAK_URL=http://localhost`):
 
 ```bash
@@ -50,7 +57,7 @@ docker compose exec ops make index        # reindex via api
 
 `initialization` is infrastructure only (`setup-minio` + `DEMO_RESOURCES`). `bootstrap` waits for the api, then Alembic migrate, Keycloak users (`DEMO_USERS`; skipped if Keycloak is down), and reindex. `teardown` clears app data only (not the Keycloak database).
 
-`add-users` seeds the same personas live tests use (`admin`, `alice@tenant-a.local`, `bob@tenant-b.local`, `writer@tenant-a.local`, `reader@tenant-a.local`). Catalog: `DEMO_USERS` in `tools/ops/Makefile`. Unit tests stay on the host (`make unittest` in `tools/qa`), not in this image.
+`add-users` seeds the same personas live tests use (`admin`, `alice@tenant-a.local`, `bob@tenant-b.local`, `writer@tenant-a.local`, `reader@tenant-a.local`). Catalog: `DEMO_USERS` in `tools/ops/Makefile`. Tests run in the **qa** image (`docker compose --profile qa run --rm qa make unittest|system-test`), not in ops.
 
 ## Layout
 

@@ -1,5 +1,5 @@
-# Quality recipes — host Make, not the ops image. Included from the root Makefile.
-# Canonical names: unittest, system-test, license, eval-test, e2e.
+# Quality recipes — no Docker. Host or `docker compose --profile qa run --rm qa make <target>`.
+# Canonical names: unittest, system-test, license, eval-live, e2e.
 # unittest always runs coverage and combines it. CI still calls coverage-combine
 # after downloading per-project artifacts (no full unittest in that job).
 
@@ -8,9 +8,9 @@ ROOT ?= $(abspath $(QA_DIR)/../..)
 
 .PHONY: unittest test test-unit coverage-combine
 .PHONY: lint format
-.PHONY: system-test test-api
+.PHONY: system-test api-test test-api
 .PHONY: license licenses
-.PHONY: eval-test eval eval-live eval-live-generation
+.PHONY: eval-live eval-live-generation
 .PHONY: e2e
 
 unittest: ## All unit tests (every project) + combined coverage
@@ -46,18 +46,21 @@ lint: ## Lint libs, services, and UI
 format: ## Auto-format Python (libs, services)
 	@set -e; for p in $(PYTHON_PROJECTS); do $(MAKE) -C $$p format; done
 
-system-test: ## Live HTTP Gherkin (tests/api; stack up + ops bootstrap done)
+# Offline eval dataset unittest is not a gate (`make -C tests/eval unittest` if needed).
+system-test: ## All measuring tests: unit + API Gherkin + e2e + live retrieval + live generation
+	$(MAKE) unittest
+	$(MAKE) api-test
+	$(MAKE) e2e
+	$(MAKE) eval-live
+	$(MAKE) eval-live-generation
+
+api-test: ## Live HTTP Gherkin (tests/api; stack up + ops bootstrap done)
 	$(MAKE) -C $(ROOT)/tests/api run
 
-test-api: system-test
+test-api: api-test
 
 license: licenses-check ## SBOM for all projects + merge + Grant policy gate
 licenses: license
-
-eval-test: ## Offline eval dataset checks (tests/eval)
-	$(MAKE) -C $(ROOT)/tests/eval run
-
-eval: eval-test
 
 eval-live: ## Investigation retrieval IR (live stack, no judge LLM)
 	$(MAKE) -C $(ROOT)/tests/eval run-retrieval-suite
